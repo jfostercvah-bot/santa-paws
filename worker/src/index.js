@@ -264,7 +264,7 @@ async function confirmPhoto(env, p, times, pets) {
 
 async function confirmVendor(env, p) {
   const text = `Hi ${field(p, "contact", 120)},\n\nThanks for applying to be a vendor at Santa Paws on Saturday, November 21, 2026. We'll review your application for ${field(p, "business", 120)} and follow up by email.\n\n` +
-    `Setup starts at 9 AM and the event runs 10 AM to 3 PM. Please bring your own tables and displays.\n\n` +
+    `The vendor fee is $20, payable by cash or check (made payable to Carolina Virginia Animal Hospital). Setup starts at 9 AM and the event runs 10 AM to 3 PM. Please bring your own tables and displays.\n\n` +
     `If you can no longer come, please withdraw at ${SITE}/cancel.html (enter this email and your phone number) so another vendor can have the spot.`;
   await sendEmails(env, [letter(field(p, "email", 120), "We got your Santa Paws vendor application", text, env)]);
 }
@@ -273,7 +273,7 @@ async function confirmSponsor(env, p) {
   const level = field(p, "level", 40);
   const price = { "North Pole": "$150", Reindeer: "$75", "Elf Friends": "$50" }[level] || "";
   const text = `Hi ${field(p, "contact", 120)},\n\nThank you for signing up ${field(p, "business", 120)} as a ${level} sponsor (${price}) of Santa Paws on Saturday, November 21, 2026! Your spot is held.\n\n` +
-    `We'll be in touch about payment and your logo for the event shirt and digital sign. Your business will appear on our website once everything is confirmed.\n\nThank you for helping keep Santa Paws free for every family.`;
+    `You can pay by cash or check, made payable to Carolina Virginia Animal Hospital. We'll be in touch with the details and about your logo for the event shirt and digital sign. Your business will appear on our website once everything is confirmed.\n\nThank you for helping keep Santa Paws free for every family.`;
   await sendEmails(env, [letter(field(p, "email", 120), "Thank you for sponsoring Santa Paws!", text, env)]);
 }
 

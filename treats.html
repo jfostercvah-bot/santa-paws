@@ -603,7 +603,7 @@ document.addEventListener("sp-status", ({ detail: d }) => {
 if (document.getElementById("vendor-form")) {
 wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone."
   : need(f, ["description"]) ? "Tell us what you'll sell or offer. Shoppers will see it on our website." : null,
-  f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`,
+  f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email. The $20 fee can be paid by cash or check (payable to Carolina Virginia Animal Hospital).`,
   f => ({ form: "vendor", subject: `Vendor application: ${f.elements.business.value}`, replyto: f.elements.email.value }),
   { full: () => "Sorry, all 15 vendor spots are taken." });
 
@@ -613,7 +613,7 @@ if (document.getElementById("sponsor-apply")) {
   const sel = document.getElementById("s-level");
   document.querySelectorAll("[data-pick]").forEach(a => a.addEventListener("click", () => { sel.value = a.dataset.pick; }));
   wire("sponsor-apply", "sponsor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone." : null,
-    f => `Thank you, ${f.elements.business.value}! Your ${f.elements.level.value} spot is held. We'll be in touch about payment.`,
+    f => `Thank you, ${f.elements.business.value}! Your ${f.elements.level.value} spot is held. You can pay by cash or check (payable to Carolina Virginia Animal Hospital), and we'll follow up with the details.`,
     f => ({ form: "sponsor", subject: `Sponsor sign-up: ${f.elements.business.value} (${f.elements.level.value})`, replyto: f.elements.email.value }),
     { full: () => `Sorry, the ${sel.value} level just sold out. Please pick another level.` });
 }

@@ -312,7 +312,7 @@ footer p { opacity: .85; font-size: .95rem; }
       <div class="cancel-note"><span>Already applied and can't make it? Free up your spot for someone else.</span><a class="btn berry" href="cancel.html">Cancel a booking</a></div>
       <div class="two">
         <div class="info">
-          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>$20 vendor fee</h3><p>Includes a minimum 10 × 10 ft outdoor space.</p><span class="price-tag" id="vendor-spots">15 spots total</span></div></div>
+          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>$20 vendor fee</h3><p>Includes a minimum 10 × 10 ft outdoor space. Pay by cash or check, made payable to Carolina Virginia Animal Hospital.</p><span class="price-tag" id="vendor-spots">15 spots total</span></div></div>
           <div class="info-item"><svg style="color:var(--berry)"><use href="#paw"/></svg><div><h3>Setup and hours</h3><p>Setup begins at 9 AM on Saturday, November 21. The event runs from 10 AM to 3 PM.</p></div></div>
           <div class="info-item"><svg style="color:var(--gold)"><use href="#paw"/></svg><div><h3>What to bring</h3><p>Bring your own tables and displays. Pop-up tents are welcome as long as they stay within your space. Electricity isn't available unless discussed before the event.</p></div></div>
           <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Food on site</h3><p>Tiffany's Curbside Cravings and Catering food truck serves from 11 AM, and River Rye Shoppe next door has coffee, hot chocolate and ice cream.</p></div></div>
@@ -573,7 +573,7 @@ document.addEventListener("sp-status", ({ detail: d }) => {
 if (document.getElementById("vendor-form")) {
 wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone."
   : need(f, ["description"]) ? "Tell us what you'll sell or offer. Shoppers will see it on our website." : null,
-  f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`,
+  f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email. The $20 fee can be paid by cash or check (payable to Carolina Virginia Animal Hospital).`,
   f => ({ form: "vendor", subject: `Vendor application: ${f.elements.business.value}`, replyto: f.elements.email.value }),
   { full: () => "Sorry, all 15 vendor spots are taken." });
 
@@ -583,7 +583,7 @@ if (document.getElementById("sponsor-apply")) {
   const sel = document.getElementById("s-level");
   document.querySelectorAll("[data-pick]").forEach(a => a.addEventListener("click", () => { sel.value = a.dataset.pick; }));
   wire("sponsor-apply", "sponsor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone." : null,
-    f => `Thank you, ${f.elements.business.value}! Your ${f.elements.level.value} spot is held. We'll be in touch about payment.`,
+    f => `Thank you, ${f.elements.business.value}! Your ${f.elements.level.value} spot is held. You can pay by cash or check (payable to Carolina Virginia Animal Hospital), and we'll follow up with the details.`,
     f => ({ form: "sponsor", subject: `Sponsor sign-up: ${f.elements.business.value} (${f.elements.level.value})`, replyto: f.elements.email.value }),
     { full: () => `Sorry, the ${sel.value} level just sold out. Please pick another level.` });
 }
