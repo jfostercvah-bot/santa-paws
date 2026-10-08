@@ -162,7 +162,10 @@ textarea { min-height: 90px; resize: vertical; }
 .menu li.star { background: var(--berry); color: var(--berry-ink); border-color: var(--berry); }
 .menu-link { font-weight: 700; color: var(--berry); text-underline-offset: 3px; }
 .food-menu { margin-top: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 18px 24px; }
-.food-menu summary { font-family: var(--display); font-size: 1.3rem; cursor: pointer; }
+.food-menu summary { display: inline-flex; align-items: center; gap: 10px; font: 700 1.05rem var(--body); letter-spacing: .01em; cursor: pointer; background: var(--berry); color: var(--berry-ink); padding: 11px 20px; border-radius: 12px; list-style: none; }
+.food-menu summary::-webkit-details-marker { display: none; }
+.food-menu summary::after { content: "+"; font-size: 1.3rem; line-height: 1; }
+.food-menu[open] summary::after { content: "\2212"; }
 .menu-cols { columns: 3 260px; column-gap: 32px; margin-top: 18px; }
 .menu-group { break-inside: avoid; margin-bottom: 22px; }
 .menu-group h4 { font-family: var(--display); font-weight: 400; font-size: 1.15rem; color: var(--pine); margin: 0 0 2px; }
