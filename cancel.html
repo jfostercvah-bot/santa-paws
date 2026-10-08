@@ -210,13 +210,14 @@ button.ph { width: 100%; border: 0; padding: 0; cursor: zoom-in; background: var
 .vendor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .vendor-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 10px; align-content: start; }
 .vendor-card .vlogo { width: 100%; height: 240px; display: grid; place-items: center; border-radius: 12px; overflow: hidden; }
-.vendor-card .vlogo.empty { height: 110px; background: var(--band); }
+.vendor-card .vlogo.art svg, .logo .art svg { display: block; width: 100%; height: auto; border-radius: 10px; }
+.logo .art { width: 100%; max-width: 240px; }
+.logos.friend .logo .art { max-width: 160px; }
 .vendor-card .vlogo img { max-width: 100%; max-height: 240px; object-fit: contain; border-radius: 10px; }
 button.zoom { border: 0; padding: 0; margin: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
 button.zoom:hover img { transform: scale(1.03); }
 button.zoom img { transition: transform .2s; }
 .viewer.logo-view img { background: #fff; padding: 18px; max-height: 80vh; }
-.vendor-card .vlogo svg { width: 48px; height: 48px; color: var(--pine); }
 .vendor-card h3 { font-size: 1.3rem; }
 .vendor-card .cat { justify-self: start; font-size: .8rem; font-weight: 700; color: var(--pine); background: var(--band); border-radius: 999px; padding: 3px 10px; }
 .vendor-card p { margin: 0; color: var(--muted); }
@@ -460,7 +461,7 @@ document.addEventListener("sp-status", ({ detail: d }) => {
     list.querySelectorAll(".logo").forEach((el, i) => {
       const it = items[i];
       el.querySelector("strong").textContent = it.name;
-      if (it.logo) el.prepend(zoomLogo(API_URL + it.logo, it.name));
+      el.prepend(it.logo ? zoomLogo(API_URL + it.logo, it.name) : holidayArt(i));
     });
   }
 });
@@ -571,6 +572,24 @@ if (document.getElementById("sponsor-apply")) {
     { full: () => `Sorry, the ${sel.value} level just sold out. Please pick another level.` });
 }
 
+// A festive picture for anyone without a logo, taking turns down the list so neighbors differ.
+const HOLIDAY_ART = [
+  // gift
+  `<rect width="300" height="200" fill="#1f5b43"/><rect x="105" y="98" width="90" height="68" rx="4" fill="#c8283a"/><rect x="98" y="82" width="104" height="22" rx="4" fill="#e5485a"/><rect x="143" y="82" width="14" height="84" fill="#f0c25a"/><ellipse cx="135" cy="74" rx="16" ry="9" transform="rotate(-25 135 74)" fill="#f0c25a"/><ellipse cx="165" cy="74" rx="16" ry="9" transform="rotate(25 165 74)" fill="#f0c25a"/><circle cx="150" cy="79" r="7" fill="#e7b23c"/>`,
+  // ornament
+  `<rect width="300" height="200" fill="#c8283a"/><path d="M150 0v58" stroke="#f6f2ea" stroke-width="3"/><rect x="139" y="54" width="22" height="15" rx="3" fill="#e7b23c"/><circle cx="150" cy="116" r="48" fill="#1f5b43"/><polyline points="106,106 120,96 135,106 150,96 165,106 180,96 194,106" fill="none" stroke="#f0c25a" stroke-width="6" stroke-linejoin="round"/><g fill="#fff"><circle cx="122" cy="136" r="4.5"/><circle cx="141" cy="136" r="4.5"/><circle cx="159" cy="136" r="4.5"/><circle cx="178" cy="136" r="4.5"/></g><ellipse cx="132" cy="94" rx="10" ry="6" fill="#fff" opacity=".25"/>`,
+  // tree
+  `<rect width="300" height="200" fill="#24476b"/><ellipse cx="150" cy="200" rx="190" ry="26" fill="#f6f2ea"/><rect x="140" y="160" width="20" height="20" fill="#8a5a36"/><g fill="#2f8a63"><polygon points="150,44 112,98 188,98"/><polygon points="150,70 102,132 198,132"/><polygon points="150,100 92,166 208,166"/></g><polygon points="150,26 155,38 168,38 158,46 162,58 150,51 138,58 142,46 132,38 145,38" fill="#f0c25a"/><g><circle cx="138" cy="88" r="5" fill="#e5485a"/><circle cx="162" cy="118" r="5" fill="#f0c25a"/><circle cx="128" cy="124" r="5" fill="#f0c25a"/><circle cx="170" cy="152" r="5" fill="#e5485a"/><circle cx="132" cy="156" r="5" fill="#fff"/></g>`,
+  // stocking
+  `<rect width="300" height="200" fill="#e7b23c"/><path d="M128 66h52v70c0 26-16 40-40 40h-24c-20 0-30-12-30-24s10-22 28-22h14z" fill="#c8283a"/><rect x="122" y="46" width="64" height="26" rx="10" fill="#fff"/><g fill="#fff" transform="translate(137 98) scale(.55)"><ellipse cx="32" cy="42" rx="14" ry="12"/><ellipse cx="14" cy="26" rx="6" ry="8"/><ellipse cx="26" cy="16" rx="6" ry="8"/><ellipse cx="38" cy="16" rx="6" ry="8"/><ellipse cx="50" cy="26" rx="6" ry="8"/></g>`,
+];
+const SNOW = `<g fill="#fff" opacity=".7"><circle cx="30" cy="30" r="3"/><circle cx="62" cy="80" r="2"/><circle cx="40" cy="140" r="3"/><circle cx="85" cy="40" r="2"/><circle cx="250" cy="34" r="3"/><circle cx="270" cy="96" r="2"/><circle cx="232" cy="150" r="3"/><circle cx="214" cy="62" r="2"/></g>`;
+function holidayArt(i) {
+  const box = document.createElement("div"); box.className = "art";
+  box.innerHTML = `<svg viewBox="0 0 300 200" role="img" aria-label="Holiday decoration">${HOLIDAY_ART[i % HOLIDAY_ART.length]}${SNOW}</svg>`;
+  return box;
+}
+
 // A logo that opens full size when tapped.
 function zoomLogo(src, name) {
   const btn = document.createElement("button"), img = document.createElement("img");
@@ -599,11 +618,11 @@ if (document.getElementById("vendor-grid")) {
     const list = (d.vendors && d.vendors.list) || [], grid = document.getElementById("vendor-grid");
     document.getElementById("vendor-list").hidden = !list.length;
     grid.innerHTML = "";
-    list.forEach(v => {
+    list.forEach((v, i) => {
       const card = document.createElement("article"); card.className = "vendor-card";
       let box;
       if (v.logo) { box = zoomLogo(API_URL + v.logo, v.name); box.classList.add("vlogo"); }
-      else { box = document.createElement("div"); box.className = "vlogo empty"; box.innerHTML = '<svg><use href="#paw"/></svg>'; }
+      else { box = holidayArt(i); box.classList.add("vlogo"); }
       const h = document.createElement("h3"); h.textContent = v.name;
       card.append(box, h);
       if (v.category) { const c = document.createElement("span"); c.className = "cat"; c.textContent = v.category; card.append(c); }
