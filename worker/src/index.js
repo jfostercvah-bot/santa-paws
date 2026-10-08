@@ -15,6 +15,7 @@
  *   POST /admin/sponsor    { business, level, show }  (with id to update)
  *   POST /admin/show       { table: vendors|sponsors, id, show }
  *   POST /admin/logo       { table: vendors|sponsors, id, logo }  (empty logo removes it)
+ *   POST /admin/edit       { table: vendors|sponsors, id, fields: {name: value} }
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
  *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
  *
@@ -332,6 +333,12 @@ async function authorized(request, env) {
   return diff === 0;
 }
 
+// Columns the admin page may edit, with their length limits.
+const EDITABLE = {
+  vendors: { business: 120, contact: 120, email: 120, phone: 40, category: 80, website: 200, needs: 500, description: 2000 },
+  sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200 },
+};
+
 const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery"];
 
 async function admin(request, env, path) {
@@ -375,6 +382,16 @@ async function admin(request, env, path) {
     if (!isImage(p.image, MAX_PHOTO) || !isImage(p.thumb, 200000)) return json({ ok: false, reason: "bad_image" }, 400);
     const r = await db.prepare("INSERT INTO gallery (year, caption, thumb, image) VALUES (?, ?, ?, ?)").bind(year, caption, p.thumb, p.image).run();
     return json({ ok: true, id: r.meta.last_row_id });
+  }
+  if (path === "/admin/edit") {
+    const allowed = EDITABLE[p.table], fields = p.fields || {};
+    const keys = allowed ? Object.keys(fields).filter(k => k in allowed) : [];
+    if (!keys.length || !Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    if (keys.includes("level") && !(fields.level in SPONSOR_LEVELS)) return json({ ok: false, reason: "bad_request" }, 400);
+    if (keys.includes("business") && !field(fields, "business")) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.prepare(`UPDATE ${p.table} SET ${keys.map(k => `${k} = ?`).join(", ")} WHERE id = ?`)
+      .bind(...keys.map(k => field(fields, k, allowed[k])), p.id).run();
+    return json({ ok: true });
   }
   if (path === "/admin/logo") {
     const logo = logoField(p);

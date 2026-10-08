@@ -52,6 +52,10 @@ td.long { min-width: 220px; white-space: pre-wrap; }
 textarea { font: inherit; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); resize: vertical; }
 img.thumb.photo { width: 120px; height: 90px; object-fit: cover; }
 img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: block; }
+.edit-dialog { width: min(560px, 94vw); padding: 20px; color: var(--ink); }
+.edit-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.edit-fields { display: grid; gap: 10px; }
+.edit-fields label { display: grid; gap: 4px; font-weight: 600; font-size: .92rem; }
 .sponsor-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 </style>
 </head>
@@ -127,6 +131,16 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
     <div class="scroll"><table id="table"></table></div>
   </div>
 </main>
+<dialog id="edit" class="card edit-dialog">
+  <form method="dialog" id="edit-form">
+    <h2 id="edit-title" style="margin:0 0 6px;font-size:1.2rem">Edit</h2>
+    <div id="edit-fields" class="edit-fields"></div>
+    <div class="bar" style="margin:12px 0 0">
+      <button type="submit" value="save">Save</button>
+      <button type="submit" value="cancel" class="ghost small" formnovalidate>Cancel</button>
+    </div>
+  </form>
+</dialog>
 <script>
 const API_URL = "https://api.cvahsantapaws.com";
 
@@ -257,7 +271,9 @@ function render() {
         try { logo = await logoData(pick.files[0]); } catch { alert("That picture couldn't be read. Try a PNG or JPG."); return; }
         await api("/admin/logo", { table: tab, id: r.id, logo });
       });
-      td.append(pick, lb, " ");
+      const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
+      ed.onclick = () => editRow(tab, r);
+      td.append(pick, ed, " ", lb, " ");
       const t = document.createElement("button"); t.className = "ghost small"; t.textContent = r.show ? "Hide" : "Show";
       t.onclick = () => act(() => api("/admin/show", { table: tab, id: r.id, show: !r.show }));
       td.append(t, " ");
@@ -390,6 +406,34 @@ document.getElementById("gallery-form").addEventListener("submit", async e => {
   f.files.value = "";
   await load().catch(() => {});
 });
+
+const EDIT_FIELDS = {
+  vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
+  sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+};
+function editRow(table, r) {
+  const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
+  document.getElementById("edit-title").textContent = "Edit " + r.business;
+  box.innerHTML = "";
+  EDIT_FIELDS[table].forEach(([k, label, kind]) => {
+    const l = document.createElement("label"); l.textContent = label;
+    let input;
+    if (Array.isArray(kind)) { input = document.createElement("select"); kind.forEach(o => input.add(new Option(o))); }
+    else if (kind === "area") { input = document.createElement("textarea"); input.rows = 5; }
+    else input = document.createElement("input");
+    input.name = k; input.value = r[k] ?? "";
+    l.append(input); box.append(l);
+  });
+  dlg.onclose = () => {
+    if (dlg.returnValue !== "save") return;
+    const fields = {};
+    box.querySelectorAll("[name]").forEach(i => (fields[i.name] = i.value));
+    if (!fields.business.trim()) { alert("Business name can't be empty."); return; }
+    act(() => api("/admin/edit", { table, id: r.id, fields }));
+  };
+  dlg.returnValue = "";
+  dlg.showModal();
+}
 
 function logout(msg) {
   pw = ""; try { sessionStorage.removeItem("sp-admin"); } catch {}
