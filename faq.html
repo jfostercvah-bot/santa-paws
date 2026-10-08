@@ -216,6 +216,10 @@ footer p { opacity: .85; font-size: .95rem; }
 @media (prefers-reduced-motion: reduce) { #snow { display: none; } }
 
 /* multi-page */
+.nav ul a.nav-cancel { border: 1.5px solid var(--gold); border-radius: 999px; padding: 2px 12px; opacity: 1; }
+.nav ul a.nav-cancel:hover, .nav ul a.nav-cancel[aria-current="page"] { background: var(--gold); color: var(--pine-deep); text-decoration: none; }
+.cancel-note { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; background: var(--band); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin: -8px 0 24px; font-weight: 600; }
+.cancel-note .btn { padding: 8px 18px; font-size: .95rem; }
 .event-strip { background: var(--band); border-bottom: 1px solid var(--line); }
 .event-strip .wrap { display: flex; flex-wrap: wrap; gap: 4px 18px; padding-block: 10px; font-weight: 600; font-size: .92rem; color: var(--pine); }
 .nav ul a[aria-current="page"] { opacity: 1; text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 3px; text-underline-offset: 6px; }
@@ -253,6 +257,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <li><a href="sponsors.html">Sponsors</a></li>
         <li><a href="faq.html" aria-current="page">FAQ</a></li>
         <li><a href="contact.html">Contact</a></li>
+        <li><a class="nav-cancel" href="cancel.html">Cancel a booking</a></li>
       </ul>
     </nav>
   </div>
