@@ -50,6 +50,7 @@ td.long { min-width: 220px; white-space: pre-wrap; }
 .err { color: var(--berry); font-weight: 600; }
 .email-form { display: grid; gap: 8px; margin-bottom: 16px; }
 textarea { font: inherit; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); resize: vertical; }
+img.thumb.photo { width: 120px; height: 90px; object-fit: cover; }
 img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: block; }
 .sponsor-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 </style>
@@ -75,6 +76,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button data-tab="vendors" aria-pressed="false">Vendors</button>
       <button data-tab="sponsors" aria-pressed="false">Sponsors</button>
       <button data-tab="messages" aria-pressed="false">Messages</button>
+      <button data-tab="gallery" aria-pressed="false">Gallery</button>
       <button data-tab="emails" aria-pressed="false">Send email</button>
     </div>
     <form class="sponsor-form" id="sponsor-form" hidden>
@@ -85,6 +87,20 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <input name="website" placeholder="Website (optional)" aria-label="Website">
       <label class="muted" style="display:flex;align-items:center;gap:6px">Logo <input name="logo_file" type="file" accept="image/*"></label>
       <button type="submit">Add sponsor</button>
+    </form>
+    <form class="card email-form" id="gallery-form" hidden>
+      <label for="g-files"><strong>Add photos</strong></label>
+      <input id="g-files" name="files" type="file" accept="image/*" multiple required>
+      <div class="bar" style="margin:0">
+        <label for="g-year"><strong>Year</strong></label>
+        <input id="g-year" name="year" inputmode="numeric" maxlength="4" style="width:90px" required>
+        <label for="g-caption" class="grow"><input id="g-caption" name="caption" maxlength="140" placeholder="Caption (optional, used for every photo in this batch)" style="width:100%"></label>
+      </div>
+      <div class="bar" style="margin:0">
+        <button type="submit" id="g-upload">Upload</button>
+        <span id="g-msg" class="muted" role="status"></span>
+      </div>
+      <p class="muted" style="margin:0">Photos are resized before uploading, so big phone photos are fine. They show on the Gallery page right away, newest year first.</p>
     </form>
     <form class="card email-form" id="email-form" hidden>
       <p id="email-setup" class="err" hidden>Email sending isn't set up yet. Add the RESEND_API_KEY and REPLY_TO_EMAIL secrets in GitHub, then run the deploy again.</p>
@@ -129,6 +145,11 @@ const TABS = {
     cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
     note: "Every sponsor holds a spot. Click Show once they've paid to put them on the website. Click a logo to download it.",
     remove: r => `Remove ${r.business} as a sponsor?`,
+  },
+  gallery: {
+    cols: [["thumb", "Photo"], ["year", "Year"], ["caption", "Caption", true], ["created", "Added"]],
+    note: "Click a photo to see it full size. Delete removes it from the Gallery page.",
+    remove: r => `Delete this ${r.year} photo from the gallery?`,
   },
   emails: {
     cols: [["created", "Sent"], ["audience", "To"], ["subject", "Subject"], ["message", "Message", true], ["sent", "Emails sent"]],
@@ -184,6 +205,8 @@ function render() {
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
   document.getElementById("sponsor-form").hidden = tab !== "sponsors";
   document.getElementById("email-form").hidden = tab !== "emails";
+  document.getElementById("gallery-form").hidden = tab !== "gallery";
+  const gy = document.getElementById("g-year"); if (!gy.value) gy.value = String(new Date().getFullYear() - (new Date().getMonth() < 11 ? 1 : 0));
   document.getElementById("email-setup").hidden = !!data.emailReady;
   document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = !data.emailReady;
   const count = list => new Set(list.map(r => String(r.email).trim().toLowerCase()).filter(Boolean));
@@ -206,6 +229,13 @@ function render() {
     const tr = body.insertRow();
     T.cols.forEach(([k, , long]) => {
       const td = tr.insertCell();
+      if (k === "thumb") {
+        const a = document.createElement("a"), img = document.createElement("img");
+        a.href = API_URL + "/photo/" + r.id; a.target = "_blank"; a.rel = "noopener"; a.title = "View full size";
+        img.src = r.thumb; img.alt = r.caption || "Gallery photo"; img.className = "thumb photo";
+        a.append(img); td.append(a);
+        return;
+      }
       if (k === "logo") {
         if (r.logo) {
           const a = document.createElement("a"), img = document.createElement("img");
@@ -244,7 +274,7 @@ async function act(fn) {
 function csv() {
   const T = TABS[tab];
   const q = v => `"${String(v).replace(/"/g, '""')}"`;
-  const cols = T.cols.filter(([k]) => k !== "logo");
+  const cols = T.cols.filter(([k]) => k !== "logo" && k !== "thumb");
   const lines = [cols.map(c => q(c[1])).join(","), ...rows().map(r => cols.map(([k]) => q(cell(r, k))).join(","))];
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv" }));
@@ -313,6 +343,44 @@ async function logoData(file) {
   } catch (err) { throw new Error(err.message === "too_big" ? "too_big" : "not_image"); }
   finally { URL.revokeObjectURL(url); }
 }
+
+// Resizes a photo to fit `max` pixels and returns a JPEG data: URL under `limit` characters.
+async function photoData(file, max, quality, limit) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const c = document.createElement("canvas"), w = img.naturalWidth, h = img.naturalHeight;
+    for (let size = max; size >= 300; size = Math.round(size * 0.8)) {
+      const k = Math.min(1, size / Math.max(w, h));
+      c.width = Math.round(w * k); c.height = Math.round(h * k);
+      const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+      const out = c.toDataURL("image/jpeg", quality);
+      if (out.length < limit) return out;
+    }
+    throw new Error("too_big");
+  } finally { URL.revokeObjectURL(url); }
+}
+document.getElementById("gallery-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target, m = document.getElementById("g-msg"), btn = document.getElementById("g-upload");
+  const files = [...f.files.files], year = f.year.value.trim(), caption = f.caption.value.trim();
+  if (!files.length) { m.textContent = "Pick one or more photos."; return; }
+  if (!/^\d{4}$/.test(year)) { m.textContent = "Enter the year, like 2025."; return; }
+  btn.disabled = true;
+  let done = 0, failed = 0;
+  for (const file of files) {
+    m.textContent = `Uploading ${done + failed + 1} of ${files.length}...`;
+    try {
+      const image = await photoData(file, 1600, 0.82, 1400000), thumb = await photoData(file, 480, 0.75, 190000);
+      await api("/admin/gallery", { year, caption, image, thumb });
+      done++;
+    } catch (err) { if (err.message === "unauthorized") return; failed++; }
+  }
+  btn.disabled = false;
+  m.textContent = `Added ${done} photo${done === 1 ? "" : "s"}.` + (failed ? ` ${failed} couldn't be read (try JPG or PNG).` : "");
+  f.files.value = "";
+  await load().catch(() => {});
+});
 
 function logout(msg) {
   pw = ""; try { sessionStorage.removeItem("sp-admin"); } catch {}

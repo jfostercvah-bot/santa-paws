@@ -149,6 +149,13 @@ textarea { min-height: 90px; resize: vertical; }
 .shot { margin: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .shot .ph { aspect-ratio: 4 / 3; max-width: 100%; display: grid; place-items: center; }
 .shot .ph svg { width: 44%; height: auto; opacity: .9; }
+button.ph { width: 100%; border: 0; padding: 0; cursor: zoom-in; background: var(--band); display: block; }
+.shot .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.viewer { border: 0; padding: 0; background: transparent; max-width: min(96vw, 1100px); max-height: 94vh; overflow: visible; }
+.viewer::backdrop { background: rgba(10, 20, 15, .85); }
+.viewer img { display: block; max-width: 100%; max-height: 84vh; border-radius: 12px; margin: 0 auto; }
+.viewer p { color: #fff; text-align: center; margin: 10px 0 0; font-weight: 600; }
+.viewer-close { position: absolute; top: -14px; right: -6px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #fff; color: #1d2a24; font-size: 1.6rem; line-height: 1; cursor: pointer; }
 .shot figcaption { padding: 10px 14px; font-size: .9rem; display: flex; justify-content: space-between; gap: 8px; }
 .shot figcaption b { font-variant-numeric: tabular-nums; color: var(--berry); }
 
@@ -693,30 +700,63 @@ if (menuLink) menuLink.addEventListener("click", () => { document.getElementById
 
 if (document.getElementById("gallery-grid")) {
 // --- gallery placeholders ---
+// Paw placeholders show until real photos are uploaded on the admin page.
 const tints = ["#c8283a", "#1f5b43", "#e7b23c", "#2b6f8f", "#8a5a36"];
-const shots = [
+let shots = [
   ["2025", "Biscuit meets Santa"], ["2025", "The reindeer-antler crew"], ["2025", "Mochi in a stocking"],
   ["2024", "Holiday sweater parade"], ["2024", "First-time visitor"], ["2024", "Vendor row"],
   ["2023", "Our very first Santa Paws"], ["2023", "Snow day pups"]
 ];
-const years = ["All", ...new Set(shots.map(s => s[0]))];
-let year = "All";
+let year = "All", galleryKey = "";
 const grid = document.getElementById("gallery-grid"), filters = document.getElementById("filters");
-function renderGallery() {
-  grid.innerHTML = "";
-  shots.filter(s => year === "All" || s[0] === year).forEach(([y, cap], i) => {
-    const c = tints[i % tints.length];
-    grid.insertAdjacentHTML("beforeend",
-      `<figure class="shot"><div class="ph" style="background:color-mix(in srgb, ${c} 22%, var(--paper))"><svg style="color:${c}"><use href="#paw"/></svg></div>
-       <figcaption><span>${cap}</span><b>${y}</b></figcaption></figure>`);
+const viewer = document.createElement("dialog");
+viewer.className = "viewer";
+viewer.innerHTML = '<button type="button" class="viewer-close" aria-label="Close">×</button><img alt=""><p></p>';
+document.body.append(viewer);
+viewer.querySelector(".viewer-close").onclick = () => viewer.close();
+viewer.addEventListener("click", e => { if (e.target === viewer) viewer.close(); });
+function renderFilters() {
+  filters.innerHTML = "";
+  ["All", ...new Set(shots.map(s => s[0]))].forEach(y => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = y; b.setAttribute("aria-pressed", String(y === year));
+    b.addEventListener("click", () => { year = y; filters.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderGallery(); });
+    filters.appendChild(b);
   });
 }
-years.forEach(y => {
-  const b = document.createElement("button");
-  b.className = "chip"; b.textContent = y; b.setAttribute("aria-pressed", String(y === year));
-  b.addEventListener("click", () => { year = y; filters.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderGallery(); });
-  filters.appendChild(b);
+function renderGallery() {
+  grid.innerHTML = "";
+  shots.filter(s => year === "All" || s[0] === year).forEach(([y, cap, id], i) => {
+    const fig = document.createElement("figure"); fig.className = "shot";
+    if (id) {
+      const btn = document.createElement("button"), img = document.createElement("img");
+      btn.type = "button"; btn.className = "ph"; btn.setAttribute("aria-label", "View larger: " + (cap || "Santa Paws " + y));
+      img.src = `${API_URL}/photo/${id}/thumb`; img.alt = cap || `Santa Paws ${y}`; img.loading = "lazy";
+      btn.append(img);
+      btn.onclick = () => {
+        const big = viewer.querySelector("img"); big.src = `${API_URL}/photo/${id}`; big.alt = img.alt;
+        viewer.querySelector("p").textContent = [cap, y].filter(Boolean).join(" · ");
+        viewer.showModal();
+      };
+      fig.append(btn);
+    } else {
+      const c = tints[i % tints.length];
+      fig.insertAdjacentHTML("beforeend", `<div class="ph" style="background:color-mix(in srgb, ${c} 22%, var(--paper))"><svg style="color:${c}"><use href="#paw"/></svg></div>`);
+    }
+    const fc = document.createElement("figcaption"), span = document.createElement("span"), b = document.createElement("b");
+    span.textContent = cap; b.textContent = y; fc.append(span, b); fig.append(fc);
+    grid.append(fig);
+  });
+}
+document.addEventListener("sp-status", ({ detail: d }) => {
+  const real = (d.gallery || []).map(g => [g.year, g.caption, g.id]);
+  const key = JSON.stringify(real);
+  if (!real.length || key === galleryKey) return;
+  galleryKey = key; shots = real;
+  if (year !== "All" && !shots.some(s => s[0] === year)) year = "All";
+  renderFilters(); renderGallery();
 });
+renderFilters();
 renderGallery();
 
 }

@@ -4,6 +4,7 @@
  * Public API (used by the website):
  *   GET  /                 -> { booked, vendors: {max, taken, list}, sponsors: {level: {max, taken, names, list}} }
  *   GET  /logo/vendor/ID, /logo/sponsor/ID -> the logo image (only once shown on the website)
+ *   GET  /photo/ID, /photo/ID/thumb -> a gallery photo
  *   GET  /?lookup=CODE     -> what a cancel code refers to
  *   POST / form=photo|vendor|sponsor|contact|cancel -> { ok, reason?, taken?, code?, status? }
  *   POST / form=find (email, phone)   -> { ok, bookings: [{kind, times|name, code}] }
@@ -13,6 +14,7 @@
  *   POST /admin/delete     { table, id }
  *   POST /admin/sponsor    { business, level, show }  (with id to update)
  *   POST /admin/show       { table: vendors|sponsors, id, show }
+ *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
  *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
  *
  * Email goes out through Resend when the RESEND_API_KEY and REPLY_TO_EMAIL secrets are set:
@@ -64,11 +66,12 @@ function logoField(p) {
 const newCode = () => crypto.randomUUID().replace(/-/g, "");
 
 async function status(db) {
-  const [slots, vendors, shown, sponsors] = await db.batch([
+  const [slots, vendors, shown, sponsors, gallery] = await db.batch([
     db.prepare("SELECT time FROM photo_slots"),
     db.prepare("SELECT COUNT(*) AS n FROM vendors"),
     db.prepare("SELECT id, business, category, description, website, logo != '' AS has_logo FROM vendors WHERE show = 1 ORDER BY business COLLATE NOCASE"),
     db.prepare("SELECT id, business, level, show, website, logo != '' AS has_logo FROM sponsors ORDER BY id"),
+    db.prepare("SELECT id, year, caption FROM gallery ORDER BY year DESC, id"),
   ]);
   const levels = {};
   for (const [level, max] of Object.entries(SPONSOR_LEVELS)) {
@@ -85,6 +88,7 @@ async function status(db) {
       list: shown.results.map(v => ({ name: v.business, category: v.category, description: v.description, website: v.website, logo: v.has_logo ? `/logo/vendor/${v.id}` : "" })),
     },
     sponsors: levels,
+    gallery: gallery.results,
   };
 }
 
@@ -163,6 +167,17 @@ async function logo(db, kind, id) {
   if (!m) return new Response("Not found", { status: 404, headers: CORS });
   const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
   return new Response(bytes, { headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=3600", ...CORS } });
+}
+
+const MAX_PHOTO = 1500000;
+const isImage = (v, max) => /^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+/=]+$/.test(String(v)) && String(v).length <= max;
+
+async function photo(db, id, thumb) {
+  const row = await db.prepare(`SELECT ${thumb ? "thumb" : "image"} AS d FROM gallery WHERE id = ?`).bind(id).first();
+  const m = row && String(row.d).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+  if (!m) return new Response("Not found", { status: 404, headers: CORS });
+  const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+  return new Response(bytes, { headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=86400", ...CORS } });
 }
 
 async function saveMessage(db, p) {
@@ -316,14 +331,16 @@ async function authorized(request, env) {
   return diff === 0;
 }
 
-const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors"];
+const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery"];
 
 async function admin(request, env, path) {
   if (!(await authorized(request, env))) return json({ ok: false, reason: "unauthorized" }, 401);
   const db = env.DB;
   if (request.method === "GET" && path === "/admin") {
     const tables = [...ADMIN_TABLES, "emails"];
-    const res = await db.batch(tables.map(t => db.prepare(`SELECT * FROM ${t} ORDER BY id DESC`)));
+    // Gallery rows leave out the full-size image to keep this response small.
+    const cols = t => (t === "gallery" ? "id, created, year, caption, thumb" : "*");
+    const res = await db.batch(tables.map(t => db.prepare(`SELECT ${cols(t)} FROM ${t} ORDER BY id DESC`)));
     const out = { ok: true, status: await status(db), emailReady: emailReady(env) };
     tables.forEach((t, i) => (out[t] = res[i].results));
     return json(out);
@@ -347,6 +364,17 @@ async function admin(request, env, path) {
     return json({ ok: true });
   }
   if (path === "/admin/email") return json(await announce(env, p));
+  if (path === "/admin/gallery") {
+    const year = field(p, "year", 4), caption = field(p, "caption", 140);
+    if (!/^\d{4}$/.test(year)) return json({ ok: false, reason: "bad_request" }, 400);
+    if (Number.isInteger(p.id)) {
+      await db.prepare("UPDATE gallery SET year = ?, caption = ? WHERE id = ?").bind(year, caption, p.id).run();
+      return json({ ok: true });
+    }
+    if (!isImage(p.image, MAX_PHOTO) || !isImage(p.thumb, 200000)) return json({ ok: false, reason: "bad_image" }, 400);
+    const r = await db.prepare("INSERT INTO gallery (year, caption, thumb, image) VALUES (?, ?, ?, ?)").bind(year, caption, p.thumb, p.image).run();
+    return json({ ok: true, id: r.meta.last_row_id });
+  }
   if (path === "/admin/show") {
     if (!["vendors", "sponsors"].includes(p.table) || !Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
     await db.prepare(`UPDATE ${p.table} SET show = ? WHERE id = ?`).bind(p.show ? 1 : 0, p.id).run();
@@ -364,6 +392,8 @@ export default {
       if (path.startsWith("/admin")) return await admin(request, env, path);
       const lm = path.match(/^\/logo\/(vendor|sponsor)\/(\d+)$/);
       if (lm && request.method === "GET") return await logo(env.DB, lm[1], Number(lm[2]));
+      const pm = path.match(/^\/photo\/(\d+)(\/thumb)?$/);
+      if (pm && request.method === "GET") return await photo(env.DB, Number(pm[1]), Boolean(pm[2]));
       if (path !== "/") return json({ ok: false, reason: "not_found" }, 404);
       const db = env.DB;
       if (request.method === "GET") {
