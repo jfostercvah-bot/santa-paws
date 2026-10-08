@@ -269,7 +269,7 @@ async function sendEmail(test) {
       m.textContent = test ? "Test sent. Check your inbox." : `Sent to ${d.sent} ${d.sent === 1 ? "person" : "people"}${d.failed ? `, ${d.failed} failed` : ""}.`;
       if (!test) { f.reset(); await load(); }
     } else {
-      m.textContent = { no_recipients: "Nobody has signed up in that group yet.", email_not_set_up: "Email isn't set up yet." }[d.reason] || "That didn't send. Try again in a minute.";
+      m.textContent = { no_recipients: "Nobody has signed up in that group yet.", email_not_set_up: "Email isn't set up yet." }[d.reason] || (d.error ? `That didn't send. The email service said: ${d.error}` : "That didn't send. Try again in a minute.");
     }
   } catch { m.textContent = "That didn't send. Check your connection and try again."; }
   finally { document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = !data.emailReady; }

@@ -206,7 +206,13 @@ async function sendEmails(env, letters) {
       body: JSON.stringify(chunk),
     });
     if (r.ok) sent += chunk.length;
-    else { failed += chunk.length; error = (await r.text()).slice(0, 300); console.error("Resend", r.status, error); }
+    else {
+      failed += chunk.length;
+      const raw = await r.text();
+      try { error = JSON.parse(raw).message || raw; } catch { error = raw; }
+      error = String(error).slice(0, 300);
+      console.error("Resend", r.status, error);
+    }
   }
   return { sent, failed, error };
 }
