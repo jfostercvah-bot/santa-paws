@@ -1,6 +1,6 @@
 # Santa Paws website
 
-The site is six plain HTML pages: `index.html` (home), `photos.html`, `treats.html`, `vendors.html`, `gallery.html`, `faq.html`, `contact.html`. Each page is self-contained (no build step needed to host).
+The site is six plain HTML pages: `index.html` (home), `photos.html`, `treats.html`, `vendors.html`, `gallery.html`, `sponsors.html`, `faq.html`, `contact.html`. Each page is self-contained (no build step needed to host).
 
 - **Placeholders** in [square brackets] need real details: clinic name, date, hours, address, prices, contact info.
 - **Forms** (photo sign-up, vendor application, contact): delivered by Web3Forms to the email tied to `FORM_KEY` near the bottom of each page, so the address never appears on the site. Empty key = preview mode.

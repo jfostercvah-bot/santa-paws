@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vendors · Santa Paws</title>
+<title>Sponsors · Santa Paws</title>
 <meta name="description" content="Santa Paws at Carolina Virginia Animal Hospital: free Santa photos for dogs and cats, local vendors and treats. Saturday, November 21, 2026 in Providence, NC.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -241,9 +241,9 @@ footer p { opacity: .85; font-size: .95rem; }
       <ul>
         <li><a href="photos.html">Santa Photos</a></li>
         <li><a href="treats.html">Treats &amp; Eats</a></li>
-        <li><a href="vendors.html" aria-current="page">Vendors</a></li>
+        <li><a href="vendors.html">Vendors</a></li>
         <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="sponsors.html">Sponsors</a></li>
+        <li><a href="sponsors.html" aria-current="page">Sponsors</a></li>
         <li><a href="faq.html">FAQ</a></li>
         <li><a href="contact.html">Contact</a></li>
       </ul>
@@ -253,44 +253,38 @@ footer p { opacity: .85; font-size: .95rem; }
 
 <div class="event-strip"><div class="wrap"><span>Saturday, November 21, 2026</span><span>10 AM to 3 PM</span><span>46 Shady Grove Road, Providence, NC</span></div></div>
 <main id="top">
-  <section class="block" id="vendors">
+  <section class="block" id="sponsor-levels">
     <div class="wrap">
       <div class="head">
-        <p class="eyebrow">Vendor sign-up</p>
-        <h2>Bring your booth to Santa Paws</h2>
-        <p>Santa Paws is an outdoor vendor event supporting small businesses in our community. We have room for 15 vendors. Apply below and we'll confirm your spot by email.</p>
+        <p class="eyebrow">Sponsor Santa Paws</p>
+        <h2>Become a sponsor</h2>
+        <p>Local businesses help keep Santa Paws free for every family. Pick a level, send us a message, and we'll take it from there.</p>
       </div>
-      <div class="two">
-        <div class="info">
-          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>$20 vendor fee</h3><p>Includes a minimum 10 × 10 ft outdoor space.</p><span class="price-tag">15 spots total</span></div></div>
-          <div class="info-item"><svg style="color:var(--berry)"><use href="#paw"/></svg><div><h3>Setup and hours</h3><p>Setup begins at 9 AM on Saturday, November 21. The event runs from 10 AM to 3 PM.</p></div></div>
-          <div class="info-item"><svg style="color:var(--gold)"><use href="#paw"/></svg><div><h3>What to bring</h3><p>Bring your own tables and displays. Pop-up tents are welcome as long as they stay within your space. Electricity isn't available unless discussed before the event.</p></div></div>
-          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Food on site</h3><p>Tiffany's Curbside Cravings and Catering food truck serves from 11 AM, and River Rye Shoppe next door has coffee, hot chocolate and ice cream.</p></div></div>
-        </div>
-        <form class="card" id="vendor-form" novalidate>
-          <div class="row">
-            <label for="v-biz">Business name<input id="v-biz" name="business" required placeholder="Barkery Bakes"></label>
-            <label for="v-contact">Contact name<input id="v-contact" name="contact" required autocomplete="name"></label>
-          </div>
-          <div class="row">
-            <label for="v-email">Email<input id="v-email" name="email" type="email" required autocomplete="email"></label>
-            <label for="v-phone">Phone<input id="v-phone" name="phone" type="tel" autocomplete="tel"></label>
-          </div>
-          <div class="row">
-            <label for="v-type">Category<select id="v-type" name="category"><option>Pet treats and food</option><option>Grooming and pet care</option><option>Training</option><option>Art, photography, crafts</option><option>Animal rescue / nonprofit</option><option>Other</option></select></label>
-            <label for="v-site">Website or social<input id="v-site" name="website" placeholder="@barkerybakes"></label>
-          </div>
-          <fieldset style="border:0;padding:0;margin:0;display:grid;gap:8px">
-            <legend style="font-weight:600;font-size:.92rem;margin-bottom:6px">Booth needs</legend>
-            <div class="checks">
-              <label for="v-tent"><input id="v-tent" type="checkbox" name="needs" value="Bringing a pop-up tent">I'm bringing a pop-up tent</label>
-              <label for="v-power"><input id="v-power" type="checkbox" name="needs" value="Would like to discuss electricity">I'd like to discuss electricity</label>
-            </div>
-          </fieldset>
-          <label for="v-desc">What will you sell or offer?<textarea id="v-desc" name="description" placeholder="Hand-decorated dog cookies and holiday treat boxes"></textarea></label>
-          <button class="btn berry" type="submit">Apply for a vendor spot</button>
-          <p class="done" id="vendor-done" hidden></p>
-        </form>
+      <div class="levels">
+        <article class="level level-north-pole">
+          <svg style="color:var(--gold)"><use href="#paw"/></svg>
+          <h3>North Pole Sponsor</h3>
+          <p class="level-price">$150</p>
+          <p class="level-spots">3 spots available</p>
+          <ul><li>Advertisement on our digital sign for 3 months</li><li>Your name or logo on the Santa Paws event shirt</li></ul>
+          <a class="btn berry" href="contact.html#sponsor-north-pole">Become a North Pole Sponsor</a>
+        </article>
+        <article class="level level-reindeer">
+          <svg style="color:var(--berry)"><use href="#paw"/></svg>
+          <h3>Reindeer Sponsor</h3>
+          <p class="level-price">$75</p>
+          <p class="level-spots">5 spots available</p>
+          <ul><li>Advertisement on our digital sign for 1 month</li><li>Your name or logo on the Santa Paws event shirt</li></ul>
+          <a class="btn berry" href="contact.html#sponsor-reindeer">Become a Reindeer Sponsor</a>
+        </article>
+        <article class="level level-elf">
+          <svg style="color:var(--pine)"><use href="#paw"/></svg>
+          <h3>Elf Friends</h3>
+          <p class="level-price">$50</p>
+          <p class="level-spots">7 spots available</p>
+          <ul><li>Advertisement on our digital sign for 1 week</li><li>Your name or logo on the Santa Paws event shirt</li></ul>
+          <a class="btn berry" href="contact.html#sponsor-elf">Become an Elf Friend</a>
+        </article>
       </div>
     </div>
   </section>

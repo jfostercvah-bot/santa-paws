@@ -180,6 +180,18 @@ textarea { min-height: 90px; resize: vertical; }
 .menu-foot { font-weight: 700; color: var(--pine); margin-top: 4px; }
 @media (max-width: 820px) { .treats { grid-template-columns: 1fr; } }
 
+/* sponsor levels */
+.levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
+.level { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.level-north-pole { border: 2px solid var(--gold); }
+.level svg { width: 40px; height: 40px; }
+.level h3 { font-size: 1.5rem; }
+.level-price { font-family: var(--display); font-size: 2.4rem; line-height: 1; color: var(--berry); font-variant-numeric: tabular-nums; }
+.level-spots { font-weight: 700; font-size: .9rem; color: var(--pine); }
+.level ul { margin: 4px 0 8px; padding-left: 1.1em; color: var(--muted); display: grid; gap: 6px; flex: 1; }
+.level .btn { text-align: center; }
+@media (max-width: 860px) { .levels { grid-template-columns: 1fr; } }
+
 /* faq + footer */
 details { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
 details + details { margin-top: 10px; }
@@ -231,6 +243,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <li><a href="treats.html">Treats &amp; Eats</a></li>
         <li><a href="vendors.html">Vendors</a></li>
         <li><a href="gallery.html" aria-current="page">Gallery</a></li>
+        <li><a href="sponsors.html">Sponsors</a></li>
         <li><a href="faq.html">FAQ</a></li>
         <li><a href="contact.html">Contact</a></li>
       </ul>
@@ -376,8 +389,11 @@ wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]
 }
 // --- contact form ---
 if (document.getElementById("contact-form")) {
-  const topic = { sponsor: "Sponsorship", vendor: "Vendors", photos: "Santa photos" }[location.hash.slice(1)];
+  const h = location.hash.slice(1);
+  const topic = h.startsWith("sponsor") ? "Sponsorship" : { vendor: "Vendors", photos: "Santa photos" }[h];
   if (topic) document.getElementById("c-topic").value = topic;
+  const level = { "sponsor-north-pole": "North Pole Sponsor ($150)", "sponsor-reindeer": "Reindeer Sponsor ($75)", "sponsor-elf": "Elf Friends ($50)" }[h];
+  if (level) document.getElementById("c-message").value = `I'm interested in the ${level} level.\n\nBusiness name: `;
   wire("contact-form", "contact-done", f => need(f, ["name", "email", "message"]) ? "Add your name, email and a message." : null,
     f => `Thanks, ${f.elements.name.value}! Your message is on its way. We'll reply to ${f.elements.email.value}.`,
     f => ({ subject: `Santa Paws message: ${f.elements.topic.value}`, replyto: f.elements.email.value }));
