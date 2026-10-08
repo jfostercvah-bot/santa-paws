@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm ci
 
       - name: Check secrets
@@ -38,10 +38,11 @@ jobs:
 
       - name: Find or create the database
         run: |
+          set -o pipefail
           id=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="santa-paws") | .uuid')
           if [ -z "$id" ]; then
             npx wrangler d1 create santa-paws
-            id=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="santa-paws") | .uuid')
+          id=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="santa-paws") | .uuid')
           fi
           [ -n "$id" ] || { echo "::error::Could not find or create the santa-paws database"; exit 1; }
           sed -i "s/DATABASE_ID_PLACEHOLDER/$id/" wrangler.toml
