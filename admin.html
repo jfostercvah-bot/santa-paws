@@ -262,6 +262,11 @@ function render() {
       td.textContent = cell(r, k); if (long) td.className = "long";
     });
     const td = tr.insertCell(); td.style.whiteSpace = "nowrap";
+    if (tab === "photos") {
+      const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
+      ed.onclick = () => editRow(tab, r);
+      td.append(ed, " ");
+    }
     if (tab === "sponsors" || tab === "vendors") {
       const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/*"; pick.hidden = true;
       const lb = document.createElement("button"); lb.className = "ghost small"; lb.textContent = r.logo ? "Change logo" : "Add logo";
@@ -410,10 +415,11 @@ document.getElementById("gallery-form").addEventListener("submit", async e => {
 const EDIT_FIELDS = {
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+  photos: [["times", "Time slot(s), like 10:05 AM (separate up to 3 with commas)"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
 function editRow(table, r) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = "Edit " + r.business;
+  document.getElementById("edit-title").textContent = "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business);
   box.innerHTML = "";
   EDIT_FIELDS[table].forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
@@ -428,8 +434,16 @@ function editRow(table, r) {
     if (dlg.returnValue !== "save") return;
     const fields = {};
     box.querySelectorAll("[name]").forEach(i => (fields[i.name] = i.value));
-    if (!fields.business.trim()) { alert("Business name can't be empty."); return; }
-    act(() => api("/admin/edit", { table, id: r.id, fields }));
+    if ("business" in fields && !fields.business.trim()) { alert("Business name can't be empty."); return; }
+    if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) { alert("First and last name can't be empty."); return; }
+    act(async () => {
+      try { await api("/admin/edit", { table, id: r.id, fields }); }
+      catch (e) {
+        if (e.message === "taken") alert("Someone else already has that time. Pick a different slot.");
+        else if (e.message === "bad_time") alert("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
+        else throw e;
+      }
+    });
   };
   dlg.returnValue = "";
   dlg.showModal();

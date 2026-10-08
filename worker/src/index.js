@@ -15,7 +15,7 @@
  *   POST /admin/sponsor    { business, level, show }  (with id to update)
  *   POST /admin/show       { table: vendors|sponsors, id, show }
  *   POST /admin/logo       { table: vendors|sponsors, id, logo }  (empty logo removes it)
- *   POST /admin/edit       { table: vendors|sponsors, id, fields: {name: value} }
+ *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
  *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
  *
@@ -333,10 +333,34 @@ async function authorized(request, env) {
   return diff === 0;
 }
 
+// Saves an edited photo booking, moving it to new time slots if those changed.
+async function editPhoto(db, id, fields, keys) {
+  const allowed = EDITABLE.photos;
+  const times = [...new Set(field(fields, "times", 200).split(",").map(normTime).filter(Boolean))];
+  if (!times.length || times.length > 3 || times.some(t => !SLOTS.has(t))) return { ok: false, reason: "bad_time" };
+  if (!field(fields, "first_name") || !field(fields, "last_name")) return { ok: false, reason: "missing" };
+  const marks = times.map(() => "?").join(",");
+  const taken = (await db.prepare(`SELECT time FROM photo_slots WHERE time IN (${marks}) AND photo_id != ?`).bind(...times, id).all()).results.map(r => r.time);
+  if (taken.length) return { ok: false, reason: "taken", taken };
+  try {
+    await db.batch([
+      db.prepare("DELETE FROM photo_slots WHERE photo_id = ?").bind(id),
+      ...times.map(t => db.prepare("INSERT INTO photo_slots (time, photo_id) VALUES (?, ?)").bind(t, id)),
+      db.prepare(`UPDATE photos SET times = ?, ${keys.map(k => `${k} = ?`).join(", ")} WHERE id = ?`)
+        .bind(times.join(", "), ...keys.map(k => field(fields, k, allowed[k])), id),
+    ]);
+  } catch (err) {
+    if (/UNIQUE|constraint/i.test(String(err))) return { ok: false, reason: "taken", taken: times };
+    throw err;
+  }
+  return { ok: true };
+}
+
 // Columns the admin page may edit, with their length limits.
 const EDITABLE = {
   vendors: { business: 120, contact: 120, email: 120, phone: 40, category: 80, website: 200, needs: 500, description: 2000 },
   sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200 },
+  photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
 };
 
 const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery"];
@@ -387,6 +411,7 @@ async function admin(request, env, path) {
     const allowed = EDITABLE[p.table], fields = p.fields || {};
     const keys = allowed ? Object.keys(fields).filter(k => k in allowed) : [];
     if (!keys.length || !Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    if (p.table === "photos" && "times" in fields) return json(await editPhoto(db, p.id, fields, keys));
     if (keys.includes("level") && !(fields.level in SPONSOR_LEVELS)) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("business") && !field(fields, "business")) return json({ ok: false, reason: "bad_request" }, 400);
     await db.prepare(`UPDATE ${p.table} SET ${keys.map(k => `${k} = ?`).join(", ")} WHERE id = ?`)
