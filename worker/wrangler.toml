@@ -1,0 +1,13 @@
+# Santa Paws sign-up service (Cloudflare Worker + D1 database).
+# Deployed by .github/workflows/deploy-api.yml; the workflow fills in database_id.
+name = "santa-paws-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+routes = [{ pattern = "api.cvahsantapaws.com", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "santa-paws"
+database_id = "DATABASE_ID_PLACEHOLDER"
+migrations_dir = "migrations"

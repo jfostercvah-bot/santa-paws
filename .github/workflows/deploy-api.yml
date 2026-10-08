@@ -1,0 +1,58 @@
+# Deploys the Santa Paws sign-up service (worker/) to Cloudflare.
+# Needs repository secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and ADMIN_PASSWORD.
+name: Deploy sign-up service
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", ".github/workflows/deploy-api.yml"]
+  workflow_dispatch:
+
+concurrency: deploy-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+
+      - name: Check secrets
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -n "$ADMIN_PASSWORD" ] || missing="$missing ADMIN_PASSWORD"
+          if [ -n "$missing" ]; then echo "::error::Add these repository secrets:$missing"; exit 1; fi
+
+      - name: Find or create the database
+        run: |
+          id=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="santa-paws") | .uuid')
+          if [ -z "$id" ]; then
+            npx wrangler d1 create santa-paws
+            id=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="santa-paws") | .uuid')
+          fi
+          [ -n "$id" ] || { echo "::error::Could not find or create the santa-paws database"; exit 1; }
+          sed -i "s/DATABASE_ID_PLACEHOLDER/$id/" wrangler.toml
+
+      - name: Update database tables
+        run: npx wrangler d1 migrations apply santa-paws --remote
+
+      - name: Deploy
+        run: npx wrangler deploy
+
+      - name: Set admin password
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: printf '%s' "$ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD
