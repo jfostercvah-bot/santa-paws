@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Santa Paws</title>
+<title>Treats & Eats · Santa Paws</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;600;700&display=swap">
@@ -224,7 +224,7 @@ footer p { opacity: .85; font-size: .95rem; }
     <nav aria-label="Pages">
       <ul>
         <li><a href="photos.html">Santa Photos</a></li>
-        <li><a href="treats.html">Treats &amp; Eats</a></li>
+        <li><a href="treats.html" aria-current="page">Treats &amp; Eats</a></li>
         <li><a href="vendors.html">Vendors</a></li>
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="faq.html">FAQ</a></li>
@@ -233,144 +233,90 @@ footer p { opacity: .85; font-size: .95rem; }
   </div>
 </header>
 
+<div class="event-strip"><div class="wrap"><span>Saturday, November 21, 2026</span><span>10 AM to 3 PM</span><span>46 Shady Grove Road, Providence, NC</span></div></div>
 <main id="top">
-  <section class="hero">
-    <canvas id="snow" aria-hidden="true"></canvas>
-    <div class="wrap">
-      <div>
-        <p class="eyebrow" style="color:var(--gold)">[Clinic Name] presents our annual</p>
-        <h1>Santa <span>Paws</span></h1>
-        <p class="lede">Bring your dogs and cats for free photos with Santa, local vendors, treats and holiday cheer.</p>
-        <div class="facts">
-          <span class="fact">Saturday, November 21, 2026</span>
-          <span class="fact">10 AM to 3 PM</span>
-          <span class="fact">46 Shady Grove Road, Providence, NC</span>
-        </div>
-        <div class="ctas">
-          <a class="btn berry" href="photos.html">Book a Santa photo</a>
-          <a class="btn ghost" href="vendors.html">Become a vendor</a>
-        </div>
-      </div>
-      <svg class="pup" viewBox="0 0 380 320" role="img" aria-label="Illustration of a dog and a cat in Santa hats with a little elf, sitting in the snow">
-        <circle cx="190" cy="170" r="150" fill="#ffffff" opacity=".08"/>
-        <!-- string lights -->
-        <path d="M20 22 Q190 74 360 22" stroke="#0e3324" stroke-width="2" fill="none"/>
-        <g><circle cx="60" cy="36" r="7" fill="#e7b23c"/><circle cx="110" cy="46" r="7" fill="#e5485a"/><circle cx="160" cy="51" r="7" fill="#ffffff"/><circle cx="210" cy="51" r="7" fill="#e7b23c"/><circle cx="260" cy="45" r="7" fill="#e5485a"/><circle cx="310" cy="35" r="7" fill="#ffffff"/></g>
-
-        <!-- DOG (left) -->
-        <ellipse cx="128" cy="268" rx="70" ry="50" fill="#d4995f"/>
-        <ellipse cx="128" cy="276" rx="38" ry="34" fill="#f3dcc0"/>
-        <ellipse cx="70" cy="178" rx="24" ry="48" fill="#9a6338" transform="rotate(14 70 178)"/>
-        <ellipse cx="186" cy="178" rx="24" ry="48" fill="#9a6338" transform="rotate(-14 186 178)"/>
-        <ellipse cx="128" cy="168" rx="58" ry="56" fill="#d4995f"/>
-        <ellipse cx="128" cy="198" rx="34" ry="26" fill="#f3dcc0"/>
-        <ellipse cx="128" cy="140" rx="10" ry="20" fill="#f3dcc0" opacity=".7"/>
-        <circle cx="106" cy="164" r="7.5" fill="#1d2a24"/><circle cx="150" cy="164" r="7.5" fill="#1d2a24"/>
-        <circle cx="108.5" cy="161.5" r="2.5" fill="#fff"/><circle cx="152.5" cy="161.5" r="2.5" fill="#fff"/>
-        <ellipse cx="128" cy="186" rx="11" ry="8" fill="#1d2a24"/>
-        <path d="M128 194 v7 M117 203 q11 9 22 0" stroke="#1d2a24" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M123 205 q5 12 10 0 z" fill="#e5485a"/>
-        <!-- scarf -->
-        <path d="M74 222 Q128 246 182 222 L184 240 Q128 266 72 240 Z" fill="#c8283a"/>
-        <path d="M92 230 l-4 20 M112 236 l-2 20 M134 238 l0 20 M156 234 l2 20" stroke="#fbf8f3" stroke-width="6"/>
-        <path d="M96 238 l-8 46 l-18 -4 l6 -44 Z" fill="#c8283a"/>
-        <path d="M92 256 l-16 -3 M90 270 l-16 -3" stroke="#fbf8f3" stroke-width="5"/>
-
-        <!-- dog santa hat -->
-        <g transform="rotate(8 128 120)">
-          <path d="M176 122 Q138 46 52 80 Q72 92 78 122 Z" fill="#c8283a"/>
-          <path d="M176 122 Q156 84 128 70" stroke="#e5485a" stroke-width="6" fill="none" stroke-linecap="round" opacity=".6"/>
-          <rect x="72" y="112" width="114" height="24" rx="12" fill="#fbf8f3"/>
-          <circle cx="51" cy="82" r="13" fill="#fbf8f3"/>
-        </g>
-
-        <!-- CAT (right) -->
-        <ellipse cx="268" cy="274" rx="58" ry="46" fill="#9aa4ac"/>
-        <ellipse cx="268" cy="284" rx="30" ry="30" fill="#f1f3f4"/>
-        <path d="M216 170 Q214 120 228 116 Q240 116 260 146 Z" fill="#9aa4ac"/>
-        <path d="M320 170 Q322 120 308 116 Q296 116 276 146 Z" fill="#9aa4ac"/>
-        <path d="M224 156 Q224 130 231 128 Q238 130 248 146 Z" fill="#f6c3cb"/>
-        <path d="M312 156 Q312 130 305 128 Q298 130 288 146 Z" fill="#f6c3cb"/>
-        <ellipse cx="268" cy="184" rx="58" ry="50" fill="#9aa4ac"/>
-        <path d="M260 142 q8 -4 16 0 M256 152 q12 -4 24 0" stroke="#838d95" stroke-width="4" fill="none" stroke-linecap="round"/>
-        <ellipse cx="268" cy="206" rx="28" ry="20" fill="#f1f3f4"/>
-        <circle cx="246" cy="182" r="9" fill="#1d2a24"/><circle cx="290" cy="182" r="9" fill="#1d2a24"/>
-        <circle cx="249" cy="178.5" r="3.2" fill="#fff"/><circle cx="293" cy="178.5" r="3.2" fill="#fff"/>
-        <circle cx="244" cy="185.5" r="1.4" fill="#fff"/><circle cx="288" cy="185.5" r="1.4" fill="#fff"/>
-        <circle cx="236" cy="200" r="7" fill="#f6a3b0" opacity=".55"/><circle cx="300" cy="200" r="7" fill="#f6a3b0" opacity=".55"/>
-        <path d="M263 197 q5 -3 10 0 q-1 5 -5 6 q-4 -1 -5 -6z" fill="#e88a9a"/>
-        <path d="M268 203 v3 M268 206 q-5 6 -10 1 M268 206 q5 6 10 1" stroke="#1d2a24" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-        <path d="M246 204 l-20 -2 M246 209 l-20 3 M290 204 l20 -2 M290 209 l20 3" stroke="#6f7980" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
-        <!-- collar + bell -->
-        <path d="M224 228 Q268 248 312 228" stroke="#1f5b43" stroke-width="10" fill="none" stroke-linecap="round"/>
-        <circle cx="268" cy="246" r="10" fill="#e7b23c"/>
-        <path d="M261 247 h14" stroke="#9a6d10" stroke-width="2"/><circle cx="268" cy="251" r="2" fill="#9a6d10"/>
-        <!-- holly on collar -->
-        <path d="M290 234 q10 -10 22 -4 q-8 2 -6 10 q-8 -6 -16 -6z" fill="#2f8a63"/>
-        <circle cx="290" cy="236" r="4" fill="#e5485a"/><circle cx="296" cy="240" r="4" fill="#e5485a"/>
-
-        <!-- cat santa hat -->
-        <g transform="rotate(10 262 148)">
-          <path d="M226 150 Q232 104 210 92 Q268 64 300 150 Z" fill="#c8283a"/>
-          <rect x="220" y="140" width="88" height="20" rx="10" fill="#fbf8f3"/>
-          <circle cx="208" cy="92" r="11" fill="#fbf8f3"/>
-        </g>
-
-        <!-- snow bank -->
-        <path d="M0 320 V292 Q60 270 120 292 Q190 312 250 290 Q320 268 380 292 V320 Z" fill="#fbf8f3"/>
-        <!-- elf -->
-        <g transform="translate(0 -14)">
-        <path d="M170 274 L140 252 L172 262 Z" fill="#f1c7a1"/>
-        <path d="M226 274 L256 252 L224 262 Z" fill="#f1c7a1"/>
-        <path d="M170 266 L148 252 L168 260 Z" fill="#e8a989" opacity=".6"/>
-        <ellipse cx="198" cy="278" rx="30" ry="28" fill="#f1c7a1"/>
-        <path d="M170 266 q4 10 10 4 q2 8 8 2 M226 266 q-4 10 -10 4 q-2 8 -8 2" fill="#b8572a"/>
-        <ellipse cx="187" cy="279" rx="4" ry="5" fill="#1d2a24"/><ellipse cx="209" cy="279" rx="4" ry="5" fill="#1d2a24"/>
-        <circle cx="188.3" cy="277.5" r="1.4" fill="#fff"/><circle cx="210.3" cy="277.5" r="1.4" fill="#fff"/>
-        <path d="M182 271 q5 -4 10 -1 M204 270 q5 -3 10 1" stroke="#8a3f1c" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <ellipse cx="198" cy="286" rx="3.5" ry="3" fill="#e39a7d"/>
-        <path d="M188 293 q10 9 20 0" stroke="#8a2a2a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <circle cx="178" cy="289" r="5.5" fill="#f08a8a" opacity=".55"/><circle cx="218" cy="289" r="5.5" fill="#f08a8a" opacity=".55"/>
-        <g fill="#b8572a" opacity=".7"><circle cx="181" cy="284" r="1"/><circle cx="176" cy="285" r="1"/><circle cx="215" cy="284" r="1"/><circle cx="220" cy="285" r="1"/></g>
-        <path d="M168 262 Q178 226 198 202 Q218 226 228 262 Z" fill="#2f8a63"/>
-        <path d="M166 258 l8 10 l8 -10 l8 10 l8 -10 l8 10 l8 -10 l8 10 l8 -10 l0 -14 l-64 0 z" fill="#c8283a"/>
-        <circle cx="198" cy="200" r="7" fill="#e7b23c"/>
-        </g>
-        <path d="M150 320 Q198 296 246 320 Z" fill="#fbf8f3"/>
-      </svg>
-    </div>
-    <svg class="hero-hills" viewBox="0 0 1200 48" preserveAspectRatio="none" aria-hidden="true"><path d="M0 48 V30 Q150 0 300 24 T600 22 T900 18 T1200 26 V48 Z"/></svg>
-  </section>
-
-  <section class="block" id="explore">
-    <div class="wrap">
-      <div class="head"><p class="eyebrow">What's happening</p><h2>Plan your Santa Paws day</h2></div>
-      <div class="tiles">
-        <a class="tile" href="photos.html"><svg style="color:var(--berry)"><use href="#paw"/></svg><h3>Santa Photos</h3><p>Free photos with Santa at River Rye Shoppe. Reserve a 5-minute spot.</p><span class="go">Reserve a spot</span></a>
-        <a class="tile" href="treats.html"><svg style="color:var(--gold)"><use href="#paw"/></svg><h3>Treats &amp; Eats</h3><p>Coffee, hot chocolate, Christmas Pup Cups and Tiffany's food truck.</p><span class="go">See what's cooking</span></a>
-        <a class="tile" href="vendors.html"><svg style="color:var(--pine)"><use href="#paw"/></svg><h3>Vendors</h3><p>15 outdoor spots for local small businesses. $20 per spot.</p><span class="go">Apply to be a vendor</span></a>
-        <a class="tile" href="gallery.html"><svg style="color:var(--berry)"><use href="#paw"/></svg><h3>Gallery</h3><p>Favorite moments from past Santa Paws events.</p><span class="go">View photos</span></a>
-      </div>
-    </div>
-  </section>
-
-  <section class="block alt" id="sponsors">
+  <section class="block" id="treats">
     <div class="wrap">
       <div class="head">
-        <p class="eyebrow">Our sponsors</p>
-        <h2>The elves behind the event</h2>
-        <p>These local businesses help keep Santa Paws free to attend. Sponsor logos go in the spaces below.</p>
+        <p class="eyebrow">Treats &amp; Eats</p>
+        <h2>Shop, sip and snack</h2>
+        <p>Santa Paws is a full day out. Warm up, cool down, shop a little and fill up while the pups do their thing.</p>
       </div>
-      <div class="tier"><div class="tier-label" style="color:var(--gold)">North Pole sponsors</div>
-        <div class="logos gold"><div class="logo"><strong>[Sponsor logo]</strong>Top tier</div><div class="logo"><strong>[Sponsor logo]</strong>Top tier</div></div></div>
-      <div class="tier"><div class="tier-label">Reindeer sponsors</div>
-        <div class="logos silver"><div class="logo"><strong>[Sponsor]</strong></div><div class="logo"><strong>[Sponsor]</strong></div><div class="logo"><strong>[Sponsor]</strong></div><div class="logo"><strong>[Sponsor]</strong></div></div></div>
-      <div class="tier"><div class="tier-label">Elf friends</div>
-        <div class="logos friend"><div class="logo">[Name]</div><div class="logo">[Name]</div><div class="logo">[Name]</div><div class="logo">[Name]</div><div class="logo">[Name]</div><div class="logo">[Name]</div></div></div>
-      <div class="sponsor-cta">
-        <div><h3>Want to sponsor Santa Paws?</h3><p>Packages start at [$XX]. Email [events email] to get yours.</p></div>
-        <a class="btn berry" href="vendors.html">See vendor options</a>
+      <div class="treats">
+        <article class="treat">
+          <div class="treat-top">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M12 24h32v18a12 12 0 0 1-12 12h-8a12 12 0 0 1-12-12z" fill="var(--berry)"/><path d="M44 28h4a7 7 0 0 1 0 14h-4" stroke="var(--berry)" stroke-width="5" fill="none"/><path d="M22 8q-4 5 0 10M30 6q-4 6 0 12M38 8q-4 5 0 10" stroke="var(--muted)" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M12 30h32" stroke="var(--snow)" stroke-width="3"/></svg>
+            <div><h3>River Rye Shoppe</h3><span class="when">Right where Santa is</span></div>
+          </div>
+          <p>Your photo stop is also the coziest shop in town. Browse boutique clothes for your holiday wardrobe, grab a coffee or a hot chocolate to sip while you wait your turn with Santa, and yes, the ice cream is open even in November. Your furry VIP gets a treat too: a Christmas Pup Cup made just for them.</p>
+          <ul class="menu">
+            <li>Boutique clothes</li><li>Coffee</li><li>Hot chocolate</li><li>Ice cream</li><li class="star">Christmas Pup Cups</li><li>And more</li>
+          </ul>
+        </article>
+        <article class="treat">
+          <div class="treat-top">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="18" width="38" height="28" rx="4" fill="var(--pine)"/><path d="M42 26h10l8 10v10H42z" fill="var(--pine)"/><rect x="10" y="24" width="24" height="10" rx="2" fill="var(--gold)"/><path d="M46 29h6l5 7h-11z" fill="var(--snow)"/><circle cx="16" cy="48" r="6" fill="var(--ink)"/><circle cx="50" cy="48" r="6" fill="var(--ink)"/><circle cx="16" cy="48" r="2.5" fill="var(--snow)"/><circle cx="50" cy="48" r="2.5" fill="var(--snow)"/></svg>
+            <div><h3>Tiffany's Curbside Cravings and Catering</h3><span class="when">Serving from 11 AM</span></div>
+          </div>
+          <p>Santa has his milk and cookies. You've got Tiffany's. This food truck rolls up to Santa Paws with tasty eats for the humans in the family. Snag lunch, find a spot in the sun, and enjoy the parade of pups in holiday sweaters.</p>
+          <ul class="menu">
+            <li>Smashburgers</li><li>Hot dogs</li><li>Corn dogs</li><li>Uncle B's Chili</li><li>Salads</li><li>Kids meals</li><li class="star">Opens at 11 AM</li>
+          </ul>
+          <a class="menu-link" href="#tiffanys-menu">See the full menu</a>
+        </article>
       </div>
+        <details class="food-menu" id="tiffanys-menu">
+          <summary>See Tiffany's full menu</summary>
+          <div class="menu-cols">
+            <section class="menu-group"><h4>Smashburgers</h4><p class="menu-sub">Double patty, comes with fries</p>
+              <ul>
+                <li><div class="mi"><span>The Classic</span><span class="dots"></span><span class="price">$15.00</span></div><small>Lettuce, tomato, mayo, ketchup, onion, pickles, cheddar</small></li>
+                <li><div class="mi"><span>Fire in the Hole</span><span class="dots"></span><span class="price">$16.00</span></div><small>Jalapeños, grilled onions, fire sauce, pepper jack</small></li>
+                <li><div class="mi"><span>Mushroom Swiss</span><span class="dots"></span><span class="price">$16.00</span></div><small>Grilled mushrooms, grilled onions, mayo, Swiss</small></li>
+                <li><div class="mi"><span>Build Your Own Burger</span><span class="dots"></span><span class="price">$14.00</span></div><small>Lettuce, tomato, onions, pickles, mayo, ketchup</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, jalapeños, slaw, chili, grilled onions, grilled mushrooms ($1.00 each), bacon crumbles ($1.00), extra smash patty (+$3.00). The Bird: substitute grilled chicken breast.</p></section>
+            <section class="menu-group"><h4>Hot Dogs</h4>
+              <ul>
+                <li><div class="mi"><span>Chili Cheese Dog</span><span class="dots"></span><span class="price">$6.00</span></div><small>Chili, cheese</small></li>
+                <li><div class="mi"><span>All the Way J Dog</span><span class="dots"></span><span class="price">$6.00</span></div><small>Mustard, chili, slaw, onions, jalapeño</small></li>
+                <li><div class="mi"><span>Build Your Own Dog</span><span class="dots"></span><span class="price">$5.00</span></div><small>Ketchup, mustard, mayo, onions</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, jalapeños, slaw, chili, grilled onions, pickles, bacon ($1.00 each)</p></section>
+            <section class="menu-group"><h4>Corn Dogs</h4>
+              <ul>
+                <li><div class="mi"><span>JJ&#x27;s Plain Corn Dog</span><span class="dots"></span><span class="price">$5.00</span></div><small>Choice of ketchup or mustard</small></li>
+                <li><div class="mi"><span>JJ&#x27;s Chili Cheese Corn Dog</span><span class="dots"></span><span class="price">$6.00</span></div><small>Split corn dog with chili and cheese</small></li>
+                <li><div class="mi"><span>JJ&#x27;s Spicy Corn Dog</span><span class="dots"></span><span class="price">$7.00</span></div><small>Split corn dog with jalapeños, grilled onions, fire sauce</small></li>
+                <li><div class="mi"><span>Build Your Own Corn Dog</span><span class="dots"></span><span class="price">$5.00</span></div><small>Ketchup, mustard, mayo, onions</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, jalapeños, slaw, chili, grilled onions, pickles, bacon ($1.00 each)</p></section>
+            <section class="menu-group"><h4>Salads</h4>
+              <ul>
+                <li><div class="mi"><span>Caesar Salad</span><span class="dots"></span><span class="price">$11.00</span></div><small>Lettuce, Parmesan cheese, croutons, Caesar dressing</small></li>
+                <li><div class="mi"><span>Garden Salad</span><span class="dots"></span><span class="price">$11.00</span></div><small>Lettuce, cheese, tomatoes, cucumbers, carrots, croutons, bacon crumbles</small></li>
+              </ul><p class="menu-note">Dressings: ranch, French, Italian, vinaigrette. Add grilled chicken (+$4.00), extra dressing (+$1.00)</p></section>
+            <section class="menu-group"><h4>Sides</h4>
+              <ul>
+                <li><div class="mi"><span>Nachos</span><span class="dots"></span><span class="price">$10.00</span></div><small>Chips and cheese</small></li>
+                <li><div class="mi"><span>Ribbon Fries</span><span class="dots"></span><span class="price">$11.00</span></div></li>
+                <li><div class="mi"><span>Chicken Tenders (3) with Fries</span><span class="dots"></span><span class="price">$12.00</span></div><small>Make them zesty for +$1.00</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, chili, jalapeños, bacon crumbles ($1.00 each)</p></section>
+            <section class="menu-group"><h4>Kids</h4>
+              <ul>
+                <li><div class="mi"><span>Grilled Cheese with Fries</span><span class="dots"></span><span class="price">$8.00</span></div></li>
+                <li><div class="mi"><span>Chicken Tenders with Fries</span><span class="dots"></span><span class="price">$10.00</span></div></li>
+              </ul></section>
+            <section class="menu-group"><h4>Uncle B&#x27;s Chili</h4>
+              <ul>
+                <li><div class="mi"><span>Cup</span><span class="dots"></span><span class="price">$6.00</span></div></li>
+                <li><div class="mi"><span>Bowl</span><span class="dots"></span><span class="price">$10.00</span></div></li>
+              </ul></section>
+            <section class="menu-group"><h4>Beverages</h4>
+              <ul>
+                <li><div class="mi"><span>Bottled Water</span><span class="dots"></span><span class="price">$2.00</span></div></li>
+                <li><div class="mi"><span>Canned Soda</span><span class="dots"></span><span class="price">$2.00</span></div></li>
+              </ul></section>
+          </div>
+          <p class="menu-foot">Ask about the dessert of the day!</p>
+        </details>
     </div>
   </section>
 </main>

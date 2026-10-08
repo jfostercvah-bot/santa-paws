@@ -1,6 +1,6 @@
 # Santa Paws website
 
-`index.html` is the whole site (one file, no build step).
+The site is six plain HTML pages: `index.html` (home), `photos.html`, `treats.html`, `vendors.html`, `gallery.html`, `faq.html`. Each page is self-contained (no build step needed to host).
 
 - **Placeholders** in [square brackets] need real details: clinic name, date, hours, address, prices, contact info.
 - **Sign-up forms**: create a free form at formspree.io, then paste its URL into `FORM_ENDPOINT` near the bottom of `index.html`. Sign-ups then arrive by email.
