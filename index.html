@@ -160,6 +160,20 @@ textarea { min-height: 90px; resize: vertical; }
 .menu { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .menu li { font-weight: 600; font-size: .9rem; padding: 6px 12px; border-radius: 999px; background: var(--snow); border: 1.5px solid var(--line); }
 .menu li.star { background: var(--berry); color: var(--berry-ink); border-color: var(--berry); }
+.menu-link { font-weight: 700; color: var(--berry); text-underline-offset: 3px; }
+.food-menu { margin-top: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 18px 24px; }
+.food-menu summary { font-family: var(--display); font-size: 1.3rem; cursor: pointer; }
+.menu-cols { columns: 3 260px; column-gap: 32px; margin-top: 18px; }
+.menu-group { break-inside: avoid; margin-bottom: 22px; }
+.menu-group h4 { font-family: var(--display); font-weight: 400; font-size: 1.15rem; color: var(--pine); margin: 0 0 2px; }
+.menu-sub, .menu-note { font-size: .82rem; color: var(--muted); }
+.menu-note { margin-top: 6px; }
+.menu-group ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.mi { display: flex; align-items: baseline; gap: 6px; font-weight: 600; }
+.mi .dots { flex: 1; border-bottom: 1.5px dotted var(--line); transform: translateY(-4px); }
+.mi .price { font-variant-numeric: tabular-nums; color: var(--berry); }
+.menu-group small { display: block; color: var(--muted); font-size: .84rem; line-height: 1.4; }
+.menu-foot { font-weight: 700; color: var(--pine); margin-top: 4px; }
 @media (max-width: 820px) { .treats { grid-template-columns: 1fr; } }
 
 /* faq + footer */
@@ -381,10 +395,63 @@ footer p { opacity: .85; font-size: .95rem; }
           </div>
           <p>Santa has his milk and cookies. You've got Tiffany's. This food truck rolls up to Santa Paws with tasty eats for the humans in the family. Snag lunch, find a spot in the sun, and enjoy the parade of pups in holiday sweaters.</p>
           <ul class="menu">
-            <li>Food truck</li><li>Lunch on site</li><li class="star">Opens at 11 AM</li>
+            <li>Smashburgers</li><li>Hot dogs</li><li>Corn dogs</li><li>Uncle B's Chili</li><li>Salads</li><li>Kids meals</li><li class="star">Opens at 11 AM</li>
           </ul>
+          <a class="menu-link" href="#tiffanys-menu">See the full menu</a>
         </article>
       </div>
+        <details class="food-menu" id="tiffanys-menu">
+          <summary>See Tiffany's full menu</summary>
+          <div class="menu-cols">
+            <section class="menu-group"><h4>Smashburgers</h4><p class="menu-sub">Double patty, comes with fries</p>
+              <ul>
+                <li><div class="mi"><span>The Classic</span><span class="dots"></span><span class="price">$15.00</span></div><small>Lettuce, tomato, mayo, ketchup, onion, pickles, cheddar</small></li>
+                <li><div class="mi"><span>Fire in the Hole</span><span class="dots"></span><span class="price">$16.00</span></div><small>Jalapeños, grilled onions, fire sauce, pepper jack</small></li>
+                <li><div class="mi"><span>Mushroom Swiss</span><span class="dots"></span><span class="price">$16.00</span></div><small>Grilled mushrooms, grilled onions, mayo, Swiss</small></li>
+                <li><div class="mi"><span>Build Your Own Burger</span><span class="dots"></span><span class="price">$14.00</span></div><small>Lettuce, tomato, onions, pickles, mayo, ketchup</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, jalapeños, slaw, chili, grilled onions, grilled mushrooms ($1.00 each), bacon crumbles ($1.00), extra smash patty (+$3.00). The Bird: substitute grilled chicken breast.</p></section>
+            <section class="menu-group"><h4>Hot Dogs</h4>
+              <ul>
+                <li><div class="mi"><span>Chili Cheese Dog</span><span class="dots"></span><span class="price">$6.00</span></div><small>Chili, cheese</small></li>
+                <li><div class="mi"><span>All the Way J Dog</span><span class="dots"></span><span class="price">$6.00</span></div><small>Mustard, chili, slaw, onions, jalapeño</small></li>
+                <li><div class="mi"><span>Build Your Own Dog</span><span class="dots"></span><span class="price">$5.00</span></div><small>Ketchup, mustard, mayo, onions</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, jalapeños, slaw, chili, grilled onions, pickles, bacon ($1.00 each)</p></section>
+            <section class="menu-group"><h4>Corn Dogs</h4>
+              <ul>
+                <li><div class="mi"><span>JJ&#x27;s Plain Corn Dog</span><span class="dots"></span><span class="price">$5.00</span></div><small>Choice of ketchup or mustard</small></li>
+                <li><div class="mi"><span>JJ&#x27;s Chili Cheese Corn Dog</span><span class="dots"></span><span class="price">$6.00</span></div><small>Split corn dog with chili and cheese</small></li>
+                <li><div class="mi"><span>JJ&#x27;s Spicy Corn Dog</span><span class="dots"></span><span class="price">$7.00</span></div><small>Split corn dog with jalapeños, grilled onions, fire sauce</small></li>
+                <li><div class="mi"><span>Build Your Own Corn Dog</span><span class="dots"></span><span class="price">$5.00</span></div><small>Ketchup, mustard, mayo, onions</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, jalapeños, slaw, chili, grilled onions, pickles, bacon ($1.00 each)</p></section>
+            <section class="menu-group"><h4>Salads</h4>
+              <ul>
+                <li><div class="mi"><span>Caesar Salad</span><span class="dots"></span><span class="price">$11.00</span></div><small>Lettuce, Parmesan cheese, croutons, Caesar dressing</small></li>
+                <li><div class="mi"><span>Garden Salad</span><span class="dots"></span><span class="price">$11.00</span></div><small>Lettuce, cheese, tomatoes, cucumbers, carrots, croutons, bacon crumbles</small></li>
+              </ul><p class="menu-note">Dressings: ranch, French, Italian, vinaigrette. Add grilled chicken (+$4.00), extra dressing (+$1.00)</p></section>
+            <section class="menu-group"><h4>Sides</h4>
+              <ul>
+                <li><div class="mi"><span>Nachos</span><span class="dots"></span><span class="price">$10.00</span></div><small>Chips and cheese</small></li>
+                <li><div class="mi"><span>Ribbon Fries</span><span class="dots"></span><span class="price">$11.00</span></div></li>
+                <li><div class="mi"><span>Chicken Tenders (3) with Fries</span><span class="dots"></span><span class="price">$12.00</span></div><small>Make them zesty for +$1.00</small></li>
+              </ul><p class="menu-note">Add-ons: cheese, chili, jalapeños, bacon crumbles ($1.00 each)</p></section>
+            <section class="menu-group"><h4>Kids</h4>
+              <ul>
+                <li><div class="mi"><span>Grilled Cheese with Fries</span><span class="dots"></span><span class="price">$8.00</span></div></li>
+                <li><div class="mi"><span>Chicken Tenders with Fries</span><span class="dots"></span><span class="price">$10.00</span></div></li>
+              </ul></section>
+            <section class="menu-group"><h4>Uncle B&#x27;s Chili</h4>
+              <ul>
+                <li><div class="mi"><span>Cup</span><span class="dots"></span><span class="price">$6.00</span></div></li>
+                <li><div class="mi"><span>Bowl</span><span class="dots"></span><span class="price">$10.00</span></div></li>
+              </ul></section>
+            <section class="menu-group"><h4>Beverages</h4>
+              <ul>
+                <li><div class="mi"><span>Bottled Water</span><span class="dots"></span><span class="price">$2.00</span></div></li>
+                <li><div class="mi"><span>Canned Soda</span><span class="dots"></span><span class="price">$2.00</span></div></li>
+              </ul></section>
+          </div>
+          <p class="menu-foot">Ask about the dessert of the day! Prices may change on event day.</p>
+        </details>
     </div>
   </section>
 
@@ -584,6 +651,8 @@ wire("photo-form", "photo-done", photoProblem,
   f => `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`);
 wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]) ? "Add your business name, contact name and email." : null,
   f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`);
+
+document.querySelector(".menu-link").addEventListener("click", () => { document.getElementById("tiffanys-menu").open = true; });
 
 // --- gallery placeholders ---
 const tints = ["#c8283a", "#1f5b43", "#e7b23c", "#2b6f8f", "#8a5a36"];
