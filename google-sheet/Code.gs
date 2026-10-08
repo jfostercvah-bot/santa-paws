@@ -52,9 +52,28 @@ function rows_(key) {
   return n > 0 ? sh.getRange(2, 1, n, TABS[key].length).getValues() : [];
 }
 
+// Normalizes "10:05", "10:05:00 AM" or "1:30 PM" to "10:05 AM" / "1:30 PM".
+function normTime_(t) {
+  const m = String(t).match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([AP]M)?/i);
+  if (!m) return "";
+  let h = Number(m[1]);
+  const ap = m[3] ? m[3].toUpperCase() : (h >= 10 && h < 12 ? "AM" : "PM");
+  if (h > 12) h -= 12;
+  return `${h}:${m[2]} ${ap}`;
+}
+
+function bookedTimes_() {
+  // Display values, because Sheets turns a single "10:05 AM" into a time value.
+  const sh = tab_("photos"), n = sh.getLastRow() - 1;
+  if (n < 1) return [];
+  const out = [];
+  sh.getRange(2, 2, n, 1).getDisplayValues().forEach(r =>
+    String(r[0]).split(",").map(normTime_).filter(Boolean).forEach(t => out.push(t)));
+  return out;
+}
+
 function status_() {
-  const booked = [];
-  rows_("photos").forEach(r => String(r[1]).split(",").map(t => t.trim()).filter(Boolean).forEach(t => booked.push(t)));
+  const booked = bookedTimes_();
   const vendorsTaken = rows_("vendors").filter(r => r[1]).length;
   const sponsors = {};
   Object.keys(SPONSOR_LEVELS).forEach(l => (sponsors[l] = []));
@@ -131,7 +150,7 @@ function doPost(e) {
       return json_(Object.assign({ ok: true, status: status_() }, d));
     }
     if (p.form === "photo") {
-      const times = String(p.times || "").split(",").map(t => t.trim()).filter(Boolean);
+      const times = String(p.times || "").split(",").map(normTime_).filter(Boolean);
       if (!times.length) return json_({ ok: false, reason: "missing" });
       const booked = status_().booked;
       const taken = times.filter(t => booked.indexOf(t) !== -1);
@@ -140,7 +159,7 @@ function doPost(e) {
       const pets = [];
       for (let i = 1; i <= count; i++) pets.push(`${p["pet" + i + "_name"] || "?"} (${p["pet" + i + "_type"] || "?"})`);
       const code = newCode_();
-      tab_("photos").appendRow([now, times.join(", "), p.first_name, p.last_name, p.phone, p.email, count, pets.join(", "), p.notes || "", code]);
+      tab_("photos").appendRow([now, "'" + times.join(", "), p.first_name, p.last_name, p.phone, p.email, count, pets.join(", "), p.notes || "", code]);
       const who = `${p.first_name} ${p.last_name}`;
       mail_(NOTIFY_EMAIL, `Santa photo booking: ${who} at ${times.join(", ")}`,
         `${who} booked ${times.join(", ")}.\n\nPets: ${pets.join(", ")}\nPhone: ${p.phone}\nEmail: ${p.email}\nNotes: ${p.notes || "-"}`, p.email);

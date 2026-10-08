@@ -335,8 +335,13 @@ function wire(id, doneId, check, msg, extra, problems = {}) {
       : "That didn't go through. Check your connection and try again.";
   });
 }
-// Live counts from the sign-up sheet
-if (SHEET_URL) fetch(SHEET_URL).then(r => r.json()).then(d => document.dispatchEvent(new CustomEvent("sp-status", { detail: d }))).catch(() => {});
+// Live counts from the sign-up sheet, refreshed every 30 seconds while the page is open
+function refreshStatus() {
+  if (!SHEET_URL || document.hidden) return;
+  fetch(SHEET_URL).then(r => r.json()).then(d => document.dispatchEvent(new CustomEvent("sp-status", { detail: d }))).catch(() => {});
+}
+refreshStatus();
+if (SHEET_URL) { setInterval(refreshStatus, 30000); document.addEventListener("visibilitychange", refreshStatus); }
 document.addEventListener("sp-status", ({ detail: d }) => {
   const vs = document.getElementById("vendor-spots");
   if (vs && d.vendors) {
@@ -435,7 +440,13 @@ function photoProblem(f) {
   return null;
 }
 wire("photo-form", "photo-done", photoProblem,
-  f => `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`,
+  f => {
+    const text = `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`;
+    picked.forEach(m => booked.add(label(m)));
+    document.querySelectorAll(".slot").forEach(b => { if (booked.has(b.textContent)) { b.disabled = true; b.title = "Booked"; } });
+    picked = []; showPicked();
+    return text;
+  },
   f => ({ form: "photo", subject: `Santa photo booking: ${f.elements.first_name.value} ${f.elements.last_name.value}`, times: picked.map(m => label(m) + " " + ampm(m)).join(", "), replyto: f.elements.email.value }),
   { taken: d => { picked = []; showPicked(); return `Sorry, ${d.taken.join(", ")} was just booked by someone else. Please pick another time.`; } });
 document.addEventListener("sp-status", ({ detail: d }) => {
