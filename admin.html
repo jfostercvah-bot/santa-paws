@@ -249,6 +249,15 @@ function render() {
     });
     const td = tr.insertCell(); td.style.whiteSpace = "nowrap";
     if (tab === "sponsors" || tab === "vendors") {
+      const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/*"; pick.hidden = true;
+      const lb = document.createElement("button"); lb.className = "ghost small"; lb.textContent = r.logo ? "Change logo" : "Add logo";
+      lb.onclick = () => pick.click();
+      pick.onchange = () => act(async () => {
+        let logo;
+        try { logo = await logoData(pick.files[0]); } catch { alert("That picture couldn't be read. Try a PNG or JPG."); return; }
+        await api("/admin/logo", { table: tab, id: r.id, logo });
+      });
+      td.append(pick, lb, " ");
       const t = document.createElement("button"); t.className = "ghost small"; t.textContent = r.show ? "Hide" : "Show";
       t.onclick = () => act(() => api("/admin/show", { table: tab, id: r.id, show: !r.show }));
       td.append(t, " ");

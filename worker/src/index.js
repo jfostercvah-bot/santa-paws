@@ -14,6 +14,7 @@
  *   POST /admin/delete     { table, id }
  *   POST /admin/sponsor    { business, level, show }  (with id to update)
  *   POST /admin/show       { table: vendors|sponsors, id, show }
+ *   POST /admin/logo       { table: vendors|sponsors, id, logo }  (empty logo removes it)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
  *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
  *
@@ -374,6 +375,12 @@ async function admin(request, env, path) {
     if (!isImage(p.image, MAX_PHOTO) || !isImage(p.thumb, 200000)) return json({ ok: false, reason: "bad_image" }, 400);
     const r = await db.prepare("INSERT INTO gallery (year, caption, thumb, image) VALUES (?, ?, ?, ?)").bind(year, caption, p.thumb, p.image).run();
     return json({ ok: true, id: r.meta.last_row_id });
+  }
+  if (path === "/admin/logo") {
+    const logo = logoField(p);
+    if (!["vendors", "sponsors"].includes(p.table) || !Number.isInteger(p.id) || (p.logo && !logo)) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.prepare(`UPDATE ${p.table} SET logo = ? WHERE id = ?`).bind(logo, p.id).run();
+    return json({ ok: true });
   }
   if (path === "/admin/show") {
     if (!["vendors", "sponsors"].includes(p.table) || !Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
