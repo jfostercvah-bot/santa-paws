@@ -340,6 +340,7 @@ function wire(id, doneId, check, msg, extra, problems = {}) {
     if (res.state === "sent" && res.data && res.data.code) {
       const a = document.createElement("a");
       a.href = "cancel.html"; a.textContent = "Cancel a booking";
+      if (res.data.emailed) done.append(" We emailed you a confirmation.");
       done.append(" Plans change? Use ", a, " at the bottom of any page with your email and phone number.");
     }
   });

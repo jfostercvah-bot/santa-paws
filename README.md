@@ -9,3 +9,4 @@ Plain HTML pages served by GitHub Pages at https://cvahsantapaws.com: `index.htm
 - **Photo slots**: every 5 minutes, 10:00 to 11:55 AM and 1:00 to 2:55 PM, up to 2 pets per spot (3+ pets hold back-to-back spots).
 - **Gallery**: the `shots` list holds caption + year; swap the paw placeholders for real photos.
 - **Domain**: registered on Cloudflare; the `CNAME` file points GitHub Pages at it.
+- **Email** (optional, via Resend): with repository secrets `RESEND_API_KEY` and `REPLY_TO_EMAIL` set (then re-run the deploy), the service emails a confirmation to each photo booking and vendor application, and the admin page's **Send email** tab sends announcements to photo families, vendors or both (one copy per person, replies go to `REPLY_TO_EMAIL`). Sent from hello@cvahsantapaws.com, which must be verified in Resend. Resend's free plan allows 100 emails a day.

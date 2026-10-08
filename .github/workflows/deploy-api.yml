@@ -1,5 +1,6 @@
 # Deploys the Santa Paws sign-up service (worker/) to Cloudflare.
 # Needs repository secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and ADMIN_PASSWORD.
+# Optional: RESEND_API_KEY and REPLY_TO_EMAIL turn on confirmation and announcement emails.
 name: Deploy sign-up service
 
 on:
@@ -57,6 +58,14 @@ jobs:
         env:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: printf '%s' "$ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD
+
+      - name: Set email secrets (optional)
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPLY_TO_EMAIL: ${{ secrets.REPLY_TO_EMAIL }}
+        run: |
+          if [ -n "$RESEND_API_KEY" ]; then printf '%s' "$RESEND_API_KEY" | npx wrangler secret put RESEND_API_KEY; else echo "No RESEND_API_KEY yet; emails stay off."; fi
+          if [ -n "$REPLY_TO_EMAIL" ]; then printf '%s' "$REPLY_TO_EMAIL" | npx wrangler secret put REPLY_TO_EMAIL; else echo "No REPLY_TO_EMAIL yet; emails stay off."; fi
 
       - name: Check it's live
         env:

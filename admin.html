@@ -48,6 +48,8 @@ th { background: var(--band); position: sticky; top: 0; white-space: nowrap; }
 td.long { min-width: 220px; white-space: pre-wrap; }
 .muted { color: var(--muted); }
 .err { color: var(--berry); font-weight: 600; }
+.email-form { display: grid; gap: 8px; margin-bottom: 16px; }
+textarea { font: inherit; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); resize: vertical; }
 .sponsor-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 </style>
 </head>
@@ -72,6 +74,7 @@ td.long { min-width: 220px; white-space: pre-wrap; }
       <button data-tab="vendors" aria-pressed="false">Vendors</button>
       <button data-tab="sponsors" aria-pressed="false">Sponsors</button>
       <button data-tab="messages" aria-pressed="false">Messages</button>
+      <button data-tab="emails" aria-pressed="false">Send email</button>
     </div>
     <form class="sponsor-form" id="sponsor-form" hidden>
       <input name="business" placeholder="Business name" required aria-label="Business name">
@@ -79,6 +82,21 @@ td.long { min-width: 220px; white-space: pre-wrap; }
         <option>North Pole</option><option>Reindeer</option><option>Elf Friends</option>
       </select>
       <button type="submit">Add sponsor</button>
+    </form>
+    <form class="card email-form" id="email-form" hidden>
+      <p id="email-setup" class="err" hidden>Email sending isn't set up yet. Add the RESEND_API_KEY and REPLY_TO_EMAIL secrets in GitHub, then run the deploy again.</p>
+      <label for="e-to"><strong>Send to</strong></label>
+      <select id="e-to" name="audience"></select>
+      <label for="e-subject"><strong>Subject</strong></label>
+      <input id="e-subject" name="subject" maxlength="150" required placeholder="Parking and arrival info for Santa Paws">
+      <label for="e-message"><strong>Message</strong></label>
+      <textarea id="e-message" name="message" rows="9" required placeholder="Hi everyone,&#10;&#10;..."></textarea>
+      <p class="muted" style="margin:0">Each person gets their own copy, so nobody sees anyone else's address. Replies come to your email. The event date, address and website are added at the bottom.</p>
+      <div class="bar" style="margin:0">
+        <button type="button" class="ghost small" id="e-test">Send me a test</button>
+        <button type="submit" id="e-send">Send</button>
+        <span id="e-msg" class="muted" role="status"></span>
+      </div>
     </form>
     <div class="bar">
       <span class="grow muted" id="note"></span>
@@ -108,6 +126,11 @@ const TABS = {
     cols: [["business", "Business"], ["level", "Level"], ["show", "On website"], ["created", "Added"]],
     note: "Sponsors you add here appear on the home page and count toward each level's spots.",
     remove: r => `Remove ${r.business} as a sponsor?`,
+  },
+  emails: {
+    cols: [["created", "Sent"], ["audience", "To"], ["subject", "Subject"], ["message", "Message", true], ["sent", "Emails sent"]],
+    note: "Emails you've sent from here.",
+    remove: null,
   },
   messages: {
     cols: [["name", "Name"], ["email", "Email"], ["phone", "Phone"], ["topic", "Topic"], ["message", "Message", true], ["created", "Sent"]],
@@ -157,6 +180,16 @@ function render() {
     });
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
   document.getElementById("sponsor-form").hidden = tab !== "sponsors";
+  document.getElementById("email-form").hidden = tab !== "emails";
+  document.getElementById("email-setup").hidden = !!data.emailReady;
+  document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = !data.emailReady;
+  const count = list => new Set(list.map(r => String(r.email).trim().toLowerCase()).filter(Boolean));
+  const fam = count(data.photos), ven = count(data.vendors), all = new Set([...fam, ...ven]);
+  const sel = document.getElementById("e-to"), was = sel.value;
+  sel.innerHTML = "";
+  [["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
+    .forEach(([v, t]) => sel.add(new Option(t, v)));
+  if (was) sel.value = was;
   document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors"].includes(tab);
   const T = TABS[tab], list = rows();
   document.getElementById("note").textContent = T.note;
@@ -175,6 +208,7 @@ function render() {
       t.onclick = () => act(() => api("/admin/sponsor", { id: r.id, business: r.business, level: r.level, show: !r.show }));
       td.append(t, " ");
     }
+    if (!T.remove) return;
     const del = document.createElement("button"); del.className = "small"; del.textContent = "Delete";
     del.onclick = () => { if (confirm(T.remove(r))) act(() => api("/admin/delete", { table: tab, id: r.id })); };
     td.append(del);
@@ -189,7 +223,7 @@ async function act(fn) {
   document.querySelectorAll("#app button").forEach(b => (b.disabled = true));
   try { await fn(); await load(); }
   catch (e) { if (e.message !== "unauthorized") alert("That didn't work. Check your connection and try again."); }
-  finally { document.querySelectorAll("#app button").forEach(b => (b.disabled = false)); }
+  finally { document.querySelectorAll("#app button").forEach(b => (b.disabled = false)); if (data) render(); }
 }
 
 function csv() {
@@ -217,6 +251,31 @@ async function copyAll(key, btn) {
 }
 document.getElementById("copy-emails").onclick = e => copyAll("email", e.target);
 document.getElementById("copy-phones").onclick = e => copyAll("phone", e.target);
+
+async function sendEmail(test) {
+  const f = document.getElementById("email-form"), m = document.getElementById("e-msg");
+  const subject = f.subject.value.trim(), message = f.message.value.trim();
+  if (!subject || !message) { m.textContent = "Add a subject and message."; return; }
+  const audience = test ? "test" : f.audience.value;
+  if (!test && !confirm(`Send "${subject}" to ${f.audience.selectedOptions[0].text.replace(/ \((\d+)\)/, ": $1 people")}?`)) return;
+  m.textContent = "Sending...";
+  document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = true;
+  try {
+    const d = await fetch(API_URL + "/admin/email", {
+      method: "POST", headers: { Authorization: "Bearer " + pw, "Content-Type": "application/json" },
+      body: JSON.stringify({ audience, subject, message }),
+    }).then(r => r.json());
+    if (d.ok) {
+      m.textContent = test ? "Test sent. Check your inbox." : `Sent to ${d.sent} ${d.sent === 1 ? "person" : "people"}${d.failed ? `, ${d.failed} failed` : ""}.`;
+      if (!test) { f.reset(); await load(); }
+    } else {
+      m.textContent = { no_recipients: "Nobody has signed up in that group yet.", email_not_set_up: "Email isn't set up yet." }[d.reason] || "That didn't send. Try again in a minute.";
+    }
+  } catch { m.textContent = "That didn't send. Check your connection and try again."; }
+  finally { document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = !data.emailReady; }
+}
+document.getElementById("e-test").onclick = () => sendEmail(true);
+document.getElementById("email-form").addEventListener("submit", e => { e.preventDefault(); sendEmail(false); });
 
 function logout(msg) {
   pw = ""; try { sessionStorage.removeItem("sp-admin"); } catch {}

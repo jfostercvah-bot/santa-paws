@@ -11,6 +11,10 @@
  *   GET  /admin            -> every table
  *   POST /admin/delete     { table, id }
  *   POST /admin/sponsor    { business, level, show }  (with id to update)
+ *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
+ *
+ * Email goes out through Resend when the RESEND_API_KEY and REPLY_TO_EMAIL secrets are set:
+ * a confirmation to each person who books or applies, and announcements from the admin page.
  */
 
 const VENDOR_MAX = 15;
@@ -105,7 +109,7 @@ async function bookPhoto(db, p) {
     }
     throw err;
   }
-  return { ok: true, code, times, status: await status(db) };
+  return { ok: true, code, times, pets: pets.join(", "), status: await status(db) };
 }
 
 async function applyVendor(db, p) {
@@ -175,6 +179,80 @@ async function removeRow(db, table, id) {
 
 // ---- admin ----
 
+// ---- email (Resend) ----
+
+const SITE = "https://cvahsantapaws.com";
+const FROM = "Santa Paws <hello@cvahsantapaws.com>";
+const emailReady = env => Boolean(env.RESEND_API_KEY && env.REPLY_TO_EMAIL);
+const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const looksLikeEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
+function letter(to, subject, text, env) {
+  const footer = `\n\nSanta Paws · Saturday, November 21, 2026 · 46 Shady Grove Road, Providence, NC\nHosted by Carolina Virginia Animal Hospital · ${SITE}`;
+  const body = text + footer;
+  const html = `<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.5;color:#1d2a24;max-width:560px">` +
+    body.split(/\n{2,}/).map(par => `<p>${escapeHtml(par).replace(/\n/g, "<br>")}</p>`).join("") + `</div>`;
+  return { from: FROM, to: [to], reply_to: env.REPLY_TO_EMAIL, subject, text: body, html };
+}
+
+// Sends one email per person (nobody sees anyone else's address), 100 per request.
+async function sendEmails(env, letters) {
+  let sent = 0, failed = 0, error = "";
+  for (let i = 0; i < letters.length; i += 100) {
+    const chunk = letters.slice(i, i + 100);
+    const r = await fetch(env.RESEND_URL || "https://api.resend.com/emails/batch", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify(chunk),
+    });
+    if (r.ok) sent += chunk.length;
+    else { failed += chunk.length; error = (await r.text()).slice(0, 300); console.error("Resend", r.status, error); }
+  }
+  return { sent, failed, error };
+}
+
+async function confirmPhoto(env, p, times, pets) {
+  const text = `Hi ${field(p, "first_name", 80)},\n\nYou're booked for Santa photos at ${times.join(", ")} on Saturday, November 21, 2026.\nPets: ${pets}\n\n` +
+    `Photos are taken at River Rye Shoppe, the building beside Carolina Virginia Animal Hospital. They're free, and we'll email you a link to download them when they're ready.\n\n` +
+    `Can't make it? Please free your time for another family at ${SITE}/cancel.html (enter this email and your phone number).\n\nSee you there!`;
+  await sendEmails(env, [letter(field(p, "email", 120), "Your Santa Paws photo time is booked!", text, env)]);
+}
+
+async function confirmVendor(env, p) {
+  const text = `Hi ${field(p, "contact", 120)},\n\nThanks for applying to be a vendor at Santa Paws on Saturday, November 21, 2026. We'll review your application for ${field(p, "business", 120)} and follow up by email.\n\n` +
+    `Setup starts at 9 AM and the event runs 10 AM to 3 PM. Please bring your own tables and displays.\n\n` +
+    `If you can no longer come, please withdraw at ${SITE}/cancel.html (enter this email and your phone number) so another vendor can have the spot.`;
+  await sendEmails(env, [letter(field(p, "email", 120), "We got your Santa Paws vendor application", text, env)]);
+}
+
+const AUDIENCES = { photos: "Photo families", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself" };
+
+async function announce(env, p) {
+  const db = env.DB, audience = String(p.audience || "");
+  const subject = field(p, "subject", 150), message = field(p, "message", 10000);
+  if (!emailReady(env)) return { ok: false, reason: "email_not_set_up" };
+  if (!(audience in AUDIENCES) || !subject || !message) return { ok: false, reason: "bad_request" };
+  let to = [];
+  if (audience === "test") to = [env.REPLY_TO_EMAIL];
+  else {
+    const qs = [];
+    if (audience !== "vendors") qs.push(db.prepare("SELECT email FROM photos"));
+    if (audience !== "photos") qs.push(db.prepare("SELECT email FROM vendors"));
+    const seen = new Set();
+    for (const res of await db.batch(qs)) for (const { email } of res.results) {
+      const e = String(email).trim(), k = e.toLowerCase();
+      if (looksLikeEmail(e) && !seen.has(k)) { seen.add(k); to.push(e); }
+    }
+  }
+  if (!to.length) return { ok: false, reason: "no_recipients" };
+  const result = await sendEmails(env, to.map(e => letter(e, subject, message, env)));
+  if (audience !== "test") {
+    await db.prepare("INSERT INTO emails (audience, subject, message, sent, failed) VALUES (?, ?, ?, ?, ?)")
+      .bind(AUDIENCES[audience], subject, message, result.sent, result.failed).run();
+  }
+  return { ok: result.sent > 0, reason: result.sent ? undefined : "send_failed", ...result };
+}
+
 async function authorized(request, env) {
   const given = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!env.ADMIN_PASSWORD || !given) return false;
@@ -192,9 +270,10 @@ async function admin(request, env, path) {
   if (!(await authorized(request, env))) return json({ ok: false, reason: "unauthorized" }, 401);
   const db = env.DB;
   if (request.method === "GET" && path === "/admin") {
-    const res = await db.batch(ADMIN_TABLES.map(t => db.prepare(`SELECT * FROM ${t} ORDER BY id DESC`)));
-    const out = { ok: true, status: await status(db) };
-    ADMIN_TABLES.forEach((t, i) => (out[t] = res[i].results));
+    const tables = [...ADMIN_TABLES, "emails"];
+    const res = await db.batch(tables.map(t => db.prepare(`SELECT * FROM ${t} ORDER BY id DESC`)));
+    const out = { ok: true, status: await status(db), emailReady: emailReady(env) };
+    tables.forEach((t, i) => (out[t] = res[i].results));
     return json(out);
   }
   if (request.method !== "POST") return json({ ok: false, reason: "not_found" }, 404);
@@ -214,11 +293,12 @@ async function admin(request, env, path) {
     }
     return json({ ok: true });
   }
+  if (path === "/admin/email") return json(await announce(env, p));
   return json({ ok: false, reason: "not_found" }, 404);
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
@@ -237,8 +317,16 @@ export default {
       if (request.method !== "POST") return json({ ok: false, reason: "not_found" }, 404);
       const p = Object.fromEntries(await request.formData());
       switch (p.form) {
-        case "photo": return json(await bookPhoto(db, p));
-        case "vendor": return json(await applyVendor(db, p));
+        case "photo": {
+          const r = await bookPhoto(db, p);
+          if (r.ok && emailReady(env)) { r.emailed = true; ctx.waitUntil(confirmPhoto(env, p, r.times, r.pets).catch(err => console.error(err))); }
+          return json(r);
+        }
+        case "vendor": {
+          const r = await applyVendor(db, p);
+          if (r.ok && emailReady(env)) { r.emailed = true; ctx.waitUntil(confirmVendor(env, p).catch(err => console.error(err))); }
+          return json(r);
+        }
         case "contact": return json(await saveMessage(db, p));
         case "cancel": return json(await cancel(db, field(p, "code", 64)));
         case "find": return json(await find(db, p));
