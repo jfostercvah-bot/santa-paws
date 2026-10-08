@@ -50,6 +50,7 @@ td.long { min-width: 220px; white-space: pre-wrap; }
 .err { color: var(--berry); font-weight: 600; }
 .email-form { display: grid; gap: 8px; margin-bottom: 16px; }
 textarea { font: inherit; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); resize: vertical; }
+img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: block; }
 .sponsor-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 </style>
 </head>
@@ -81,6 +82,8 @@ textarea { font: inherit; padding: 8px 10px; border: 1.5px solid var(--line); bo
       <select name="level" aria-label="Level">
         <option>North Pole</option><option>Reindeer</option><option>Elf Friends</option>
       </select>
+      <input name="website" placeholder="Website (optional)" aria-label="Website">
+      <label class="muted" style="display:flex;align-items:center;gap:6px">Logo <input name="logo_file" type="file" accept="image/*"></label>
       <button type="submit">Add sponsor</button>
     </form>
     <form class="card email-form" id="email-form" hidden>
@@ -118,13 +121,13 @@ const TABS = {
     remove: r => `Delete the ${r.times} booking for ${r.first_name} ${r.last_name}? The time opens up for someone else.`,
   },
   vendors: {
-    cols: [["business", "Business"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["category", "Category"], ["website", "Website"], ["needs", "Booth needs", true], ["description", "About", true], ["created", "Applied"]],
-    note: "Delete an application to open the spot again.",
+    cols: [["logo", "Logo"], ["business", "Business"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["category", "Category"], ["website", "Website"], ["needs", "Booth needs", true], ["description", "About", true], ["created", "Applied"]],
+    note: "Click Show to list a vendor on the Vendors page. Click a logo to download it. Delete an application to open the spot again.",
     remove: r => `Delete the vendor application from ${r.business}? The spot opens up for someone else.`,
   },
   sponsors: {
-    cols: [["business", "Business"], ["level", "Level"], ["show", "On website"], ["created", "Added"]],
-    note: "Sponsors you add here appear on the home page and count toward each level's spots.",
+    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
+    note: "Every sponsor holds a spot. Click Show once they've paid to put them on the website. Click a logo to download it.",
     remove: r => `Remove ${r.business} as a sponsor?`,
   },
   emails: {
@@ -201,11 +204,23 @@ function render() {
   if (!list.length) { const td = body.insertRow().insertCell(); td.colSpan = T.cols.length + 1; td.className = "muted"; td.textContent = "Nothing here yet."; }
   list.forEach(r => {
     const tr = body.insertRow();
-    T.cols.forEach(([k, , long]) => { const td = tr.insertCell(); td.textContent = cell(r, k); if (long) td.className = "long"; });
+    T.cols.forEach(([k, , long]) => {
+      const td = tr.insertCell();
+      if (k === "logo") {
+        if (r.logo) {
+          const a = document.createElement("a"), img = document.createElement("img");
+          a.href = r.logo; a.download = `${r.business} logo.${(r.logo.match(/^data:image\/(\w+)/) || [, "png"])[1].replace("jpeg", "jpg")}`;
+          a.title = "Download logo"; img.src = r.logo; img.alt = r.business + " logo"; img.className = "thumb";
+          a.append(img); td.append(a);
+        } else td.innerHTML = '<span class="muted">None</span>';
+        return;
+      }
+      td.textContent = cell(r, k); if (long) td.className = "long";
+    });
     const td = tr.insertCell(); td.style.whiteSpace = "nowrap";
-    if (tab === "sponsors") {
+    if (tab === "sponsors" || tab === "vendors") {
       const t = document.createElement("button"); t.className = "ghost small"; t.textContent = r.show ? "Hide" : "Show";
-      t.onclick = () => act(() => api("/admin/sponsor", { id: r.id, business: r.business, level: r.level, show: !r.show }));
+      t.onclick = () => act(() => api("/admin/show", { table: tab, id: r.id, show: !r.show }));
       td.append(t, " ");
     }
     if (!T.remove) return;
@@ -229,7 +244,8 @@ async function act(fn) {
 function csv() {
   const T = TABS[tab];
   const q = v => `"${String(v).replace(/"/g, '""')}"`;
-  const lines = [T.cols.map(c => q(c[1])).join(","), ...rows().map(r => T.cols.map(([k]) => q(cell(r, k))).join(","))];
+  const cols = T.cols.filter(([k]) => k !== "logo");
+  const lines = [cols.map(c => q(c[1])).join(","), ...rows().map(r => cols.map(([k]) => q(cell(r, k))).join(","))];
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv" }));
   a.download = `santa-paws-${tab}.csv`;
@@ -277,6 +293,27 @@ async function sendEmail(test) {
 document.getElementById("e-test").onclick = () => sendEmail(true);
 document.getElementById("email-form").addEventListener("submit", e => { e.preventDefault(); sendEmail(false); });
 
+// Shrinks an uploaded logo (to fit 600px, then smaller if needed) and returns it as a data: URL.
+async function logoData(file) {
+  if (!file) return "";
+  if (!/^image\//.test(file.type)) throw new Error("not_image");
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const w = img.naturalWidth || 600, h = img.naturalHeight || 600, c = document.createElement("canvas");
+    for (let size = 600; size >= 150; size = Math.round(size * 0.75)) {
+      const k = Math.min(1, size / Math.max(w, h));
+      c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+      const ctx = c.getContext("2d"); ctx.clearRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+      let out = c.toDataURL("image/webp", 0.85);
+      if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
+      if (out.length < 380000) return out;
+    }
+    throw new Error("too_big");
+  } catch (err) { throw new Error(err.message === "too_big" ? "too_big" : "not_image"); }
+  finally { URL.revokeObjectURL(url); }
+}
+
 function logout(msg) {
   pw = ""; try { sessionStorage.removeItem("sp-admin"); } catch {}
   document.getElementById("app").hidden = true;
@@ -308,7 +345,12 @@ document.querySelectorAll(".tabs button").forEach(b => (b.onclick = () => { tab 
 document.getElementById("sponsor-form").addEventListener("submit", e => {
   e.preventDefault();
   const f = e.target;
-  act(async () => { await api("/admin/sponsor", { business: f.business.value, level: f.level.value }); f.reset(); });
+  act(async () => {
+    let logo = "";
+    try { logo = await logoData(f.logo_file.files[0]); } catch { alert("That logo file couldn't be read. Try a PNG or JPG."); return; }
+    await api("/admin/sponsor", { business: f.business.value, level: f.level.value, website: f.website.value, logo });
+    f.reset();
+  });
 });
 if (pw) start();
 setInterval(() => { if (pw && !document.hidden && !document.getElementById("app").hidden) load().catch(() => {}); }, 60000);

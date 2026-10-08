@@ -2,15 +2,17 @@
  * Santa Paws sign-up service.
  *
  * Public API (used by the website):
- *   GET  /                 -> { booked, vendors: {max, taken}, sponsors: {level: {max, taken, names}} }
+ *   GET  /                 -> { booked, vendors: {max, taken, list}, sponsors: {level: {max, taken, names, list}} }
+ *   GET  /logo/vendor/ID, /logo/sponsor/ID -> the logo image (only once shown on the website)
  *   GET  /?lookup=CODE     -> what a cancel code refers to
- *   POST / form=photo|vendor|contact|cancel -> { ok, reason?, taken?, code?, status? }
+ *   POST / form=photo|vendor|sponsor|contact|cancel -> { ok, reason?, taken?, code?, status? }
  *   POST / form=find (email, phone)   -> { ok, bookings: [{kind, times|name, code}] }
  *
  * Admin API (Authorization: Bearer ADMIN_PASSWORD), used by admin.html:
  *   GET  /admin            -> every table
  *   POST /admin/delete     { table, id }
  *   POST /admin/sponsor    { business, level, show }  (with id to update)
+ *   POST /admin/show       { table: vendors|sponsors, id, show }
  *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
  *
  * Email goes out through Resend when the RESEND_API_KEY and REPLY_TO_EMAIL secrets are set:
@@ -52,22 +54,36 @@ function normTime(t) {
   return `${h}:${m[2]} ${ap}`;
 }
 
+// Logos arrive as small data: URLs (the page resizes them first).
+const MAX_LOGO = 400000;
+function logoField(p) {
+  const v = String(p.logo || "");
+  return /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length <= MAX_LOGO ? v : "";
+}
+
 const newCode = () => crypto.randomUUID().replace(/-/g, "");
 
 async function status(db) {
-  const [slots, vendors, sponsors] = await db.batch([
+  const [slots, vendors, shown, sponsors] = await db.batch([
     db.prepare("SELECT time FROM photo_slots"),
     db.prepare("SELECT COUNT(*) AS n FROM vendors"),
-    db.prepare("SELECT business, level, show FROM sponsors ORDER BY id"),
+    db.prepare("SELECT id, business, category, description, website, logo != '' AS has_logo FROM vendors WHERE show = 1 ORDER BY business COLLATE NOCASE"),
+    db.prepare("SELECT id, business, level, show, website, logo != '' AS has_logo FROM sponsors ORDER BY id"),
   ]);
   const levels = {};
   for (const [level, max] of Object.entries(SPONSOR_LEVELS)) {
-    const rows = sponsors.results.filter(s => s.level === level);
-    levels[level] = { max, taken: rows.length, names: rows.filter(s => s.show).map(s => s.business) };
+    const rows = sponsors.results.filter(s => s.level === level), visible = rows.filter(s => s.show);
+    levels[level] = {
+      max, taken: rows.length, names: visible.map(s => s.business),
+      list: visible.map(s => ({ name: s.business, website: s.website, logo: s.has_logo ? `/logo/sponsor/${s.id}` : "" })),
+    };
   }
   return {
     booked: slots.results.map(r => r.time),
-    vendors: { max: VENDOR_MAX, taken: vendors.results[0].n },
+    vendors: {
+      max: VENDOR_MAX, taken: vendors.results[0].n,
+      list: shown.results.map(v => ({ name: v.business, category: v.category, description: v.description, website: v.website, logo: v.has_logo ? `/logo/vendor/${v.id}` : "" })),
+    },
     sponsors: levels,
   };
 }
@@ -118,13 +134,35 @@ async function applyVendor(db, p) {
   const code = newCode();
   // The count check and insert are one statement, so two last-minute applications can't both get spot 15.
   const r = await db.prepare(
-    `INSERT INTO vendors (business, contact, email, phone, category, website, needs, description, code)
-     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM vendors) < ?`)
+    `INSERT INTO vendors (business, contact, email, phone, category, website, needs, description, logo, code)
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM vendors) < ?`)
     .bind(business, contact, email, field(p, "phone", 40), field(p, "category", 80), field(p, "website", 200),
-      field(p, "needs", 500), field(p, "description", 2000), code, VENDOR_MAX)
+      field(p, "needs", 500), field(p, "description", 2000), logoField(p), code, VENDOR_MAX)
     .run();
   if (!r.meta.changes) return { ok: false, reason: "full", status: await status(db) };
   return { ok: true, code, status: await status(db) };
+}
+
+// Sponsor sign-ups hold a spot right away; they show on the website once approved on the admin page.
+async function applySponsor(db, p) {
+  const business = field(p, "business", 120), contact = field(p, "contact", 120), email = field(p, "email", 120), level = field(p, "level", 40);
+  if (!business || !contact || !email || !(level in SPONSOR_LEVELS)) return { ok: false, reason: "missing" };
+  const r = await db.prepare(
+    `INSERT INTO sponsors (business, level, show, contact, email, phone, website, logo)
+     SELECT ?, ?, 0, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM sponsors WHERE level = ?) < ?`)
+    .bind(business, level, contact, email, field(p, "phone", 40), field(p, "website", 200), logoField(p), level, SPONSOR_LEVELS[level])
+    .run();
+  if (!r.meta.changes) return { ok: false, reason: "full", status: await status(db) };
+  return { ok: true, status: await status(db) };
+}
+
+async function logo(db, kind, id) {
+  const table = { vendor: "vendors", sponsor: "sponsors" }[kind];
+  const row = table && (await db.prepare(`SELECT logo FROM ${table} WHERE id = ? AND show = 1`).bind(id).first());
+  const m = row && String(row.logo).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+  if (!m) return new Response("Not found", { status: 404, headers: CORS });
+  const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+  return new Response(bytes, { headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=3600", ...CORS } });
 }
 
 async function saveMessage(db, p) {
@@ -231,6 +269,14 @@ async function confirmVendor(env, p) {
   await sendEmails(env, [letter(field(p, "email", 120), "We got your Santa Paws vendor application", text, env)]);
 }
 
+async function confirmSponsor(env, p) {
+  const level = field(p, "level", 40);
+  const price = { "North Pole": "$150", Reindeer: "$75", "Elf Friends": "$50" }[level] || "";
+  const text = `Hi ${field(p, "contact", 120)},\n\nThank you for signing up ${field(p, "business", 120)} as a ${level} sponsor (${price}) of Santa Paws on Saturday, November 21, 2026! Your spot is held.\n\n` +
+    `We'll be in touch about payment and your logo for the event shirt and digital sign. Your business will appear on our website once everything is confirmed.\n\nThank you for helping keep Santa Paws free for every family.`;
+  await sendEmails(env, [letter(field(p, "email", 120), "Thank you for sponsoring Santa Paws!", text, env)]);
+}
+
 const AUDIENCES = { photos: "Photo families", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself" };
 
 async function announce(env, p) {
@@ -295,11 +341,17 @@ async function admin(request, env, path) {
     if (Number.isInteger(p.id)) {
       await db.prepare("UPDATE sponsors SET business = ?, level = ?, show = ? WHERE id = ?").bind(business, level, show, p.id).run();
     } else {
-      await db.prepare("INSERT INTO sponsors (business, level, show) VALUES (?, ?, ?)").bind(business, level, show).run();
+      await db.prepare("INSERT INTO sponsors (business, level, show, website, logo) VALUES (?, ?, ?, ?, ?)")
+        .bind(business, level, show, field(p, "website", 200), logoField(p)).run();
     }
     return json({ ok: true });
   }
   if (path === "/admin/email") return json(await announce(env, p));
+  if (path === "/admin/show") {
+    if (!["vendors", "sponsors"].includes(p.table) || !Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.prepare(`UPDATE ${p.table} SET show = ? WHERE id = ?`).bind(p.show ? 1 : 0, p.id).run();
+    return json({ ok: true });
+  }
   return json({ ok: false, reason: "not_found" }, 404);
 }
 
@@ -310,6 +362,8 @@ export default {
     const path = url.pathname.replace(/\/+$/, "") || "/";
     try {
       if (path.startsWith("/admin")) return await admin(request, env, path);
+      const lm = path.match(/^\/logo\/(vendor|sponsor)\/(\d+)$/);
+      if (lm && request.method === "GET") return await logo(env.DB, lm[1], Number(lm[2]));
       if (path !== "/") return json({ ok: false, reason: "not_found" }, 404);
       const db = env.DB;
       if (request.method === "GET") {
@@ -331,6 +385,11 @@ export default {
         case "vendor": {
           const r = await applyVendor(db, p);
           if (r.ok && emailReady(env)) { r.emailed = true; ctx.waitUntil(confirmVendor(env, p).catch(err => console.error(err))); }
+          return json(r);
+        }
+        case "sponsor": {
+          const r = await applySponsor(db, p);
+          if (r.ok && emailReady(env)) { r.emailed = true; ctx.waitUntil(confirmSponsor(env, p).catch(err => console.error(err))); }
           return json(r);
         }
         case "contact": return json(await saveMessage(db, p));
