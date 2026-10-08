@@ -41,6 +41,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--snow); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; }
 h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.1; text-wrap: balance; margin: 0; }
 h2 { font-size: clamp(2rem, 5vw, 2.8rem); }
@@ -462,6 +463,29 @@ wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]
   { full: () => "Sorry, all 15 vendor spots are taken." });
 
 }
+// --- cancel page ---
+if (document.getElementById("cancel-box")) {
+  const code = new URLSearchParams(location.search).get("code");
+  const text = document.getElementById("cancel-text"), btn = document.getElementById("cancel-btn");
+  const nope = 'We couldn\'t find that booking. It may already be cancelled. Need help? <a href="contact.html">Send us a message</a>.';
+  if (!code || !SHEET_URL) { text.innerHTML = 'Use the cancel link in your confirmation email, or <a href="contact.html">send us a message</a>.'; }
+  else fetch(SHEET_URL + "?lookup=" + encodeURIComponent(code)).then(r => r.json()).then(d => {
+    if (!d.ok) { text.innerHTML = nope; return; }
+    text.textContent = d.kind === "photo" ? `Cancel the Santa photo at ${d.times} for ${d.name}?` : `Withdraw the vendor application for ${d.name}?`;
+    btn.textContent = d.kind === "photo" ? "Yes, cancel my photo time" : "Yes, withdraw my application";
+    btn.hidden = false;
+    btn.onclick = async () => {
+      btn.disabled = true; text.textContent = "Cancelling...";
+      try {
+        const r = await fetch(SHEET_URL, { method: "POST", body: new URLSearchParams({ form: "cancel", code }) });
+        const x = await r.json();
+        btn.hidden = true;
+        text.textContent = x.ok ? (x.kind === "photo" ? `Done. Your ${x.times} photo time is cancelled and open for someone else. We sent you a confirmation email.` : `Done. Your application for ${x.name} is withdrawn.`) : "We couldn't find that booking. It may already be cancelled.";
+      } catch { btn.disabled = false; text.textContent = "That didn't go through. Check your connection and try again."; }
+    };
+  }).catch(() => { text.textContent = "We couldn't load your booking right now. Please try again in a minute."; });
+}
+
 // --- contact form ---
 if (document.getElementById("contact-form")) {
   const h = location.hash.slice(1);

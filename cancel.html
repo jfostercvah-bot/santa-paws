@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FAQ · Santa Paws</title>
+<title>Cancel a booking · Santa Paws</title>
 <meta name="description" content="Santa Paws at Carolina Virginia Animal Hospital: free Santa photos for dogs and cats, local vendors and treats. Saturday, November 21, 2026 in Providence, NC.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -247,7 +247,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <li><a href="vendors.html">Vendors</a></li>
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="sponsors.html">Sponsors</a></li>
-        <li><a href="faq.html" aria-current="page">FAQ</a></li>
+        <li><a href="faq.html">FAQ</a></li>
         <li><a href="contact.html">Contact</a></li>
       </ul>
     </nav>
@@ -256,16 +256,17 @@ footer p { opacity: .85; font-size: .95rem; }
 
 <div class="event-strip"><div class="wrap"><span>Saturday, November 21, 2026</span><span>10 AM to 3 PM</span><span>46 Shady Grove Road, Providence, NC</span></div></div>
 <main id="top">
-  <section class="block" id="faq">
-    <div class="wrap" style="max-width:780px">
-      <div class="head"><p class="eyebrow">Good to know</p><h2>Questions</h2></div>
-      <details open><summary>Is the event free?</summary><p>Yes. The event and the Santa photos are both free. We'll email you a link to download your photos when they're ready.</p></details>
-      <details><summary>Where are the Santa photos?</summary><p>At River Rye Shoppe, the building right beside the clinic at 46 Shady Grove Road.</p></details>
-      <details><summary>Do I need a photo reservation?</summary><p>A reservation guarantees your time. Walk-ups are welcome too. We'll fit you in between scheduled photos, so there may be a short wait.</p></details>
-      <details><summary>What if I can't make my photo time?</summary><p>Please release it so another family can come. Use the cancel link in your confirmation email, or <a href="contact.html">send us a message</a>.</p></details>
-      <details><summary>I have more than 2 pets. What should I do?</summary><p>Each 5-minute spot fits up to 2 pets. Choose how many pets you're bringing on the sign-up form, and it will hold back-to-back spots for you.</p></details>
-      <details><summary>Will there be food?</summary><p>Yes. Tiffany's Curbside Cravings and Catering food truck starts serving at 11 AM. River Rye Shoppe has coffee, hot chocolate, ice cream and Christmas Pup Cups for your dog.</p></details>
-      <details><summary>What if the weather is bad?</summary><p>[Rain plan, e.g. moves indoors at the clinic.]</p></details>
+  <section class="block" id="cancel">
+    <div class="wrap" style="max-width:680px">
+      <div class="head">
+        <p class="eyebrow">Change of plans</p>
+        <h2>Cancel a booking</h2>
+        <p>Releasing your spot lets another family or vendor take it. Thank you!</p>
+      </div>
+      <div class="card" id="cancel-box" style="background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:14px">
+        <p id="cancel-text">Looking up your booking...</p>
+        <button class="btn berry" type="button" id="cancel-btn" hidden>Yes, cancel it</button>
+      </div>
     </div>
   </section>
 </main>
