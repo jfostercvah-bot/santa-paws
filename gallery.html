@@ -282,21 +282,23 @@ footer p { opacity: .85; font-size: .95rem; }
 // Leave FORM_KEY empty to keep the forms in preview mode.
 const FORM_ENDPOINT = "https://api.web3forms.com/submit";
 const FORM_KEY = "564b0e79-ea1f-4f77-9f8f-c629473bbf90";
-// Google Sheet web app (see google-sheet/Code.gs). When set, sign-ups are stored there,
+// Sign-up service on Cloudflare (see worker/ in the repo). When set, sign-ups are stored there,
 // spots count down on their own and booked photo times are crossed out automatically.
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwWlDtM-r1OUdICxswQubIx6jFtHV8B9yHnXHntzlx7XqKyxlv0p3Q33EvP-cj7h1PGPg/exec";
+// Web3Forms still emails each sign-up to the clinic.
+const API_URL = "https://api.cvahsantapaws.com";
 
 async function send(form, extra) {
   const x = extra(form);
-  if (SHEET_URL) {
+  if (API_URL) {
     const fd = new FormData(form), params = new URLSearchParams();
     const merged = {};
     for (const [k, v] of fd.entries()) merged[k] = k in merged ? merged[k] + ", " + v : v;
     Object.entries({ ...merged, ...x }).forEach(([k, v]) => params.append(k, v));
-    const r = await fetch(SHEET_URL, { method: "POST", body: params });
+    const r = await fetch(API_URL, { method: "POST", body: params });
     const d = await r.json();
     if (d.status) document.dispatchEvent(new CustomEvent("sp-status", { detail: d.status }));
-    return d.ok ? { state: "sent" } : { state: d.reason || "error", data: d };
+    if (d.ok && FORM_KEY) notify(form, x).catch(() => {});
+    return d.ok ? { state: "sent", data: d } : { state: d.reason || "error", data: d };
   }
   if (!FORM_KEY) return { state: "preview" };
   const data = new FormData(form);
@@ -305,6 +307,14 @@ async function send(form, extra) {
   Object.entries(x).forEach(([k, v]) => data.append(k, v));
   const r = await fetch(FORM_ENDPOINT, { method: "POST", body: data, headers: { Accept: "application/json" } });
   return { state: r.ok ? "sent" : "error" };
+}
+// Emails the clinic a copy of a sign-up that was just saved.
+function notify(form, x) {
+  const data = new FormData(form);
+  data.append("access_key", FORM_KEY);
+  data.append("from_name", "Santa Paws website");
+  Object.entries(x).forEach(([k, v]) => data.append(k, v));
+  return fetch(FORM_ENDPOINT, { method: "POST", body: data, headers: { Accept: "application/json" } });
 }
 function wire(id, doneId, check, msg, extra, problems = {}) {
   const form = document.getElementById(id), done = document.getElementById(doneId);
@@ -318,19 +328,25 @@ function wire(id, doneId, check, msg, extra, problems = {}) {
     let res;
     try { res = await send(form, extra); } catch { res = { state: "error" }; }
     btn.disabled = res.state === "sent";
-    done.textContent = res.state === "sent" ? msg(form)
+    done.textContent = res.state === "sent" ? msg(form, res.data)
       : res.state === "preview" ? msg(form) + " (Preview only: this form is not connected yet, so nothing was sent.)"
       : problems[res.state] ? problems[res.state](res.data)
       : "That didn't go through. Check your connection and try again.";
+    if (res.state === "sent" && res.data && res.data.code) {
+      const p = document.createElement("span"), a = document.createElement("a");
+      a.href = "cancel.html?code=" + res.data.code; a.textContent = "cancel link";
+      p.append(" Can't make it after all? Bookmark or screenshot this ", a, " so you can free your spot for someone else.");
+      done.append(p);
+    }
   });
 }
 // Live counts from the sign-up sheet, refreshed every 30 seconds while the page is open
 function refreshStatus() {
-  if (!SHEET_URL || document.hidden) return;
-  fetch(SHEET_URL).then(r => r.json()).then(d => document.dispatchEvent(new CustomEvent("sp-status", { detail: d }))).catch(() => {});
+  if (!API_URL || document.hidden) return;
+  fetch(API_URL).then(r => r.json()).then(d => document.dispatchEvent(new CustomEvent("sp-status", { detail: d }))).catch(() => {});
 }
 refreshStatus();
-if (SHEET_URL) { setInterval(refreshStatus, 30000); document.addEventListener("visibilitychange", refreshStatus); }
+if (API_URL) { setInterval(refreshStatus, 30000); document.addEventListener("visibilitychange", refreshStatus); }
 document.addEventListener("sp-status", ({ detail: d }) => {
   const vs = document.getElementById("vendor-spots");
   if (vs && d.vendors) {
@@ -430,7 +446,7 @@ function photoProblem(f) {
 }
 wire("photo-form", "photo-done", photoProblem,
   f => {
-    const text = `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`;
+    const text = `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}!`;
     picked.forEach(m => booked.add(label(m)));
     document.querySelectorAll(".slot").forEach(b => { if (booked.has(b.textContent)) { b.disabled = true; b.title = "Booked"; } });
     picked = []; showPicked();
@@ -455,8 +471,8 @@ if (document.getElementById("cancel-box")) {
   const code = new URLSearchParams(location.search).get("code");
   const text = document.getElementById("cancel-text"), btn = document.getElementById("cancel-btn");
   const nope = 'We couldn\'t find that booking. It may already be cancelled. Need help? <a href="contact.html">Send us a message</a>.';
-  if (!code || !SHEET_URL) { text.innerHTML = 'Use the cancel link in your confirmation email, or <a href="contact.html">send us a message</a>.'; }
-  else fetch(SHEET_URL + "?lookup=" + encodeURIComponent(code)).then(r => r.json()).then(d => {
+  if (!code || !API_URL) { text.innerHTML = 'Use the cancel link you got when you booked, or <a href="contact.html">send us a message</a>.'; }
+  else fetch(API_URL + "?lookup=" + encodeURIComponent(code)).then(r => r.json()).then(d => {
     if (!d.ok) { text.innerHTML = nope; return; }
     text.textContent = d.kind === "photo" ? `Cancel the Santa photo at ${d.times} for ${d.name}?` : `Withdraw the vendor application for ${d.name}?`;
     btn.textContent = d.kind === "photo" ? "Yes, cancel my photo time" : "Yes, withdraw my application";
@@ -464,10 +480,10 @@ if (document.getElementById("cancel-box")) {
     btn.onclick = async () => {
       btn.disabled = true; text.textContent = "Cancelling...";
       try {
-        const r = await fetch(SHEET_URL, { method: "POST", body: new URLSearchParams({ form: "cancel", code }) });
+        const r = await fetch(API_URL, { method: "POST", body: new URLSearchParams({ form: "cancel", code }) });
         const x = await r.json();
         btn.hidden = true;
-        text.textContent = x.ok ? (x.kind === "photo" ? `Done. Your ${x.times} photo time is cancelled and open for someone else. We sent you a confirmation email.` : `Done. Your application for ${x.name} is withdrawn.`) : "We couldn't find that booking. It may already be cancelled.";
+        text.textContent = x.ok ? (x.kind === "photo" ? `Done. Your ${x.times} photo time is cancelled and open for someone else.` : `Done. Your application for ${x.name} is withdrawn.`) : "We couldn't find that booking. It may already be cancelled.";
       } catch { btn.disabled = false; text.textContent = "That didn't go through. Check your connection and try again."; }
     };
   }).catch(() => { text.textContent = "We couldn't load your booking right now. Please try again in a minute."; });

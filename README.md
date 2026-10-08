@@ -1,10 +1,11 @@
 # Santa Paws website
 
-The site is six plain HTML pages: `index.html` (home), `photos.html`, `treats.html`, `vendors.html`, `gallery.html`, `sponsors.html`, `faq.html`, `contact.html`. Each page is self-contained (no build step needed to host).
+Plain HTML pages served by GitHub Pages at https://cvahsantapaws.com: `index.html` (home), `photos.html`, `treats.html`, `vendors.html`, `gallery.html`, `sponsors.html`, `faq.html`, `contact.html`, plus `cancel.html` (cancel links) and `admin.html` (password-protected admin page). Each page is self-contained.
 
-- **Placeholders** in [square brackets] need real details: clinic name, date, hours, address, prices, contact info.
-- **Forms** (photo sign-up, vendor application, contact): delivered by Web3Forms to the email tied to `FORM_KEY` near the bottom of each page, so the address never appears on the site. Empty key = preview mode.
-- **Photo slots**: every 5 minutes, 10:00 to 11:55 AM and 1:00 to 2:55 PM, up to 2 pets per spot (3+ pets hold back-to-back spots). Add filled times to the `booked` list in the script to cross them out.
+- **Sign-ups**: forms post to the sign-up service at https://api.cvahsantapaws.com (`API_URL` in each page's script). It stores photo bookings, vendor applications, messages and sponsors in a Cloudflare D1 database, refuses double-booked photo times and a 16th vendor, and tells the pages which times are taken and how many spots are left. Pages refresh that every 30 seconds.
+- **Emails**: after each sign-up is saved, the page also sends a copy through Web3Forms (`FORM_KEY`) to the clinic's inbox, so the address never appears on the site. People who book see their cancel link on screen.
+- **Admin page**: `admin.html` lists bookings (in photo-time order), vendors, sponsors and messages. Deleting a row frees its spot; sponsors added there appear on the home page and count toward each level. Each list downloads as CSV.
+- **Sign-up service code**: `worker/` (Cloudflare Worker + `migrations/` for the database). `.github/workflows/deploy-api.yml` deploys it on every push that changes `worker/`, using repository secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `ADMIN_PASSWORD` (changing the password secret takes effect on the next deploy; run the workflow by hand from the Actions tab).
+- **Photo slots**: every 5 minutes, 10:00 to 11:55 AM and 1:00 to 2:55 PM, up to 2 pets per spot (3+ pets hold back-to-back spots).
 - **Gallery**: the `shots` list holds caption + year; swap the paw placeholders for real photos.
-- **Hosting**: GitHub Pages from the `main` branch, served at https://cvahsantapaws.com (domain registered on Cloudflare; the `CNAME` file sets it).
-- **Live spot counts** (optional): `google-sheet/Code.gs` is a Google Apps Script for a Google Sheet. Deployed as a web app and pasted into `SHEET_URL`, it stores every sign-up, blocks double-booked photo times, counts down vendor (15) and sponsor spots, emails each sign-up plus a confirmation to the person, and shows sponsors listed in its Sponsors tab on the home page. When `SHEET_URL` is set, forms use it instead of Web3Forms.
+- **Domain**: registered on Cloudflare; the `CNAME` file points GitHub Pages at it.
