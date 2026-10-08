@@ -209,14 +209,21 @@ button.ph { width: 100%; border: 0; padding: 0; cursor: zoom-in; background: var
 /* sponsor levels */
 .vendor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .vendor-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 10px; align-content: start; }
-.vendor-card .vlogo { width: 100%; height: 120px; display: grid; place-items: center; background: #fff; border-radius: 12px; border: 1px solid var(--line); overflow: hidden; }
-.vendor-card .vlogo img { max-width: 90%; max-height: 104px; object-fit: contain; }
+.vendor-card .vlogo { width: 100%; height: 240px; display: grid; place-items: center; border-radius: 12px; overflow: hidden; }
+.vendor-card .vlogo.empty { height: 110px; background: var(--band); }
+.vendor-card .vlogo img { max-width: 100%; max-height: 240px; object-fit: contain; border-radius: 10px; }
+button.zoom { border: 0; padding: 0; margin: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
+button.zoom:hover img { transform: scale(1.03); }
+button.zoom img { transition: transform .2s; }
+.viewer.logo-view img { background: #fff; padding: 18px; max-height: 80vh; }
 .vendor-card .vlogo svg { width: 48px; height: 48px; color: var(--pine); }
 .vendor-card h3 { font-size: 1.3rem; }
 .vendor-card .cat { justify-self: start; font-size: .8rem; font-weight: 700; color: var(--pine); background: var(--band); border-radius: 999px; padding: 3px 10px; }
 .vendor-card p { margin: 0; color: var(--muted); }
 .vendor-card a { font-weight: 600; color: var(--berry); overflow-wrap: anywhere; }
-.logo img { max-width: 100%; max-height: 90px; object-fit: contain; }
+.logo img { max-width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; }
+.logos.gold .logo img { max-height: 170px; }
+.logo button.zoom { display: grid; place-items: center; }
 .sponsor-apply { margin-top: 28px; max-width: 780px; }
 .sponsor-apply h3 { font-size: 1.5rem; }
 .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
@@ -441,7 +448,7 @@ document.addEventListener("sp-status", ({ detail: d }) => {
     list.querySelectorAll(".logo").forEach((el, i) => {
       const it = items[i];
       el.querySelector("strong").textContent = it.name;
-      if (it.logo) { const img = document.createElement("img"); img.src = API_URL + it.logo; img.alt = it.name + " logo"; img.loading = "lazy"; el.prepend(img); }
+      if (it.logo) el.prepend(zoomLogo(API_URL + it.logo, it.name));
     });
   }
 });
@@ -552,6 +559,28 @@ if (document.getElementById("sponsor-apply")) {
     { full: () => `Sorry, the ${sel.value} level just sold out. Please pick another level.` });
 }
 
+// A logo that opens full size when tapped.
+function zoomLogo(src, name) {
+  const btn = document.createElement("button"), img = document.createElement("img");
+  btn.type = "button"; btn.className = "zoom"; btn.setAttribute("aria-label", `View ${name} logo larger`);
+  img.src = src; img.alt = name + " logo"; img.loading = "lazy";
+  btn.append(img);
+  btn.onclick = () => {
+    let dlg = document.getElementById("logo-viewer");
+    if (!dlg) {
+      dlg = document.createElement("dialog"); dlg.id = "logo-viewer"; dlg.className = "viewer logo-view";
+      dlg.innerHTML = '<button type="button" class="viewer-close" aria-label="Close">×</button><img alt=""><p></p>';
+      document.body.append(dlg);
+      dlg.querySelector(".viewer-close").onclick = () => dlg.close();
+      dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+    }
+    const big = dlg.querySelector("img"); big.src = src; big.alt = img.alt;
+    dlg.querySelector("p").textContent = name;
+    dlg.showModal();
+  };
+  return btn;
+}
+
 // --- vendors who are coming ---
 if (document.getElementById("vendor-grid")) {
   document.addEventListener("sp-status", ({ detail: d }) => {
@@ -560,9 +589,9 @@ if (document.getElementById("vendor-grid")) {
     grid.innerHTML = "";
     list.forEach(v => {
       const card = document.createElement("article"); card.className = "vendor-card";
-      const box = document.createElement("div"); box.className = "vlogo";
-      if (v.logo) { const img = document.createElement("img"); img.src = API_URL + v.logo; img.alt = v.name + " logo"; img.loading = "lazy"; box.append(img); }
-      else box.innerHTML = '<svg><use href="#paw"/></svg>';
+      let box;
+      if (v.logo) { box = zoomLogo(API_URL + v.logo, v.name); box.classList.add("vlogo"); }
+      else { box = document.createElement("div"); box.className = "vlogo empty"; box.innerHTML = '<svg><use href="#paw"/></svg>'; }
       const h = document.createElement("h3"); h.textContent = v.name;
       card.append(box, h);
       if (v.category) { const c = document.createElement("span"); c.className = "cat"; c.textContent = v.category; card.append(c); }
