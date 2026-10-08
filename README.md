@@ -7,3 +7,4 @@ The site is six plain HTML pages: `index.html` (home), `photos.html`, `treats.ht
 - **Photo slots**: every 5 minutes, 10:00 to 11:55 AM and 1:00 to 2:55 PM, up to 2 pets per spot (3+ pets hold back-to-back spots). Add filled times to the `booked` list in the script to cross them out.
 - **Gallery**: the `shots` list holds caption + year; swap the paw placeholders for real photos.
 - **Hosting**: GitHub Pages from the `main` branch, served at https://cvahsantapaws.com (domain registered on Cloudflare; the `CNAME` file sets it).
+- **Live spot counts** (optional): `google-sheet/Code.gs` is a Google Apps Script for a Google Sheet. Deployed as a web app and pasted into `SHEET_URL`, it stores every sign-up, blocks double-booked photo times, counts down vendor (15) and sponsor spots, emails each sign-up plus a confirmation to the person, and shows sponsors listed in its Sponsors tab on the home page. When `SHEET_URL` is set, forms use it instead of Web3Forms.

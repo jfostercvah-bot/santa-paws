@@ -190,6 +190,7 @@ textarea { min-height: 90px; resize: vertical; }
 .level-spots { font-weight: 700; font-size: .9rem; color: var(--pine); }
 .level ul { margin: 4px 0 8px; padding-left: 1.1em; color: var(--muted); display: grid; gap: 6px; flex: 1; }
 .level .btn { text-align: center; }
+.level .btn.sold { background: var(--line); color: var(--muted); box-shadow: none; cursor: default; }
 @media (max-width: 860px) { .levels { grid-template-columns: 1fr; } }
 
 /* faq + footer */
@@ -353,30 +354,73 @@ footer p { opacity: .85; font-size: .95rem; }
 // Leave FORM_KEY empty to keep the forms in preview mode.
 const FORM_ENDPOINT = "https://api.web3forms.com/submit";
 const FORM_KEY = "564b0e79-ea1f-4f77-9f8f-c629473bbf90";
+// Google Sheet web app (see google-sheet/Code.gs). When set, sign-ups are stored there,
+// spots count down on their own and booked photo times are crossed out automatically.
+const SHEET_URL = "";
 
 async function send(form, extra) {
-  if (!FORM_KEY) return "preview";
+  const x = extra(form);
+  if (SHEET_URL) {
+    const fd = new FormData(form), params = new URLSearchParams();
+    const merged = {};
+    for (const [k, v] of fd.entries()) merged[k] = k in merged ? merged[k] + ", " + v : v;
+    Object.entries({ ...merged, ...x }).forEach(([k, v]) => params.append(k, v));
+    const r = await fetch(SHEET_URL, { method: "POST", body: params });
+    const d = await r.json();
+    if (d.status) document.dispatchEvent(new CustomEvent("sp-status", { detail: d.status }));
+    return d.ok ? { state: "sent" } : { state: d.reason || "error", data: d };
+  }
+  if (!FORM_KEY) return { state: "preview" };
   const data = new FormData(form);
   data.append("access_key", FORM_KEY);
   data.append("from_name", "Santa Paws website");
-  Object.entries(extra || {}).forEach(([k, v]) => data.append(k, v));
+  Object.entries(x).forEach(([k, v]) => data.append(k, v));
   const r = await fetch(FORM_ENDPOINT, { method: "POST", body: data, headers: { Accept: "application/json" } });
-  return r.ok ? "sent" : "error";
+  return { state: r.ok ? "sent" : "error" };
 }
-function wire(id, doneId, check, msg, extra) {
+function wire(id, doneId, check, msg, extra, problems = {}) {
   const form = document.getElementById(id), done = document.getElementById(doneId);
   form.addEventListener("submit", async e => {
     e.preventDefault();
     const problem = check(form);
     done.hidden = false;
     if (problem) { done.textContent = problem; return; }
+    const btn = form.querySelector("button[type=submit]");
+    btn.disabled = true; done.textContent = "Sending...";
     let res;
-    try { res = await send(form, extra(form)); } catch { res = "error"; }
-    if (res === "sent") { form.querySelector("button[type=submit]").disabled = true; }
-    done.textContent = res === "error" ? "That didn't go through. Check your connection and try again." :
-      res === "preview" ? msg(form) + " (Preview only: this form is not connected yet, so nothing was sent.)" : msg(form);
+    try { res = await send(form, extra); } catch { res = { state: "error" }; }
+    btn.disabled = res.state === "sent";
+    done.textContent = res.state === "sent" ? msg(form)
+      : res.state === "preview" ? msg(form) + " (Preview only: this form is not connected yet, so nothing was sent.)"
+      : problems[res.state] ? problems[res.state](res.data)
+      : "That didn't go through. Check your connection and try again.";
   });
 }
+// Live counts from the sign-up sheet
+if (SHEET_URL) fetch(SHEET_URL).then(r => r.json()).then(d => document.dispatchEvent(new CustomEvent("sp-status", { detail: d }))).catch(() => {});
+document.addEventListener("sp-status", ({ detail: d }) => {
+  const vs = document.getElementById("vendor-spots");
+  if (vs && d.vendors) {
+    const left = Math.max(0, d.vendors.max - d.vendors.taken);
+    vs.textContent = left ? `${left} of ${d.vendors.max} spots left` : "All vendor spots are taken";
+    const vb = document.querySelector("#vendor-form button[type=submit]");
+    if (vb && !left) { vb.disabled = true; vb.textContent = "Vendor spots are full"; }
+  }
+  document.querySelectorAll(".level[data-level]").forEach(card => {
+    const L = d.sponsors && d.sponsors[card.dataset.level]; if (!L) return;
+    const left = Math.max(0, L.max - L.taken);
+    card.querySelector(".level-spots").textContent = left ? `${left} of ${L.max} spots left` : "Sold out";
+    if (!left) { const b = card.querySelector(".btn"); b.removeAttribute("href"); b.textContent = "Sold out"; b.classList.add("sold"); }
+  });
+  const list = document.getElementById("sponsor-list");
+  if (list && d.sponsors) {
+    const groups = Object.entries(d.sponsors).filter(([, L]) => L.names.length);
+    list.hidden = !groups.length;
+    list.innerHTML = groups.map(([level, L]) => `<div class="tier"><div class="tier-label">${level === "Elf Friends" ? level : level + " Sponsors"}</div>
+      <div class="logos ${level === "North Pole" ? "gold" : level === "Reindeer" ? "silver" : "friend"}">${L.names.map(n => `<div class="logo"><strong></strong></div>`).join("")}</div></div>`).join("");
+    list.querySelectorAll(".logo strong").forEach((el, i) => { el.textContent = groups.flatMap(([, L]) => L.names)[i]; });
+  }
+});
 const need = (f, names) => names.find(n => !f.elements[n].value.trim());
 if (document.getElementById("photo-form")) {
 // --- photo slots: every 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM ---
@@ -453,12 +497,18 @@ function photoProblem(f) {
 }
 wire("photo-form", "photo-done", photoProblem,
   f => `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`,
-  f => ({ subject: `Santa photo booking: ${f.elements.first_name.value} ${f.elements.last_name.value}`, times: picked.map(m => label(m) + " " + ampm(m)).join(", "), replyto: f.elements.email.value }));
+  f => ({ form: "photo", subject: `Santa photo booking: ${f.elements.first_name.value} ${f.elements.last_name.value}`, times: picked.map(m => label(m) + " " + ampm(m)).join(", "), replyto: f.elements.email.value }),
+  { taken: d => { picked = []; showPicked(); return `Sorry, ${d.taken.join(", ")} was just booked by someone else. Please pick another time.`; } });
+document.addEventListener("sp-status", ({ detail: d }) => {
+  (d.booked || []).forEach(t => booked.add(t.replace(/\s*[AP]M$/i, "")));
+  document.querySelectorAll(".slot").forEach(b => { if (booked.has(b.textContent)) { b.disabled = true; b.title = "Booked"; } });
+});
 }
 if (document.getElementById("vendor-form")) {
 wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]) ? "Add your business name, contact name and email." : null,
   f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`,
-  f => ({ subject: `Vendor application: ${f.elements.business.value}`, replyto: f.elements.email.value }));
+  f => ({ form: "vendor", subject: `Vendor application: ${f.elements.business.value}`, replyto: f.elements.email.value }),
+  { full: () => "Sorry, all 15 vendor spots are taken." });
 
 }
 // --- contact form ---
@@ -470,7 +520,7 @@ if (document.getElementById("contact-form")) {
   if (level) document.getElementById("c-message").value = `I'm interested in the ${level} level.\n\nBusiness name: `;
   wire("contact-form", "contact-done", f => need(f, ["name", "email", "message"]) ? "Add your name, email and a message." : null,
     f => `Thanks, ${f.elements.name.value}! Your message is on its way. We'll reply to ${f.elements.email.value}.`,
-    f => ({ subject: `Santa Paws message: ${f.elements.topic.value}`, replyto: f.elements.email.value }));
+    f => ({ form: "contact", subject: `Santa Paws message: ${f.elements.topic.value}`, replyto: f.elements.email.value }));
 }
 
 const menuLink = document.querySelector(".menu-link");
