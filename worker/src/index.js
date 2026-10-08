@@ -5,6 +5,7 @@
  *   GET  /                 -> { booked, vendors: {max, taken}, sponsors: {level: {max, taken, names}} }
  *   GET  /?lookup=CODE     -> what a cancel code refers to
  *   POST / form=photo|vendor|contact|cancel -> { ok, reason?, taken?, code?, status? }
+ *   POST / form=find (email, phone)   -> { ok, bookings: [{kind, times|name, code}] }
  *
  * Admin API (Authorization: Bearer ADMIN_PASSWORD), used by admin.html:
  *   GET  /admin            -> every table
@@ -130,6 +131,30 @@ async function saveMessage(db, p) {
   return { ok: true };
 }
 
+// Last 10 digits, so "(555) 123-4567" and "+1 555.123.4567" match.
+const digits = s => String(s).replace(/\D/g, "").slice(-10);
+
+// Lets people find their own bookings with the email and phone they signed up with.
+async function find(db, p) {
+  const email = field(p, "email", 120).toLowerCase(), phone = digits(field(p, "phone", 40));
+  if (!email || phone.length < 7) return { ok: false, reason: "missing" };
+  const [photos, vendors] = await db.batch([
+    db.prepare("SELECT times, first_name, last_name, phone, code FROM photos WHERE lower(email) = ?").bind(email),
+    db.prepare("SELECT business, phone, code FROM vendors WHERE lower(email) = ?").bind(email),
+  ]);
+  const bookings = [
+    ...photos.results.filter(r => digits(r.phone) === phone).sort((a, b) => minutes(a.times) - minutes(b.times))
+      .map(r => ({ kind: "photo", times: r.times, name: `${r.first_name} ${r.last_name}`, code: r.code })),
+    ...vendors.results.filter(r => digits(r.phone) === phone).map(r => ({ kind: "vendor", name: r.business, code: r.code })),
+  ];
+  return { ok: true, bookings };
+}
+
+const minutes = t => {
+  const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i);
+  return m ? (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 9999;
+};
+
 async function cancel(db, code) {
   const hit = await lookup(db, code);
   if (!hit) return { ok: false, reason: "not_found" };
@@ -216,6 +241,7 @@ export default {
         case "vendor": return json(await applyVendor(db, p));
         case "contact": return json(await saveMessage(db, p));
         case "cancel": return json(await cancel(db, field(p, "code", 64)));
+        case "find": return json(await find(db, p));
         default: return json({ ok: false, reason: "unknown_form" }, 400);
       }
     } catch (err) {

@@ -91,6 +91,10 @@ section.alt { background: var(--band); }
 form.card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 24px; display: grid; gap: 16px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .row > * { min-width: 0; }
+.find-results { display: grid; gap: 10px; }
+.find-results:empty { display: none; }
+.booking { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: var(--snow); }
+.booking p { margin: 0; }
 label { display: grid; gap: 6px; font-weight: 600; font-size: .92rem; }
 label .hint { font-weight: 400; color: var(--muted); font-size: .85rem; }
 input, select, textarea { font: inherit; font-size: 1rem; color: var(--ink); background: var(--snow); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
@@ -287,6 +291,7 @@ footer p { opacity: .85; font-size: .95rem; }
           <label for="p-notes">Anything Santa should know? <span class="hint">nervous pets, mobility needs, family members joining</span><textarea id="p-notes" name="notes"></textarea></label>
           <button class="btn berry" type="submit">Reserve my spot</button>
           <p class="done" id="photo-done" hidden></p>
+          <p class="hint" style="margin:0">Already booked and need to cancel? <a href="cancel.html">Cancel a booking</a></p>
         </form>
         <div class="info">
           <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Where to find Santa</h3><p>Photos are taken at River Rye Shoppe, the building right beside the clinic.</p></div></div>
@@ -303,7 +308,7 @@ footer p { opacity: .85; font-size: .95rem; }
 <footer>
   <div class="wrap">
     <div><p class="brand" style="font-size:1.3rem">Santa Paws</p><p>Hosted by Carolina Virginia Animal Hospital · 46 Shady Grove Road, Providence, NC 27315</p></div>
-    <div><p><a href="contact.html">Send us a message</a></p></div>
+    <div><p><a href="cancel.html">Cancel a booking</a> · <a href="contact.html">Send us a message</a></p></div>
   </div>
 </footer>
 
@@ -364,10 +369,9 @@ function wire(id, doneId, check, msg, extra, problems = {}) {
       : problems[res.state] ? problems[res.state](res.data)
       : "That didn't go through. Check your connection and try again.";
     if (res.state === "sent" && res.data && res.data.code) {
-      const p = document.createElement("span"), a = document.createElement("a");
-      a.href = "cancel.html?code=" + res.data.code; a.textContent = "cancel link";
-      p.append(" Can't make it after all? Bookmark or screenshot this ", a, " so you can free your spot for someone else.");
-      done.append(p);
+      const a = document.createElement("a");
+      a.href = "cancel.html"; a.textContent = "Cancel a booking";
+      done.append(" Plans change? Use ", a, " at the bottom of any page with your email and phone number.");
     }
   });
 }
@@ -491,7 +495,7 @@ document.addEventListener("sp-status", ({ detail: d }) => {
 });
 }
 if (document.getElementById("vendor-form")) {
-wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]) ? "Add your business name, contact name and email." : null,
+wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone." : null,
   f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`,
   f => ({ form: "vendor", subject: `Vendor application: ${f.elements.business.value}`, replyto: f.elements.email.value }),
   { full: () => "Sorry, all 15 vendor spots are taken." });
@@ -500,6 +504,45 @@ wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]
 // --- cancel page ---
 if (document.getElementById("cancel-box")) {
   const code = new URLSearchParams(location.search).get("code");
+  // Without a link code, people look up their bookings by email + phone.
+  const findForm = document.getElementById("find-form");
+  if (!code) document.getElementById("cancel-box").hidden = true, findForm.hidden = false;
+  else document.getElementById("cancel-box").hidden = false;
+  const fDone = document.getElementById("find-done"), results = document.getElementById("find-results");
+  const describe = b => b.kind === "photo" ? `Santa photo at ${b.times} for ${b.name}` : `Vendor application for ${b.name}`;
+  findForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = findForm.elements.email.value.trim(), phone = findForm.elements.phone.value.trim();
+    results.innerHTML = ""; fDone.hidden = false;
+    if (!email || phone.replace(/\D/g, "").length < 7) { fDone.textContent = "Enter your email and phone number."; return; }
+    if (!API_URL) { fDone.textContent = "Booking lookup isn't connected yet."; return; }
+    const btn = findForm.querySelector("button[type=submit]");
+    btn.disabled = true; fDone.textContent = "Looking...";
+    try {
+      const d = await (await fetch(API_URL, { method: "POST", body: new URLSearchParams({ form: "find", email, phone }) })).json();
+      if (!d.ok || !d.bookings.length) {
+        fDone.innerHTML = 'We couldn\'t find a booking with that email and phone. Check for typos, or <a href="contact.html">send us a message</a>.';
+        return;
+      }
+      fDone.textContent = d.bookings.length === 1 ? "We found your booking:" : "We found these bookings:";
+      d.bookings.forEach(b => {
+        const row = document.createElement("div"), p = document.createElement("p"), x = document.createElement("button");
+        row.className = "booking"; p.textContent = describe(b);
+        x.type = "button"; x.className = "btn berry"; x.textContent = b.kind === "photo" ? "Cancel this time" : "Withdraw";
+        x.onclick = async () => {
+          if (!confirm(`Cancel the ${describe(b).replace(/^./, c => c.toLowerCase())}?`)) return;
+          x.disabled = true;
+          try {
+            const r = await (await fetch(API_URL, { method: "POST", body: new URLSearchParams({ form: "cancel", code: b.code }) })).json();
+            p.textContent = r.ok ? (b.kind === "photo" ? `Cancelled: ${b.times} is open for someone else. Thank you!` : `Withdrawn: ${b.name}. Thank you!`) : "This one was already cancelled.";
+            x.remove();
+          } catch { x.disabled = false; p.textContent = describe(b) + " (that didn't go through, try again)"; }
+        };
+        row.append(p, x); results.append(row);
+      });
+    } catch { fDone.textContent = "That didn't go through. Check your connection and try again."; }
+    finally { btn.disabled = false; }
+  });
   const text = document.getElementById("cancel-text"), btn = document.getElementById("cancel-btn");
   const nope = 'We couldn\'t find that booking. It may already be cancelled. Need help? <a href="contact.html">Send us a message</a>.';
   if (!code || !API_URL) { text.innerHTML = 'Use the cancel link you got when you booked, or <a href="contact.html">send us a message</a>.'; }
