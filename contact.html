@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vendors · Santa Paws</title>
+<title>Contact · Santa Paws</title>
 <meta name="description" content="Santa Paws at Carolina Virginia Animal Hospital: free Santa photos for dogs and cats, local vendors and treats. Saturday, November 21, 2026 in Providence, NC.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -229,10 +229,10 @@ footer p { opacity: .85; font-size: .95rem; }
       <ul>
         <li><a href="photos.html">Santa Photos</a></li>
         <li><a href="treats.html">Treats &amp; Eats</a></li>
-        <li><a href="vendors.html" aria-current="page">Vendors</a></li>
+        <li><a href="vendors.html">Vendors</a></li>
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="faq.html">FAQ</a></li>
-        <li><a href="contact.html">Contact</a></li>
+        <li><a href="contact.html" aria-current="page">Contact</a></li>
       </ul>
     </nav>
   </div>
@@ -240,45 +240,26 @@ footer p { opacity: .85; font-size: .95rem; }
 
 <div class="event-strip"><div class="wrap"><span>Saturday, November 21, 2026</span><span>10 AM to 3 PM</span><span>46 Shady Grove Road, Providence, NC</span></div></div>
 <main id="top">
-  <section class="block" id="vendors">
-    <div class="wrap">
+  <section class="block" id="contact">
+    <div class="wrap" style="max-width:780px">
       <div class="head">
-        <p class="eyebrow">Vendor sign-up</p>
-        <h2>Bring your booth to Santa Paws</h2>
-        <p>Santa Paws is an outdoor vendor event supporting small businesses in our community. We have room for 15 vendors. Apply below and we'll confirm your spot by email.</p>
+        <p class="eyebrow">Contact us</p>
+        <h2>Send us a message</h2>
+        <p>Questions about Santa photos, vendor spots or sponsoring Santa Paws? Send a note and the team at Carolina Virginia Animal Hospital will get back to you by email.</p>
       </div>
-      <div class="two">
-        <div class="info">
-          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>$20 vendor fee</h3><p>Includes a minimum 10 × 10 ft outdoor space.</p><span class="price-tag">15 spots total</span></div></div>
-          <div class="info-item"><svg style="color:var(--berry)"><use href="#paw"/></svg><div><h3>Setup and hours</h3><p>Setup begins at 9 AM on Saturday, November 21. The event runs from 10 AM to 3 PM.</p></div></div>
-          <div class="info-item"><svg style="color:var(--gold)"><use href="#paw"/></svg><div><h3>What to bring</h3><p>Bring your own tables and displays. Pop-up tents are welcome as long as they stay within your space. Electricity isn't available unless discussed before the event.</p></div></div>
-          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Food on site</h3><p>Tiffany's Curbside Cravings and Catering food truck serves from 11 AM, and River Rye Shoppe next door has coffee, hot chocolate and ice cream.</p></div></div>
+      <form class="card" id="contact-form" novalidate>
+        <div class="row">
+          <label for="c-name">Your name<input id="c-name" name="name" required autocomplete="name"></label>
+          <label for="c-email">Email<input id="c-email" name="email" type="email" required autocomplete="email"></label>
         </div>
-        <form class="card" id="vendor-form" novalidate>
-          <div class="row">
-            <label for="v-biz">Business name<input id="v-biz" name="business" required placeholder="Barkery Bakes"></label>
-            <label for="v-contact">Contact name<input id="v-contact" name="contact" required autocomplete="name"></label>
-          </div>
-          <div class="row">
-            <label for="v-email">Email<input id="v-email" name="email" type="email" required autocomplete="email"></label>
-            <label for="v-phone">Phone<input id="v-phone" name="phone" type="tel" autocomplete="tel"></label>
-          </div>
-          <div class="row">
-            <label for="v-type">Category<select id="v-type" name="category"><option>Pet treats and food</option><option>Grooming and pet care</option><option>Training</option><option>Art, photography, crafts</option><option>Animal rescue / nonprofit</option><option>Other</option></select></label>
-            <label for="v-site">Website or social<input id="v-site" name="website" placeholder="@barkerybakes"></label>
-          </div>
-          <fieldset style="border:0;padding:0;margin:0;display:grid;gap:8px">
-            <legend style="font-weight:600;font-size:.92rem;margin-bottom:6px">Booth needs</legend>
-            <div class="checks">
-              <label for="v-tent"><input id="v-tent" type="checkbox" name="needs" value="Bringing a pop-up tent">I'm bringing a pop-up tent</label>
-              <label for="v-power"><input id="v-power" type="checkbox" name="needs" value="Would like to discuss electricity">I'd like to discuss electricity</label>
-            </div>
-          </fieldset>
-          <label for="v-desc">What will you sell or offer?<textarea id="v-desc" name="description" placeholder="Hand-decorated dog cookies and holiday treat boxes"></textarea></label>
-          <button class="btn berry" type="submit">Apply for a vendor spot</button>
-          <p class="done" id="vendor-done" hidden></p>
-        </form>
-      </div>
+        <div class="row">
+          <label for="c-phone">Phone <span class="hint">optional</span><input id="c-phone" name="phone" type="tel" autocomplete="tel"></label>
+          <label for="c-topic">What's it about?<select id="c-topic" name="topic"><option>General question</option><option>Santa photos</option><option>Vendors</option><option>Sponsorship</option></select></label>
+        </div>
+        <label for="c-message">Message<textarea id="c-message" name="message" required style="min-height:140px"></textarea></label>
+        <button class="btn berry" type="submit">Send message</button>
+        <p class="done" id="contact-done" hidden></p>
+      </form>
     </div>
   </section>
 </main>

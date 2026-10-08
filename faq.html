@@ -232,6 +232,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <li><a href="vendors.html">Vendors</a></li>
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="faq.html" aria-current="page">FAQ</a></li>
+        <li><a href="contact.html">Contact</a></li>
       </ul>
     </nav>
   </div>
@@ -255,23 +256,27 @@ footer p { opacity: .85; font-size: .95rem; }
 <footer>
   <div class="wrap">
     <div><p class="brand" style="font-size:1.3rem">Santa Paws</p><p>Hosted by Carolina Virginia Animal Hospital · 46 Shady Grove Road, Providence, NC 27315</p></div>
-    <div><p>[Phone] · [Email]</p><p>Follow along on [social links]</p></div>
+    <div><p><a href="contact.html">Send us a message</a></p></div>
   </div>
 </footer>
 
 <script>
-// Set this to your Formspree (or similar) form URL to receive sign-ups by email.
-// Leave empty to keep the forms in preview mode.
-const FORM_ENDPOINT = "";
+// Form delivery: Web3Forms emails every submission to the address tied to this key,
+// so the address itself never appears on the site. Get a free key at web3forms.com.
+// Leave FORM_KEY empty to keep the forms in preview mode.
+const FORM_ENDPOINT = "https://api.web3forms.com/submit";
+const FORM_KEY = "";
 
 async function send(form, extra) {
-  if (!FORM_ENDPOINT) return "preview";
+  if (!FORM_KEY) return "preview";
   const data = new FormData(form);
+  data.append("access_key", FORM_KEY);
+  data.append("from_name", "Santa Paws website");
   Object.entries(extra || {}).forEach(([k, v]) => data.append(k, v));
   const r = await fetch(FORM_ENDPOINT, { method: "POST", body: data, headers: { Accept: "application/json" } });
   return r.ok ? "sent" : "error";
 }
-function wire(id, doneId, check, msg) {
+function wire(id, doneId, check, msg, extra) {
   const form = document.getElementById(id), done = document.getElementById(doneId);
   form.addEventListener("submit", async e => {
     e.preventDefault();
@@ -279,9 +284,10 @@ function wire(id, doneId, check, msg) {
     done.hidden = false;
     if (problem) { done.textContent = problem; return; }
     let res;
-    try { res = await send(form, id === "photo-form" ? { form: "Santa photo", times: picked.map(m => label(m) + " " + ampm(m)).join(", ") } : { form: "Vendor" }); } catch { res = "error"; }
+    try { res = await send(form, extra(form)); } catch { res = "error"; }
+    if (res === "sent") { form.querySelector("button[type=submit]").disabled = true; }
     done.textContent = res === "error" ? "That didn't go through. Check your connection and try again." :
-      res === "preview" ? msg(form) + " (Preview only: sign-ups start once the form is connected.)" : msg(form);
+      res === "preview" ? msg(form) + " (Preview only: this form is not connected yet, so nothing was sent.)" : msg(form);
   });
 }
 const need = (f, names) => names.find(n => !f.elements[n].value.trim());
@@ -359,13 +365,24 @@ function photoProblem(f) {
   return null;
 }
 wire("photo-form", "photo-done", photoProblem,
-  f => `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`);
+  f => `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`,
+  f => ({ subject: `Santa photo booking: ${f.elements.first_name.value} ${f.elements.last_name.value}`, times: picked.map(m => label(m) + " " + ampm(m)).join(", "), replyto: f.elements.email.value }));
 }
 if (document.getElementById("vendor-form")) {
 wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]) ? "Add your business name, contact name and email." : null,
-  f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`);
+  f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`,
+  f => ({ subject: `Vendor application: ${f.elements.business.value}`, replyto: f.elements.email.value }));
 
 }
+// --- contact form ---
+if (document.getElementById("contact-form")) {
+  const topic = { sponsor: "Sponsorship", vendor: "Vendors", photos: "Santa photos" }[location.hash.slice(1)];
+  if (topic) document.getElementById("c-topic").value = topic;
+  wire("contact-form", "contact-done", f => need(f, ["name", "email", "message"]) ? "Add your name, email and a message." : null,
+    f => `Thanks, ${f.elements.name.value}! Your message is on its way. We'll reply to ${f.elements.email.value}.`,
+    f => ({ subject: `Santa Paws message: ${f.elements.topic.value}`, replyto: f.elements.email.value }));
+}
+
 const menuLink = document.querySelector(".menu-link");
 if (menuLink) menuLink.addEventListener("click", () => { document.getElementById("tiffanys-menu").open = true; });
 
