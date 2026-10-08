@@ -82,6 +82,8 @@ td.long { min-width: 220px; white-space: pre-wrap; }
     </form>
     <div class="bar">
       <span class="grow muted" id="note"></span>
+      <button class="ghost small" id="copy-emails" hidden>Copy all emails</button>
+      <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="ghost small" id="refresh">Refresh</button>
       <button class="small" id="csv">Download spreadsheet (CSV)</button>
     </div>
@@ -155,6 +157,7 @@ function render() {
     });
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
   document.getElementById("sponsor-form").hidden = tab !== "sponsors";
+  document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors"].includes(tab);
   const T = TABS[tab], list = rows();
   document.getElementById("note").textContent = T.note;
   const table = document.getElementById("table");
@@ -199,6 +202,21 @@ function csv() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+
+// Copies every unique email or phone on this tab, ready to paste into BCC or a text app.
+async function copyAll(key, btn) {
+  const seen = new Set(), out = [];
+  rows().forEach(r => {
+    const v = String(r[key] || "").trim(), k = key === "phone" ? v.replace(/\D/g, "").slice(-10) : v.toLowerCase();
+    if (v && !seen.has(k)) { seen.add(k); out.push(v); }
+  });
+  const text = out.join(key === "email" ? ", " : "\n"), label = btn.textContent;
+  try { await navigator.clipboard.writeText(text); btn.textContent = `Copied ${out.length}!`; }
+  catch { prompt("Copy these:", text); }
+  setTimeout(() => (btn.textContent = label), 2000);
+}
+document.getElementById("copy-emails").onclick = e => copyAll("email", e.target);
+document.getElementById("copy-phones").onclick = e => copyAll("phone", e.target);
 
 function logout(msg) {
   pw = ""; try { sessionStorage.removeItem("sp-admin"); } catch {}
