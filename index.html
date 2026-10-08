@@ -100,11 +100,20 @@ textarea { min-height: 90px; resize: vertical; }
 .done { background: var(--band); border: 1.5px dashed var(--pine); border-radius: 12px; padding: 14px 16px; font-weight: 600; }
 
 /* photo slots */
-.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
 .slot { font: 600 .95rem var(--body); font-variant-numeric: tabular-nums; padding: 10px 6px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--snow); color: var(--ink); cursor: pointer; }
 .slot:hover:not(:disabled) { border-color: var(--pine); }
 .slot[aria-pressed="true"] { background: var(--pine); border-color: var(--pine); color: #fff; }
 .slot:disabled { opacity: .45; cursor: not-allowed; text-decoration: line-through; }
+.slot-group { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 6px; }
+.slot-need { font-size: .88rem; color: var(--muted); }
+.pet-rows { display: grid; gap: 10px; }
+.pet-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.pet-row > * { min-width: 0; }
+.seg { display: flex; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg label { display: flex; align-items: center; gap: 6px; padding: 9px 14px; font-weight: 600; cursor: pointer; background: var(--snow); }
+.seg label + label { border-left: 1.5px solid var(--line); }
+.seg input { width: auto; accent-color: var(--pine); }
 .slot-legend { display: flex; gap: 16px; font-size: .85rem; color: var(--muted); }
 .info { display: grid; gap: 18px; }
 .info-item { display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; }
@@ -189,7 +198,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <p class="lede">Bring your dogs, cats, bunnies and every furry family member for photos with Santa, local vendors and holiday cheer.</p>
         <div class="facts">
           <span class="fact">[Event date]</span>
-          <span class="fact">[Event hours]</span>
+          <span class="fact">Starts at 10 AM</span>
           <span class="fact">[Clinic address]</span>
         </div>
         <div class="ctas">
@@ -293,32 +302,38 @@ footer p { opacity: .85; font-size: .95rem; }
       <div class="head">
         <p class="eyebrow">Photos with Santa</p>
         <h2>Reserve your pet's Santa photo</h2>
-        <p>Pick a 10-minute slot so nobody waits in line. Every pet is welcome, and families can bring more than one.</p>
+        <p>Photos run every 5 minutes from 10 AM to noon and 1 to 3 PM. Each spot covers up to 2 pets. Bringing 3 or more? We'll hold back-to-back spots for you.</p>
       </div>
       <div class="two">
         <form class="card" id="photo-form" novalidate>
-          <div>
-            <p style="font-weight:600;font-size:.92rem;margin-bottom:8px">Choose a time</p>
-            <div class="slots" id="slots" role="group" aria-label="Available photo times"></div>
-            <div class="slot-legend" style="margin-top:8px"><span>Crossed out = already booked</span><span id="slot-picked">No time picked yet</span></div>
+          <div class="row">
+            <label for="p-first">First name<input id="p-first" name="first_name" required autocomplete="given-name" placeholder="Jamie"></label>
+            <label for="p-last">Last name<input id="p-last" name="last_name" required autocomplete="family-name" placeholder="Rivera"></label>
           </div>
           <div class="row">
-            <label for="p-name">Your name<input id="p-name" name="name" required autocomplete="name" placeholder="Jamie Rivera"></label>
+            <label for="p-phone">Phone<input id="p-phone" name="phone" type="tel" required autocomplete="tel" placeholder="(555) 123-4567"></label>
             <label for="p-email">Email<input id="p-email" name="email" type="email" required autocomplete="email" placeholder="jamie@example.com"></label>
           </div>
-          <div class="row">
-            <label for="p-phone">Phone <span class="hint">for day-of updates</span><input id="p-phone" name="phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567"></label>
-            <label for="p-count">Number of pets<select id="p-count" name="pets"><option>1</option><option>2</option><option>3</option><option>4+</option></select></label>
+          <label for="p-count">How many pets are coming?<select id="p-count" name="pet_count"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+          <div id="pet-rows" class="pet-rows"></div>
+          <div>
+            <p style="font-weight:600;font-size:.92rem;margin-bottom:4px">Choose a time</p>
+            <p class="slot-need" id="slot-need">1 spot needed</p>
+            <p class="slot-group">Morning</p>
+            <div class="slots" id="slots-am" role="group" aria-label="Morning photo times"></div>
+            <p class="slot-group">Afternoon</p>
+            <div class="slots" id="slots-pm" role="group" aria-label="Afternoon photo times"></div>
+            <div class="slot-legend" style="margin-top:8px"><span id="slot-picked">No time picked yet</span></div>
           </div>
-          <label for="p-pets">Pet names and species<input id="p-pets" name="pet_names" placeholder="Biscuit (dog), Mochi (cat)"></label>
           <label for="p-notes">Anything Santa should know? <span class="hint">nervous pets, mobility needs, family members joining</span><textarea id="p-notes" name="notes"></textarea></label>
-          <button class="btn berry" type="submit">Reserve my slot</button>
+          <button class="btn berry" type="submit">Reserve my spot</button>
           <p class="done" id="photo-done" hidden></p>
         </form>
         <div class="info">
+          <div class="info-item"><svg style="color:var(--berry)"><use href="#paw"/></svg><div><h3>Walk-ups welcome</h3><p>No reservation? Come on by. We'll fit you in between scheduled photos, so there may be a short wait.</p></div></div>
+          <div class="info-item"><svg style="color:var(--gold)"><use href="#paw"/></svg><div><h3>3 or more pets</h3><p>Each spot fits up to 2 pets. Pick your start time and we'll hold the next spot for you automatically.</p></div></div>
           <div class="info-item"><svg style="color:var(--berry)"><use href="#paw"/></svg><div><h3>[$XX] per session</h3><p>Includes [number] digital photos, emailed within a week. Proceeds support [cause or rescue partner].</p></div></div>
-          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Leashes and carriers</h3><p>Dogs on a leash, cats and small pets in a carrier until it's their turn on Santa's lap.</p></div></div>
-          <div class="info-item"><svg style="color:var(--gold)"><use href="#paw"/></svg><div><h3>Running late?</h3><p>We'll fit you in after the next open slot. Give us a call at [clinic phone].</p></div></div>
+          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Leashes and carriers</h3><p>Dogs on a leash and cats in a carrier until it's their turn with Santa.</p></div></div>
         </div>
       </div>
     </div>
@@ -329,13 +344,14 @@ footer p { opacity: .85; font-size: .95rem; }
       <div class="head">
         <p class="eyebrow">Vendor sign-up</p>
         <h2>Bring your booth to Santa Paws</h2>
-        <p>We welcome pet bakeries, groomers, trainers, artists, rescues and local makers. Apply below and we'll confirm your spot by email.</p>
+        <p>Santa Paws is an outdoor vendor event supporting small businesses in our community. We have room for 15 vendors. Apply below and we'll confirm your spot by email.</p>
       </div>
       <div class="two">
         <div class="info">
-          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Booth fee</h3><p>10 × 10 ft space with one table and two chairs.</p><span class="price-tag">[$XX] per booth</span></div></div>
-          <div class="info-item"><svg style="color:var(--berry)"><use href="#paw"/></svg><div><h3>Rescues and nonprofits</h3><p>Booths are free for registered animal rescues.</p></div></div>
-          <div class="info-item"><svg style="color:var(--gold)"><use href="#paw"/></svg><div><h3>Setup</h3><p>Load-in starts at [time]. Tents must be weighted if we're outdoors.</p></div></div>
+          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>$20 vendor fee</h3><p>Includes a minimum 10 × 10 ft outdoor space.</p><span class="price-tag">15 spots total</span></div></div>
+          <div class="info-item"><svg style="color:var(--berry)"><use href="#paw"/></svg><div><h3>Setup and hours</h3><p>Setup begins at 9 AM Saturday morning. The event starts at 10 AM.</p></div></div>
+          <div class="info-item"><svg style="color:var(--gold)"><use href="#paw"/></svg><div><h3>What to bring</h3><p>Bring your own tables and displays. Pop-up tents are welcome as long as they stay within your space. Electricity isn't available unless discussed before the event.</p></div></div>
+          <div class="info-item"><svg style="color:var(--pine)"><use href="#paw"/></svg><div><h3>Food on site</h3><p>A food and beverage truck will be on site with items for purchase.</p></div></div>
         </div>
         <form class="card" id="vendor-form" novalidate>
           <div class="row">
@@ -353,13 +369,12 @@ footer p { opacity: .85; font-size: .95rem; }
           <fieldset style="border:0;padding:0;margin:0;display:grid;gap:8px">
             <legend style="font-weight:600;font-size:.92rem;margin-bottom:6px">Booth needs</legend>
             <div class="checks">
-              <label for="v-power"><input id="v-power" type="checkbox" name="needs" value="Electricity">Electricity</label>
-              <label for="v-table"><input id="v-table" type="checkbox" name="needs" value="Extra table">Extra table</label>
-              <label for="v-tent"><input id="v-tent" type="checkbox" name="needs" value="Bringing own tent">Bringing my own tent</label>
+              <label for="v-tent"><input id="v-tent" type="checkbox" name="needs" value="Bringing a pop-up tent">I'm bringing a pop-up tent</label>
+              <label for="v-power"><input id="v-power" type="checkbox" name="needs" value="Would like to discuss electricity">I'd like to discuss electricity</label>
             </div>
           </fieldset>
           <label for="v-desc">What will you sell or offer?<textarea id="v-desc" name="description" placeholder="Hand-decorated dog cookies and holiday treat boxes"></textarea></label>
-          <button class="btn berry" type="submit">Apply for a booth</button>
+          <button class="btn berry" type="submit">Apply for a vendor spot</button>
           <p class="done" id="vendor-done" hidden></p>
         </form>
       </div>
@@ -402,8 +417,9 @@ footer p { opacity: .85; font-size: .95rem; }
     <div class="wrap" style="max-width:780px">
       <div class="head"><p class="eyebrow">Good to know</p><h2>Questions</h2></div>
       <details open><summary>Is the event free?</summary><p>Yes, entry is free. Santa photo sessions are [$XX], and proceeds support [cause].</p></details>
-      <details><summary>Can I bring a pet other than a dog or cat?</summary><p>Absolutely. Bunnies, birds, reptiles and guinea pigs have all met Santa. Please keep them in a carrier until your turn.</p></details>
-      <details><summary>Do I need a photo reservation?</summary><p>Reservations guarantee a time. Walk-ups are welcome if open slots remain.</p></details>
+      <details><summary>Do I need a photo reservation?</summary><p>A reservation guarantees your time. Walk-ups are welcome too. We'll fit you in between scheduled photos, so there may be a short wait.</p></details>
+      <details><summary>I have more than 2 pets. What should I do?</summary><p>Each 5-minute spot fits up to 2 pets. Choose how many pets you're bringing on the sign-up form, and it will hold back-to-back spots for you.</p></details>
+      <details><summary>Will there be food?</summary><p>Yes. A food and beverage truck will be on site with items for purchase.</p></details>
       <details><summary>What if the weather is bad?</summary><p>[Rain plan, e.g. moves indoors at the clinic.]</p></details>
     </div>
   </section>
@@ -421,28 +437,67 @@ footer p { opacity: .85; font-size: .95rem; }
 // Leave empty to keep the forms in preview mode.
 const FORM_ENDPOINT = "";
 
-// --- photo slots (sample schedule) ---
-const booked = new Set(["10:20", "10:50", "11:30", "1:00", "1:40", "2:10"]);
-const times = [];
-for (let m = 10 * 60; m < 15 * 60; m += 10) {
-  if (m >= 12 * 60 && m < 12 * 60 + 30) continue; // Santa's lunch break
-  const h = Math.floor(m / 60), mm = String(m % 60).padStart(2, "0");
-  times.push(`${h > 12 ? h - 12 : h}:${mm}`);
+// --- photo slots: every 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM ---
+// Add times here as they fill up (e.g. "10:05", "1:30") to cross them out.
+const booked = new Set([]);
+const PETS_PER_SPOT = 2;
+const blocks = { am: [10 * 60, 12 * 60], pm: [13 * 60, 15 * 60] };
+const label = m => { const h = Math.floor(m / 60); return `${h > 12 ? h - 12 : h}:${String(m % 60).padStart(2, "0")}`; };
+const ampm = m => (m < 12 * 60 ? "AM" : "PM");
+let picked = [];
+const petCount = document.getElementById("p-count");
+const spotsNeeded = () => Math.ceil(Number(petCount.value) / PETS_PER_SPOT);
+const pickedEl = document.getElementById("slot-picked");
+
+function showPicked() {
+  document.querySelectorAll(".slot").forEach(b => b.setAttribute("aria-pressed", String(picked.includes(Number(b.dataset.m)))));
+  pickedEl.textContent = picked.length ? `Picked: ${picked.map(label).join(", ")} ${ampm(picked[0])}` : "No time picked yet";
 }
-let picked = null;
-const slotsEl = document.getElementById("slots");
-times.forEach(t => {
-  const b = document.createElement("button");
-  b.type = "button"; b.className = "slot"; b.textContent = t;
-  b.setAttribute("aria-pressed", "false");
-  if (booked.has(t)) { b.disabled = true; b.title = "Booked"; }
-  b.addEventListener("click", () => {
-    slotsEl.querySelectorAll(".slot").forEach(x => x.setAttribute("aria-pressed", "false"));
-    b.setAttribute("aria-pressed", "true"); picked = t;
-    const h = parseInt(t); document.getElementById("slot-picked").textContent = `Picked: ${t} ${h >= 10 && h < 12 ? "AM" : "PM"}`;
-  });
-  slotsEl.appendChild(b);
+function pick(m, block) {
+  const run = [];
+  for (let i = 0; i < spotsNeeded(); i++) run.push(m + i * 5);
+  if (run.some(x => x >= blocks[block][1] || booked.has(label(x)))) {
+    picked = []; showPicked();
+    pickedEl.textContent = `That time doesn't have ${run.length} open spots in a row. Try an earlier time.`;
+    return;
+  }
+  picked = run; showPicked();
+}
+Object.entries(blocks).forEach(([block, [from, to]]) => {
+  const el = document.getElementById("slots-" + block);
+  for (let m = from; m < to; m += 5) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "slot"; b.textContent = label(m); b.dataset.m = m;
+    b.setAttribute("aria-pressed", "false");
+    if (booked.has(label(m))) { b.disabled = true; b.title = "Booked"; }
+    b.addEventListener("click", () => pick(m, block));
+    el.appendChild(b);
+  }
 });
+
+// one name + dog/cat row per pet
+const petRows = document.getElementById("pet-rows");
+function renderPets() {
+  const n = Number(petCount.value), old = [...petRows.querySelectorAll(".pet-row")].map(r => ({
+    name: r.querySelector("input[type=text]").value, type: (r.querySelector("input[type=radio]:checked") || {}).value }));
+  petRows.innerHTML = "";
+  for (let i = 1; i <= n; i++) {
+    const prev = old[i - 1] || {};
+    petRows.insertAdjacentHTML("beforeend", `<div class="pet-row">
+      <label for="pet${i}-name">Pet ${i} name<input type="text" id="pet${i}-name" name="pet${i}_name" required placeholder="${i % 2 ? "Biscuit" : "Mochi"}"></label>
+      <div class="seg" role="radiogroup" aria-label="Pet ${i} is a">
+        <label for="pet${i}-dog"><input type="radio" id="pet${i}-dog" name="pet${i}_type" value="Dog">Dog</label>
+        <label for="pet${i}-cat"><input type="radio" id="pet${i}-cat" name="pet${i}_type" value="Cat">Cat</label>
+      </div></div>`);
+    petRows.querySelector(`#pet${i}-name`).value = prev.name || "";
+    if (prev.type) petRows.querySelector(`#pet${i}-${prev.type.toLowerCase()}`).checked = true;
+  }
+  const need = spotsNeeded();
+  document.getElementById("slot-need").textContent = need === 1 ? "1 spot needed (up to 2 pets)" : `${need} back-to-back spots needed for ${n} pets. Pick your start time.`;
+  if (picked.length) { const first = picked[0]; pick(first, first < 12 * 60 ? "am" : "pm"); }
+}
+petCount.addEventListener("change", renderPets);
+renderPets();
 
 async function send(form, extra) {
   if (!FORM_ENDPOINT) return "preview";
@@ -459,14 +514,24 @@ function wire(id, doneId, check, msg) {
     done.hidden = false;
     if (problem) { done.textContent = problem; return; }
     let res;
-    try { res = await send(form, id === "photo-form" ? { form: "Santa photo", slot: picked } : { form: "Vendor" }); } catch { res = "error"; }
+    try { res = await send(form, id === "photo-form" ? { form: "Santa photo", times: picked.map(m => label(m) + " " + ampm(m)).join(", ") } : { form: "Vendor" }); } catch { res = "error"; }
     done.textContent = res === "error" ? "That didn't go through. Check your connection and try again." :
       res === "preview" ? msg(form) + " (Preview only: sign-ups start once the form is connected.)" : msg(form);
   });
 }
 const need = (f, names) => names.find(n => !f.elements[n].value.trim());
-wire("photo-form", "photo-done", f => !picked ? "Pick a time above first." : need(f, ["name", "email"]) ? "Add your name and email so we can confirm." : null,
-  f => `You're booked for ${picked}. We'll email ${f.elements.email.value} a confirmation.`);
+function photoProblem(f) {
+  if (need(f, ["first_name", "last_name", "phone", "email"])) return "Add your first and last name, phone and email.";
+  const n = Number(petCount.value);
+  for (let i = 1; i <= n; i++) {
+    if (!f.elements[`pet${i}_name`].value.trim()) return `Add a name for pet ${i}.`;
+    if (!f.querySelector(`input[name=pet${i}_type]:checked`)) return `Choose dog or cat for pet ${i}.`;
+  }
+  if (!picked.length) return "Pick a time above.";
+  return null;
+}
+wire("photo-form", "photo-done", photoProblem,
+  f => `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}. We'll email ${f.elements.email.value} a confirmation.`);
 wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email"]) ? "Add your business name, contact name and email." : null,
   f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email.`);
 
