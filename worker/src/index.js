@@ -339,10 +339,11 @@ async function authorized(request, env) {
 async function editPhoto(db, id, fields, keys) {
   const allowed = EDITABLE.photos;
   const times = [...new Set(field(fields, "times", 200).split(",").map(normTime).filter(Boolean))];
-  if (!times.length || times.length > 3 || times.some(t => !SLOTS.has(t))) return { ok: false, reason: "bad_time" };
+  // No time means the waiting list.
+  if (times.length > 3 || times.some(t => !SLOTS.has(t))) return { ok: false, reason: "bad_time" };
   if (!field(fields, "first_name") || !field(fields, "last_name")) return { ok: false, reason: "missing" };
   const marks = times.map(() => "?").join(",");
-  const taken = (await db.prepare(`SELECT time FROM photo_slots WHERE time IN (${marks}) AND photo_id != ?`).bind(...times, id).all()).results.map(r => r.time);
+  const taken = !times.length ? [] : (await db.prepare(`SELECT time FROM photo_slots WHERE time IN (${marks}) AND photo_id != ?`).bind(...times, id).all()).results.map(r => r.time);
   if (taken.length) return { ok: false, reason: "taken", taken };
   try {
     await db.batch([
@@ -358,10 +359,11 @@ async function editPhoto(db, id, fields, keys) {
   return { ok: true };
 }
 
-// Adds a walk-up on event day. Only a name and one way to reach them are required.
+// Adds a walk-up on event day. Only a name and one way to reach them are required; with no time they join the waiting list.
 async function addWalkup(db, p) {
   const times = [...new Set(field(p, "times", 200).split(",").map(normTime).filter(Boolean))];
-  if (!times.length || times.length > 3 || times.some(t => !SLOTS.has(t))) return { ok: false, reason: "bad_time" };
+  // No time means the waiting list.
+  if (times.length > 3 || times.some(t => !SLOTS.has(t))) return { ok: false, reason: "bad_time" };
   const first = field(p, "first_name", 80), last = field(p, "last_name", 80);
   const phone = field(p, "phone", 40), email = field(p, "email", 120), pets = field(p, "pets", 500);
   if (!first || !last || (!phone && !email)) return { ok: false, reason: "missing" };

@@ -161,7 +161,7 @@ const TABS = {
   photos: {
     cols: [["times", "Time"], ["checked_in", "Here"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets"], ["notes", "Notes", true], ["created", "Booked"]],
     note: "Sorted by photo time. Tap Check in when a family arrives. Delete a booking to open its time again.",
-    remove: r => `Delete the ${r.times} booking for ${r.first_name} ${r.last_name}? The time opens up for someone else.`,
+    remove: r => `Delete the ${r.times || "waiting list"} booking for ${r.first_name} ${r.last_name}? The time opens up for someone else.`,
   },
   vendors: {
     cols: [["logo", "Logo"], ["business", "Business"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["category", "Category"], ["website", "Website"], ["needs", "Booth needs", true], ["description", "About", true], ["created", "Applied"]],
@@ -209,11 +209,12 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
+const cell = (r, k) => k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
 
 function rows() {
   const list = [...(data[tab] || [])];
-  if (tab === "photos") list.sort((a, b) => minutes(a.times) - minutes(b.times));
+  // Waiting-list walk-ups (no time yet) go last, first come first served.
+  if (tab === "photos") list.sort((a, b) => minutes(a.times) - minutes(b.times) || a.id - b.id);
   return list;
 }
 
@@ -436,7 +437,7 @@ document.getElementById("gallery-form").addEventListener("submit", async e => {
 const EDIT_FIELDS = {
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
-  photos: [["times", "Time slot(s), like 10:05 AM (separate up to 3 with commas)"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
+  photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
 // Every photo time, in order: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM (same as the server).
 const SLOTS = [];
@@ -458,11 +459,11 @@ function dayOf() {
   const box = document.getElementById("dayof");
   box.hidden = tab !== "photos";
   if (box.hidden) return;
-  const here = data.photos.filter(r => r.checked_in).length;
-  document.getElementById("dayof-count").textContent = `${here} of ${data.photos.length} families checked in`;
+  const here = data.photos.filter(r => r.checked_in).length, waiting = data.photos.filter(r => !r.times).length;
+  document.getElementById("dayof-count").textContent = `${here} of ${data.photos.length} families checked in` + (waiting ? ` · ${waiting} on the waiting list` : "");
   const open = openTimes(), wrap = document.getElementById("open-times");
   wrap.innerHTML = "";
-  if (!open.length) wrap.innerHTML = '<span class="muted">No open times left.</span>';
+  if (!open.length) wrap.innerHTML = '<span class="muted">No open times left. Add walk-up still works: leave the time blank to put them on the waiting list, then use Edit to give them a time when one opens.</span>';
   open.forEach(t => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.onclick = () => walkup(t); wrap.append(b); });
   document.getElementById("walkup-btn").onclick = () => walkup(open[0] || "");
 }
