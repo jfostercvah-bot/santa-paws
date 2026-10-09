@@ -50,6 +50,11 @@ td.long { min-width: 220px; white-space: pre-wrap; }
 .err { color: var(--berry); font-weight: 600; }
 .email-form { display: grid; gap: 8px; margin-bottom: 16px; }
 textarea { font: inherit; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); resize: vertical; }
+.dayof { display: grid; gap: 10px; margin-bottom: 12px; }
+.dayof .open { display: flex; flex-wrap: wrap; gap: 6px; }
+.dayof .open button { background: var(--band); color: var(--ink); padding: 4px 10px; font-size: .9rem; }
+tr.here td { background: color-mix(in srgb, var(--pine) 10%, transparent); }
+.tag { display: inline-block; font-size: .8rem; font-weight: 700; color: #fff; background: var(--pine); border-radius: 999px; padding: 1px 8px; }
 img.thumb.photo { width: 120px; height: 90px; object-fit: cover; }
 img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: block; }
 .edit-dialog { width: min(560px, 94vw); padding: 20px; color: var(--ink); }
@@ -121,6 +126,14 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
         <span id="e-msg" class="muted" role="status"></span>
       </div>
     </form>
+    <div class="card dayof" id="dayof" hidden>
+      <div class="bar" style="margin:0">
+        <strong class="grow" id="dayof-count"></strong>
+        <button type="button" id="walkup-btn">Add walk-up</button>
+      </div>
+      <div><strong>Open times</strong> <span class="muted">(tap one to give it to a walk-up)</span></div>
+      <div class="open" id="open-times"></div>
+    </div>
     <div class="bar">
       <span class="grow muted" id="note"></span>
       <button class="ghost small" id="copy-emails" hidden>Copy all emails</button>
@@ -146,8 +159,8 @@ const API_URL = "https://api.cvahsantapaws.com";
 
 const TABS = {
   photos: {
-    cols: [["times", "Time"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets"], ["notes", "Notes", true], ["created", "Booked"]],
-    note: "Sorted by photo time. Delete a booking to open its time again.",
+    cols: [["times", "Time"], ["checked_in", "Here"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets"], ["notes", "Notes", true], ["created", "Booked"]],
+    note: "Sorted by photo time. Tap Check in when a family arrives. Delete a booking to open its time again.",
     remove: r => `Delete the ${r.times} booking for ${r.first_name} ${r.last_name}? The time opens up for someone else.`,
   },
   vendors: {
@@ -195,7 +208,8 @@ async function api(path, body) {
 // "10:05 AM" -> minutes after midnight, for sorting the photo schedule
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => k === "created" ? when(r[k]) : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
+const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+const cell = (r, k) => k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
 
 function rows() {
   const list = [...(data[tab] || [])];
@@ -231,6 +245,7 @@ function render() {
     .forEach(([v, t]) => sel.add(new Option(t, v)));
   if (was) sel.value = was;
   document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors"].includes(tab);
+  dayOf();
   const T = TABS[tab], list = rows();
   document.getElementById("note").textContent = T.note;
   const table = document.getElementById("table");
@@ -241,6 +256,7 @@ function render() {
   if (!list.length) { const td = body.insertRow().insertCell(); td.colSpan = T.cols.length + 1; td.className = "muted"; td.textContent = "Nothing here yet."; }
   list.forEach(r => {
     const tr = body.insertRow();
+    if (tab === "photos" && r.checked_in) tr.className = "here";
     T.cols.forEach(([k, , long]) => {
       const td = tr.insertCell();
       if (k === "thumb") {
@@ -260,9 +276,14 @@ function render() {
         return;
       }
       td.textContent = cell(r, k); if (long) td.className = "long";
+      if (k === "times" || k === "checked_in") td.style.whiteSpace = "nowrap";
     });
     const td = tr.insertCell(); td.style.whiteSpace = "nowrap";
     if (tab === "photos") {
+      const ci = document.createElement("button"); ci.className = r.checked_in ? "ghost small" : "small";
+      ci.textContent = r.checked_in ? "Undo check-in" : "Check in";
+      ci.onclick = () => act(() => api("/admin/checkin", { id: r.id, on: !r.checked_in }));
+      td.append(ci, " ");
       const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
       ed.onclick = () => editRow(tab, r);
       td.append(ed, " ");
@@ -417,9 +438,42 @@ const EDIT_FIELDS = {
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
   photos: [["times", "Time slot(s), like 10:05 AM (separate up to 3 with commas)"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
-function editRow(table, r) {
+// Every photo time, in order: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM (same as the server).
+const SLOTS = [];
+for (const [from, to] of [[600, 720], [780, 900]]) for (let m = from; m < to; m += 5) {
+  const h = Math.floor(m / 60);
+  SLOTS.push(`${h > 12 ? h - 12 : h}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`);
+}
+const EVENT_DAY = "2026-11-21";
+
+// Open times, leaving out ones already past on event day.
+function openTimes() {
+  const taken = new Set(data.status.booked), now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const cutoff = today === EVENT_DAY ? now.getHours() * 60 + now.getMinutes() - 5 : today > EVENT_DAY ? 9999 : 0;
+  return SLOTS.filter(t => !taken.has(t) && minutes(t) >= cutoff);
+}
+
+function dayOf() {
+  const box = document.getElementById("dayof");
+  box.hidden = tab !== "photos";
+  if (box.hidden) return;
+  const here = data.photos.filter(r => r.checked_in).length;
+  document.getElementById("dayof-count").textContent = `${here} of ${data.photos.length} families checked in`;
+  const open = openTimes(), wrap = document.getElementById("open-times");
+  wrap.innerHTML = "";
+  if (!open.length) wrap.innerHTML = '<span class="muted">No open times left.</span>';
+  open.forEach(t => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.onclick = () => walkup(t); wrap.append(b); });
+  document.getElementById("walkup-btn").onclick = () => walkup(open[0] || "");
+}
+
+function walkup(time) {
+  editRow("photos", { times: time }, true);
+}
+
+function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business);
+  document.getElementById("edit-title").textContent = adding ? "Add a walk-up" : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business);
   box.innerHTML = "";
   EDIT_FIELDS[table].forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
@@ -434,13 +488,16 @@ function editRow(table, r) {
     if (dlg.returnValue !== "save") return;
     const fields = {};
     box.querySelectorAll("[name]").forEach(i => (fields[i.name] = i.value));
-    if ("business" in fields && !fields.business.trim()) { alert("Business name can't be empty."); return; }
-    if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) { alert("First and last name can't be empty."); return; }
+    // On a problem, say what's wrong and reopen the form with what was typed.
+    const problem = msg => { alert(msg); dlg.returnValue = ""; dlg.showModal(); };
+    if ("business" in fields && !fields.business.trim()) return problem("Business name can't be empty.");
+    if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
+    if (adding && !fields.email.trim() && !fields.phone.trim()) return problem("Add an email (best, so they get their photo link) or a phone number.");
     act(async () => {
-      try { await api("/admin/edit", { table, id: r.id, fields }); }
+      try { await (adding ? api("/admin/walkup", fields) : api("/admin/edit", { table, id: r.id, fields })); }
       catch (e) {
-        if (e.message === "taken") alert("Someone else already has that time. Pick a different slot.");
-        else if (e.message === "bad_time") alert("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
+        if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
+        else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
         else throw e;
       }
     });

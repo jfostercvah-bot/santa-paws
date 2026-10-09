@@ -15,6 +15,8 @@
  *   POST /admin/sponsor    { business, level, show }  (with id to update)
  *   POST /admin/show       { table: vendors|sponsors, id, show }
  *   POST /admin/logo       { table: vendors|sponsors, id, logo }  (empty logo removes it)
+ *   POST /admin/walkup     { times, first_name, last_name, phone, email, pets, notes } (checked in right away)
+ *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
  *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
@@ -356,6 +358,27 @@ async function editPhoto(db, id, fields, keys) {
   return { ok: true };
 }
 
+// Adds a walk-up on event day. Only a name and one way to reach them are required.
+async function addWalkup(db, p) {
+  const times = [...new Set(field(p, "times", 200).split(",").map(normTime).filter(Boolean))];
+  if (!times.length || times.length > 3 || times.some(t => !SLOTS.has(t))) return { ok: false, reason: "bad_time" };
+  const first = field(p, "first_name", 80), last = field(p, "last_name", 80);
+  const phone = field(p, "phone", 40), email = field(p, "email", 120), pets = field(p, "pets", 500);
+  if (!first || !last || (!phone && !email)) return { ok: false, reason: "missing" };
+  const code = newCode();
+  try {
+    await db.batch([
+      db.prepare("INSERT INTO photos (times, first_name, last_name, phone, email, pet_count, pets, notes, code, walkup, checked_in) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))")
+        .bind(times.join(", "), first, last, phone, email, pets ? pets.split(",").length : 1, pets, field(p, "notes", 1000), code),
+      ...times.map(t => db.prepare("INSERT INTO photo_slots (time, photo_id) VALUES (?, (SELECT id FROM photos WHERE code = ?))").bind(t, code)),
+    ]);
+  } catch (err) {
+    if (/UNIQUE|constraint/i.test(String(err))) return { ok: false, reason: "taken" };
+    throw err;
+  }
+  return { ok: true };
+}
+
 // Columns the admin page may edit, with their length limits.
 const EDITABLE = {
   vendors: { business: 120, contact: 120, email: 120, phone: 40, category: 80, website: 200, needs: 500, description: 2000 },
@@ -416,6 +439,12 @@ async function admin(request, env, path) {
     if (keys.includes("business") && !field(fields, "business")) return json({ ok: false, reason: "bad_request" }, 400);
     await db.prepare(`UPDATE ${p.table} SET ${keys.map(k => `${k} = ?`).join(", ")} WHERE id = ?`)
       .bind(...keys.map(k => field(fields, k, allowed[k])), p.id).run();
+    return json({ ok: true });
+  }
+  if (path === "/admin/walkup") return json(await addWalkup(db, p));
+  if (path === "/admin/checkin") {
+    if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.prepare("UPDATE photos SET checked_in = CASE WHEN ? THEN datetime('now') ELSE '' END WHERE id = ?").bind(p.on ? 1 : 0, p.id).run();
     return json({ ok: true });
   }
   if (path === "/admin/logo") {
