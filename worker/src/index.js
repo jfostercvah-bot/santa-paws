@@ -16,6 +16,7 @@
  *   POST /admin/show       { table: vendors|sponsors, id, show }
  *   POST /admin/logo       { table: vendors|sponsors, id, logo }  (empty logo removes it)
  *   POST /admin/walkup     { times, first_name, last_name, phone, email, pets, notes } (checked in right away)
+ *   POST /admin/vendor     { business, contact, email, phone, category, website, needs, description } (shown right away)
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
@@ -444,6 +445,15 @@ async function admin(request, env, path) {
     return json({ ok: true });
   }
   if (path === "/admin/walkup") return json(await addWalkup(db, p));
+  if (path === "/admin/vendor") {
+    // Added by Josh, so it skips the 15-spot limit and shows on the website right away.
+    const business = field(p, "business", 120);
+    if (!business) return json({ ok: false, reason: "missing" });
+    await db.prepare("INSERT INTO vendors (business, contact, email, phone, category, website, needs, description, code, show) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)")
+      .bind(business, field(p, "contact", 120), field(p, "email", 120), field(p, "phone", 40), field(p, "category", 80),
+        field(p, "website", 200), field(p, "needs", 500), field(p, "description", 2000), newCode()).run();
+    return json({ ok: true });
+  }
   if (path === "/admin/checkin") {
     if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
     await db.prepare("UPDATE photos SET checked_in = CASE WHEN ? THEN datetime('now') ELSE '' END WHERE id = ?").bind(p.on ? 1 : 0, p.id).run();

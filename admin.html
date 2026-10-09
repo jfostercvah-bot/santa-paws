@@ -138,6 +138,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <span class="grow muted" id="note"></span>
       <button class="ghost small" id="copy-emails" hidden>Copy all emails</button>
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
+      <button class="small" id="add-vendor" hidden>Add vendor</button>
       <button class="ghost small" id="refresh">Refresh</button>
       <button class="small" id="csv">Download spreadsheet (CSV)</button>
     </div>
@@ -165,7 +166,7 @@ const TABS = {
   },
   vendors: {
     cols: [["logo", "Logo"], ["business", "Business"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["category", "Category"], ["website", "Website"], ["needs", "Booth needs", true], ["description", "About", true], ["created", "Applied"]],
-    note: "Click Show to list a vendor on the Vendors page. Click a logo to download it. Delete an application to open the spot again.",
+    note: "Click Show to list a vendor on the Vendors page. Vendors you add yourself show right away. Click a logo to download it. Delete an application to open the spot again.",
     remove: r => `Delete the vendor application from ${r.business}? The spot opens up for someone else.`,
   },
   sponsors: {
@@ -247,6 +248,7 @@ function render() {
   if (was) sel.value = was;
   document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors"].includes(tab);
   dayOf();
+  document.getElementById("add-vendor").hidden = tab !== "vendors";
   const T = TABS[tab], list = rows();
   document.getElementById("note").textContent = T.note;
   const table = document.getElementById("table");
@@ -474,7 +476,7 @@ function walkup(time) {
 
 function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = adding ? "Add a walk-up" : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business);
+  document.getElementById("edit-title").textContent = adding ? (table === "photos" ? "Add a walk-up" : "Add a vendor") : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business);
   box.innerHTML = "";
   EDIT_FIELDS[table].forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
@@ -493,9 +495,9 @@ function editRow(table, r, adding) {
     const problem = msg => { alert(msg); dlg.returnValue = ""; dlg.showModal(); };
     if ("business" in fields && !fields.business.trim()) return problem("Business name can't be empty.");
     if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
-    if (adding && !fields.email.trim() && !fields.phone.trim()) return problem("Add an email (best, so they get their photo link) or a phone number.");
+    if (adding && table === "photos" && !fields.email.trim() && !fields.phone.trim()) return problem("Add an email (best, so they get their photo link) or a phone number.");
     act(async () => {
-      try { await (adding ? api("/admin/walkup", fields) : api("/admin/edit", { table, id: r.id, fields })); }
+      try { await (adding ? api(table === "photos" ? "/admin/walkup" : "/admin/vendor", fields) : api("/admin/edit", { table, id: r.id, fields })); }
       catch (e) {
         if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
         else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
@@ -532,6 +534,11 @@ async function start() {
 
 document.getElementById("login").addEventListener("submit", e => { e.preventDefault(); pw = document.getElementById("pw").value; start(); });
 document.getElementById("logout").onclick = () => logout();
+document.getElementById("add-vendor").onclick = () => {
+  const v = data.status.vendors;
+  if (v.taken >= v.max && !confirm(`All ${v.max} vendor spots are taken. Add this vendor anyway?`)) return;
+  editRow("vendors", {}, true);
+};
 document.getElementById("refresh").onclick = () => act(async () => {});
 document.getElementById("csv").onclick = csv;
 document.querySelectorAll(".tabs button").forEach(b => (b.onclick = () => { tab = b.dataset.tab; render(); }));
