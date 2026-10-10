@@ -29,8 +29,8 @@
 
 const VENDOR_MAX = 15;
 const SPONSOR_LEVELS = { "North Pole": 3, Reindeer: 5, "Elf Friends": 7 };
-// Every sponsor gets one event shirt in one of these sizes.
-const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
+// Event shirt sizes: toddler, youth, then adult. Sponsors pick from the adult ones.
+const SHIRT_SIZES = ["2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const shirtField = p => (SHIRT_SIZES.includes(field(p, "shirt_size", 10)) ? field(p, "shirt_size", 10) : "");
 const MAX_PETS = 6;
 

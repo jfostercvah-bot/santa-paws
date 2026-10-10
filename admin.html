@@ -237,7 +237,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
+const cell = (r, k) => (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -247,7 +247,9 @@ function shirtTally() {
   return order.length ? ` Shirts to order: ${order.map(z => `${n[z]} ${z}`).join(", ")}.` : "";
 }
 
-const SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
+const SIZES = ["2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
+// "M" -> "Adult M" so adult sizes don't get mixed up with youth ones.
+const sizeLabel = z => /^(XS|S|M|L|XL|2XL|3XL)$/.test(z) ? "Adult " + z : z;
 const TEAMS = ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"];
 
 // Everyone getting a shirt: people added on the Shirts tab, plus every sponsor.
@@ -268,7 +270,7 @@ function shirtTotals() {
   const row = (label, team, bold) => `<tr${bold ? ' style="font-weight:700"' : ""}><td>${label}</td>${used.map(z => `<td>${count(team, z) || ""}</td>`).join("")}<td>${used.reduce((n, z) => n + count(team, z), 0)}</td></tr>`;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   box.innerHTML = `<strong>${sized.length} shirt${sized.length === 1 ? "" : "s"} to order</strong>` +
-    (used.length ? `<div class="scroll"><table><thead><tr><th></th>${used.map(z => `<th>${z}</th>`).join("")}<th>Total</th></tr></thead><tbody>${teams.map(t => row(esc(t), t)).join("")}${row("All", null, true)}</tbody></table></div>` : "") +
+    (used.length ? `<div class="scroll"><table><thead><tr><th></th>${used.map(z => `<th>${sizeLabel(z)}</th>`).join("")}<th>Total</th></tr></thead><tbody>${teams.map(t => row(esc(t), t)).join("")}${row("All", null, true)}</tbody></table></div>` : "") +
     (missing ? `<span class="err">${missing} ${missing === 1 ? "person hasn't" : "people haven't"} picked a size yet.</span>` : "");
 }
 
@@ -506,7 +508,7 @@ document.getElementById("gallery-form").addEventListener("submit", async e => {
 });
 
 const EDIT_FIELDS = {
-  shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["notes", "Notes"]],
+  shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["size", "Shirt size", ["", "2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["notes", "Notes"]],
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
@@ -551,7 +553,7 @@ function editRow(table, r, adding) {
   EDIT_FIELDS[table].forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
     let input;
-    if (Array.isArray(kind)) { input = document.createElement("select"); kind.forEach(o => input.add(new Option(o || "Not picked", o))); }
+    if (Array.isArray(kind)) { input = document.createElement("select"); kind.forEach(o => input.add(new Option(o ? sizeLabel(o) : "Not picked", o))); }
     else if (kind === "area") { input = document.createElement("textarea"); input.rows = 5; }
     else input = document.createElement("input");
     input.name = k; input.value = r[k] ?? "";
