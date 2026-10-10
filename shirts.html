@@ -232,6 +232,11 @@ button.zoom img { transition: transform .2s; }
 .maker img { width: 100%; height: auto; border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
 .maker h3 { font-size: 1.7rem; margin-bottom: 8px; }
 .maker p + p { margin-top: 10px; }
+.maker-tag { font-family: var(--display); color: var(--berry); font-size: 1.25rem; }
+.maker-links { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.maker-links a { display: inline-block; background: var(--band); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 600; color: var(--pine); text-decoration: none; overflow-wrap: anywhere; }
+.maker-links a:hover { border-color: var(--pine); }
+@media (max-width: 640px) { .maker-links { justify-content: center; } }
 .design { margin-bottom: 24px; }
 .design-soon { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center; }
 .design-soon svg { width: 100%; color: var(--pine); }
@@ -357,8 +362,14 @@ footer p { opacity: .85; font-size: .95rem; }
         <div>
           <p class="eyebrow">Meet our shirt elf</p>
           <h3>Double E Designs LLC</h3>
-          <p>Every Santa needs a workshop, and ours is Double E Designs! She's the talented maker designing and printing this year's Santa Paws shirts. When she isn't sprinkling holiday magic on event shirts, she's busy creating custom DTF prints, vinyl banners, yard signs and so much more.</p>
+          <p>Every Santa needs a workshop, and ours is Double E Designs! She's the talented maker designing and printing this year's Santa Paws shirts. When she isn't sprinkling holiday magic on event shirts, she's busy creating DTF prints, custom shirts, banners, yard signs, business cards and so much more.</p>
           <p>Think of her as the elf who keeps the season merry, bright and perfectly pressed. Every shirt you order is made with care, a dash of sparkle and maybe just a little bit of tinsel.</p>
+          <p class="maker-tag">Let's bring your vision to life!</p>
+          <ul class="maker-links">
+            <li><a href="tel:+14347130475">434-713-0475</a></li>
+            <li><a href="mailto:sdpmhp@hotmail.com">sdpmhp@hotmail.com</a></li>
+            <li><a href="https://www.facebook.com/DoubleEDesignsLLC" target="_blank" rel="noopener">Facebook: @DoubleEDesignsLLC</a></li>
+          </ul>
         </div>
       </div>
 

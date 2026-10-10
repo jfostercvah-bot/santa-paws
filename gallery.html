@@ -232,6 +232,11 @@ button.zoom img { transition: transform .2s; }
 .maker img { width: 100%; height: auto; border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
 .maker h3 { font-size: 1.7rem; margin-bottom: 8px; }
 .maker p + p { margin-top: 10px; }
+.maker-tag { font-family: var(--display); color: var(--berry); font-size: 1.25rem; }
+.maker-links { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.maker-links a { display: inline-block; background: var(--band); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 600; color: var(--pine); text-decoration: none; overflow-wrap: anywhere; }
+.maker-links a:hover { border-color: var(--pine); }
+@media (max-width: 640px) { .maker-links { justify-content: center; } }
 .design { margin-bottom: 24px; }
 .design-soon { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center; }
 .design-soon svg { width: 100%; color: var(--pine); }
