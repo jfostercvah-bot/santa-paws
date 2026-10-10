@@ -186,6 +186,7 @@ button.ph { width: 100%; border: 0; padding: 0; cursor: zoom-in; background: var
 .treat p { color: var(--muted); }
 .menu { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .menu li { font-weight: 600; font-size: .9rem; padding: 6px 12px; border-radius: 999px; background: var(--snow); border: 1.5px solid var(--line); }
+.treat-sparkle { grid-column: 1 / -1; border: 2px solid var(--gold); background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 10%, var(--paper)), var(--paper) 55%, color-mix(in srgb, #9b6bd6 10%, var(--paper))); }
 .menu li.star { background: var(--berry); color: var(--berry-ink); border-color: var(--berry); }
 .menu-link { font-weight: 700; color: var(--berry); text-underline-offset: 3px; }
 .food-menu { margin-top: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 18px 24px; }
@@ -311,14 +312,13 @@ footer p { opacity: .85; font-size: .95rem; }
 .event-strip { background: var(--band); border-bottom: 1px solid var(--line); }
 .event-strip .wrap { display: flex; flex-wrap: wrap; gap: 4px 18px; padding-block: 10px; font-weight: 600; font-size: .92rem; color: var(--pine); }
 .nav ul a[aria-current="page"] { opacity: 1; text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 3px; text-underline-offset: 6px; }
-.tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .tile { display: grid; gap: 10px; align-content: start; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 22px; text-decoration: none; color: var(--ink); transition: transform .15s, border-color .15s; }
 .tile:hover { transform: translateY(-3px); border-color: var(--pine); }
 .tile svg { width: 40px; height: 40px; }
 .tile h3 { font-size: 1.35rem; }
 .tile p { color: var(--muted); font-size: .95rem; }
 .tile .go { font-weight: 700; color: var(--berry); margin-top: auto; }
-@media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 760px) { .tiles { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 520px) { .tiles { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
@@ -359,7 +359,7 @@ footer p { opacity: .85; font-size: .95rem; }
     <div class="wrap">
       <div class="head">
         <p class="eyebrow">Treats &amp; Eats</p>
-        <h2>Shop, sip and snack</h2>
+        <h2>Shop, sip, snack and sparkle</h2>
         <p>Santa Paws is a full day out. Warm up, cool down, shop a little and fill up while the pups do their thing.</p>
       </div>
       <div class="treats">
@@ -383,6 +383,16 @@ footer p { opacity: .85; font-size: .95rem; }
             <li>Smashburgers</li><li>Hot dogs</li><li>Corn dogs</li><li>Uncle B's Chili</li><li>Salads</li><li>Kids meals</li><li class="star">Opens at 11 AM</li>
           </ul>
           <a class="menu-link" href="#tiffanys-menu">See the full menu</a>
+        </article>
+        <article class="treat treat-sparkle" id="tinsel-tresses">
+          <div class="treat-top">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M20 6c-6 10-8 26-4 44" stroke="#e7b23c" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M28 4c-4 12-4 30 2 48" stroke="#c8283a" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M36 6c0 14 2 30 8 42" stroke="#9b6bd6" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M44 8c2 12 6 24 12 32" stroke="#2f8a63" stroke-width="3.5" fill="none" stroke-linecap="round"/><g fill="#e7b23c"><path d="M52 6l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M10 40l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5z"/></g></svg>
+            <div><h3>Tinsel Tresses by Ash &amp; Co. Salon</h3><span class="when">Fairy hair · $5</span></div>
+          </div>
+          <p>Every reindeer needs a little sparkle! Ash &amp; Co. Salon is bringing the holiday shine with fairy hair: shimmery strands tied right into your hair that catch the light like twinkle lights on a tree. It's quick, painless and the perfect finishing touch for your photo with Santa. Grab a strand for yourself, the kids, or the whole family, and leave Santa Paws glowing like the North Pole.</p>
+          <ul class="menu">
+            <li class="star">Fairy hair $5</li><li>Sparkly holiday colors</li><li>Kids and grown-ups</li><li>Picture-perfect for your Santa photo</li>
+          </ul>
         </article>
       </div>
         <details class="food-menu" id="tiffanys-menu">
