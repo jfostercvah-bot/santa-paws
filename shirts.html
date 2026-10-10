@@ -450,7 +450,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <label for="o-notes">Anything else? <span class="hint">optional</span><textarea id="o-notes" name="notes" placeholder="Who each shirt is for, questions, anything"></textarea></label>
         <p class="order-total">Total: <strong id="order-total">$15</strong></p>
         <div class="pay-box">
-          <p><strong>How to pay:</strong> pay Carolina Virginia Animal Hospital with cash, Venmo, Cash App or PayPal. If you pay online, put your name in the payment note.</p>
+          <p><strong>How to pay:</strong> pay Carolina Virginia Animal Hospital with cash, Venmo, Cash App or PayPal. Online payments go to Josh Foster for the hospital. Please put your name and "Santa Paws shirts" in the payment note.</p>
           <div class="pay-links" id="pay-links" hidden></div>
           <p><strong>Pickup:</strong> your shirts will be waiting for you at Santa Paws on Saturday, November 21.</p>
         </div>
@@ -485,8 +485,12 @@ const API_URL = "https://api.cvahsantapaws.com";
 // Shirt orders (and sponsors' free shirts) close at the end of Friday, November 6 (Eastern).
 const SHIRT_DEADLINE = Date.parse("2026-11-07T05:00:00Z");
 const shirtsOpen = () => Date.now() < SHIRT_DEADLINE;
-// Payment links for shirt orders. Leave one empty to hide its button.
-const PAY = { Venmo: "", "Cash App": "", PayPal: "" };
+// Payment links for shirt orders (they go to Josh for the hospital): [name, handle, link].
+const PAY = [
+  ["Venmo", "@Joshua-Foster-79", "https://venmo.com/u/Joshua-Foster-79"],
+  ["Cash App", "$joshman2474", "https://cash.app/$joshman2474"],
+  ["PayPal", "@jfoster0470", "https://www.paypal.com/paypalme/jfoster0470"],
+];
 
 // Shrinks an uploaded logo (to fit 600px, then smaller if needed) and returns it as a data: URL.
 async function logoData(file) {
@@ -786,8 +790,8 @@ if (document.getElementById("shirt-order") && !shirtsOpen()) {
 }
 if (document.getElementById("shirt-order")) {
   const payLinks = document.getElementById("pay-links");
-  Object.entries(PAY).filter(([, url]) => url).forEach(([name, url]) => {
-    const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Pay with " + name;
+  PAY.filter(([, , url]) => url).forEach(([name, handle, url]) => {
+    const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = `${name} ${handle}`;
     payLinks.append(a); payLinks.hidden = false;
   });
   const PRICES = { "Short sleeve": 15, "Long sleeve": 20, Crewneck: 25, Hoodie: 30 };
