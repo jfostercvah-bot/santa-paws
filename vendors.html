@@ -181,6 +181,11 @@ button.ph { width: 100%; border: 0; padding: 0; cursor: zoom-in; background: var
 .treat-top { display: flex; align-items: center; gap: 14px; }
 .treat-top > div { display: grid; gap: 8px; }
 .treat-top svg { width: 56px; height: 56px; flex: none; }
+.treat-logo { flex: none; width: 112px; height: 112px; padding: 0; border: 0; border-radius: 16px; overflow: hidden; cursor: zoom-in; background: none; box-shadow: 0 4px 14px rgb(0 0 0 / .12); }
+.treat-logo.wide { width: 220px; height: 90px; background: #000; }
+.treat-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.treat-logo.wide img { object-fit: contain; }
+@media (max-width: 520px) { .treat-top { flex-wrap: wrap; } }
 .treat h3 { font-size: 1.6rem; }
 .when { display: inline-block; font-weight: 700; font-size: .85rem; border-radius: 999px; padding: 4px 12px; background: var(--band); color: var(--pine); border: 1.5px solid var(--pine); width: fit-content; }
 .treat p { color: var(--muted); }
@@ -774,6 +779,10 @@ if (document.getElementById("shirt-order")) {
     img.onclick = () => zoomLogo(img.src, "Santa Paws shirt design").click();
   });
 }
+
+document.querySelectorAll(".treat-logo").forEach(b => {
+  b.onclick = () => zoomLogo(b.dataset.logo, b.querySelector("img").alt.replace(/ logo$/, "")).click();
+});
 
 // --- cancel page ---
 if (document.getElementById("cancel-box")) {
