@@ -105,6 +105,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button data-tab="messages" aria-pressed="false">Messages</button>
       <button data-tab="gallery" aria-pressed="false">Gallery</button>
       <button data-tab="shirts" aria-pressed="false">Shirts</button>
+      <button data-tab="shirt_orders" aria-pressed="false">Shirt orders</button>
       <button data-tab="emails" aria-pressed="false">Send email</button>
     </div>
     <form class="sponsor-form" id="sponsor-form" hidden>
@@ -206,6 +207,11 @@ const TABS = {
     note: "Emails you've sent from here.",
     remove: null,
   },
+  shirt_orders: {
+    cols: [["first_name", "First name"], ["last_name", "Last name"], ["email", "Email"], ["phone", "Phone"], ["items", "Shirts", true], ["total", "Total"], ["paid", "Paid"], ["notes", "Notes", true], ["created", "Ordered"]],
+    note: "Orders from the Event Shirts page. Tap Paid when someone pays.",
+    remove: r => `Delete the shirt order from ${r.first_name} ${r.last_name}?`,
+  },
   shirts: {
     cols: [["team", "Group"], ["name", "Name"], ["style", "Type"], ["size", "Size"], ["notes", "Notes", true], ["created", "Added"]],
     note: "Add staff, event help and anyone else who gets a shirt. Sponsors are listed automatically; change their size on the Sponsors tab.",
@@ -237,7 +243,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
+const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -260,24 +266,58 @@ function shirtRows() {
   return [...data.shirts, ...sponsors].sort((a, b) => order(a.team) - order(b.team) || String(a.name).localeCompare(String(b.name)));
 }
 
+const ORDER_STYLES = ["Short sleeve", "Long sleeve", "Crewneck", "Hoodie"];
+const orderItems = r => { try { return JSON.parse(r.items) || []; } catch { return []; } };
+const itemText = r => orderItems(r).map(l => `${l.qty} × ${l.style} ${sizeLabel(l.size)}`).join(", ");
+
+// Totals box for the Shirts tab (free shirts) and Shirt orders tab (sold shirts).
 function shirtTotals() {
   const box = document.getElementById("shirt-totals");
-  box.hidden = tab !== "shirts";
+  box.hidden = !["shirts", "shirt_orders"].includes(tab);
   if (box.hidden) return;
-  const all = shirtRows(), sized = all.filter(r => SIZES.includes(r.size)), missing = all.length - sized.length;
+  const orders = tab === "shirt_orders";
+  const all = orders ? data.shirt_orders.flatMap(r => orderItems(r).flatMap(l => Array(l.qty).fill({ style: l.style, size: l.size }))) : shirtRows();
+  const sized = all.filter(r => SIZES.includes(r.size)), missing = all.length - sized.length;
   // Rows are shirt types, columns are sizes: exactly what goes on the order.
+  const kinds = orders ? ORDER_STYLES : STYLES;
   const style = r => r.style || "T-shirt";
-  const types = [...STYLES, ...new Set(sized.map(style).filter(t => !STYLES.includes(t)))].filter(t => sized.some(r => style(r) === t));
+  const types = [...kinds, ...new Set(sized.map(style).filter(t => !kinds.includes(t)))].filter(t => sized.some(r => style(r) === t));
   const count = (type, z) => sized.filter(r => (!type || style(r) === type) && r.size === z).length;
   const used = SIZES.filter(z => count(null, z));
   const row = (label, type, bold) => `<tr${bold ? ' style="font-weight:700"' : ""}><td>${label}</td>${used.map(z => `<td>${count(type, z) || ""}</td>`).join("")}<td>${used.reduce((n, z) => n + count(type, z), 0)}</td></tr>`;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const groups = {};
-  sized.forEach(r => { const g = r.team || "Other"; groups[g] = (groups[g] || 0) + 1; });
-  box.innerHTML = `<strong>${sized.length} shirt${sized.length === 1 ? "" : "s"} to order</strong>` +
+  if (!orders) sized.forEach(r => { const g = r.team || "Other"; groups[g] = (groups[g] || 0) + 1; });
+  const money = orders ? (() => { const t = data.shirt_orders.reduce((n, r) => n + r.total, 0), paid = data.shirt_orders.filter(r => r.paid).reduce((n, r) => n + r.total, 0); return `<span class="muted">${data.shirt_orders.length} order${data.shirt_orders.length === 1 ? "" : "s"} · $${t} total · $${paid} paid · $${t - paid} still owed</span>`; })() : "";
+  box.innerHTML = `<strong>${sized.length} shirt${sized.length === 1 ? "" : "s"} ${orders ? "ordered" : "to order"}</strong>` +
     (used.length ? `<div class="scroll"><table><thead><tr><th></th>${used.map(z => `<th>${sizeLabel(z)}</th>`).join("")}<th>Total</th></tr></thead><tbody>${types.map(t => row(esc(t), t)).join("")}${types.length > 1 ? row("All", null, true) : ""}</tbody></table></div>` : "") +
-    (sized.length ? `<span class="muted">By group: ${Object.entries(groups).map(([g, n]) => `${esc(g)} ${n}`).join(" · ")}</span>` : "") +
-    (missing ? `<span class="err">${missing} ${missing === 1 ? "person hasn't" : "people haven't"} picked a size yet.</span>` : "");
+    money +
+    (sized.length && !orders ? `<span class="muted">By group: ${Object.entries(groups).map(([g, n]) => `${esc(g)} ${n}`).join(" · ")}</span>` : "") +
+    (missing && !orders ? `<span class="err">${missing} ${missing === 1 ? "person hasn't" : "people haven't"} picked a size yet.</span>` : "");
+  if (orders) designCard(box);
+}
+
+// Upload or remove the shirt design shown on the Event Shirts page.
+function designCard(box) {
+  const wrap = document.createElement("div"); wrap.className = "bar"; wrap.style.margin = "6px 0 0";
+  const v = data.status.shirtDesign;
+  wrap.innerHTML = `<strong class="grow">Shirt design on the website: ${v ? "posted" : "not posted yet (the page shows \u201ccoming soon\u201d)"}</strong>`;
+  if (v) { const img = document.createElement("img"); img.src = `${API_URL}/image/shirt-design?v=${encodeURIComponent(v)}`; img.className = "thumb"; img.alt = "Shirt design"; wrap.prepend(img); }
+  const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/*"; pick.hidden = true;
+  const up = document.createElement("button"); up.className = "small"; up.textContent = v ? "Replace design" : "Post shirt design";
+  up.onclick = () => pick.click();
+  pick.onchange = () => act(async () => {
+    let image;
+    try { image = await photoData(pick.files[0], 1600, 0.88, 1400000); } catch { alert("That picture couldn't be read. Try a PNG or JPG."); return; }
+    await api("/admin/image", { key: "shirt-design", image });
+  });
+  wrap.append(pick, up);
+  if (v) {
+    const rm = document.createElement("button"); rm.className = "ghost small"; rm.textContent = "Remove";
+    rm.onclick = () => { if (confirm("Take the shirt design off the website? It will say coming soon again.")) act(() => api("/admin/image", { key: "shirt-design", image: "" })); };
+    wrap.append(rm);
+  }
+  box.append(wrap);
 }
 
 function rows() {
@@ -315,7 +355,7 @@ function render() {
   [["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
     .forEach(([v, t]) => sel.add(new Option(t, v)));
   if (was) sel.value = was;
-  document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors"].includes(tab);
+  document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors", "shirt_orders"].includes(tab);
   dayOf();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
   document.getElementById("add-shirt").hidden = tab !== "shirts";
@@ -353,6 +393,11 @@ function render() {
       if (k === "times" || k === "checked_in") td.style.whiteSpace = "nowrap";
     });
     const td = tr.insertCell(); td.style.whiteSpace = "nowrap";
+    if (tab === "shirt_orders") {
+      const pb = document.createElement("button"); pb.className = r.paid ? "ghost small" : "small"; pb.textContent = r.paid ? "Mark unpaid" : "Paid";
+      pb.onclick = () => act(() => api("/admin/paid", { id: r.id, paid: !r.paid }));
+      td.append(pb, " ");
+    }
     if (tab === "shirts") {
       if (r.sponsor) { td.innerHTML = '<span class="muted">Edit on Sponsors tab</span>'; return; }
       const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";

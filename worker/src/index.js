@@ -18,6 +18,8 @@
  *   POST /admin/walkup     { times, first_name, last_name, phone, email, pets, notes } (checked in right away)
  *   POST /admin/vendor     { business, contact, email, phone, category, website, needs, description } (shown right away)
  *   POST /admin/shirt      { name, team, size, style, notes }
+ *   POST /admin/image      { key: "shirt-design", image }  (empty image removes it)
+ *   POST /admin/paid       { id, paid }  (shirt orders)
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
@@ -75,12 +77,13 @@ function logoField(p) {
 const newCode = () => crypto.randomUUID().replace(/-/g, "");
 
 async function status(db) {
-  const [slots, vendors, shown, sponsors, gallery] = await db.batch([
+  const [slots, vendors, shown, sponsors, gallery, design] = await db.batch([
     db.prepare("SELECT time FROM photo_slots"),
     db.prepare("SELECT COUNT(*) AS n FROM vendors"),
     db.prepare("SELECT id, business, category, description, website, logo != '' AS has_logo FROM vendors WHERE show = 1 ORDER BY business COLLATE NOCASE"),
     db.prepare("SELECT id, business, level, show, website, logo != '' AS has_logo FROM sponsors ORDER BY id"),
     db.prepare("SELECT id, year, caption FROM gallery ORDER BY year DESC, id"),
+    db.prepare("SELECT updated FROM site_images WHERE key = 'shirt-design'"),
   ]);
   const levels = {};
   for (const [level, max] of Object.entries(SPONSOR_LEVELS)) {
@@ -98,6 +101,7 @@ async function status(db) {
     },
     sponsors: levels,
     gallery: gallery.results,
+    shirtDesign: design.results.length ? design.results[0].updated : "",
   };
 }
 
@@ -187,6 +191,43 @@ async function photo(db, id, thumb) {
   if (!m) return new Response("Not found", { status: 404, headers: CORS });
   const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
   return new Response(bytes, { headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=86400", ...CORS } });
+}
+
+// Event shirts sold on the Event Shirts page.
+const SHIRT_PRICES = { "Short sleeve": 15, "Long sleeve": 20, Crewneck: 25, Hoodie: 30 };
+
+function orderItems(raw) {
+  let list;
+  try { list = JSON.parse(String(raw || "")); } catch { return null; }
+  if (!Array.isArray(list) || !list.length || list.length > 20) return null;
+  const items = list.map(l => ({ style: String(l.style), size: String(l.size), qty: Number(l.qty) }));
+  return items.every(l => l.style in SHIRT_PRICES && SHIRT_SIZES.includes(l.size) && Number.isInteger(l.qty) && l.qty >= 1 && l.qty <= 20) ? items : null;
+}
+const itemText = items => items.map(l => `${l.qty} × ${l.style} ${/^(XS|S|M|L|XL|2XL|3XL)$/.test(l.size) ? "Adult " + l.size : l.size}`).join(", ");
+
+async function orderShirts(db, p) {
+  const first = field(p, "first_name", 80), last = field(p, "last_name", 80), email = field(p, "email", 120), phone = field(p, "phone", 40);
+  if (!first || !last || !email || !phone) return { ok: false, reason: "missing" };
+  const items = orderItems(p.items);
+  if (!items) return { ok: false, reason: "bad_items" };
+  const total = items.reduce((n, l) => n + SHIRT_PRICES[l.style] * l.qty, 0);
+  await db.prepare("INSERT INTO shirt_orders (first_name, last_name, email, phone, items, total, notes) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    .bind(first, last, email, phone, JSON.stringify(items), total, field(p, "notes", 1000)).run();
+  return { ok: true, total, items };
+}
+
+async function confirmShirtOrder(env, p, items, total) {
+  const text = `Hi ${field(p, "first_name", 80)},\n\nThank you for ordering Santa Paws event shirts! Here's your order:\n\n${items.map(l => "• " + itemText([l])).join("\n")}\n\nTotal: $${total}\n\n` +
+    `Your shirts are designed and printed by Double E Designs. We'll be in touch about paying and picking them up.`;
+  await sendEmails(env, [letter(field(p, "email", 120), "Your Santa Paws shirt order", text, env)]);
+}
+
+async function siteImage(db, key) {
+  const row = await db.prepare("SELECT image FROM site_images WHERE key = ?").bind(key).first();
+  const m = row && String(row.image).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+  if (!m) return new Response("Not found", { status: 404, headers: CORS });
+  const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+  return new Response(bytes, { headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=3600", ...CORS } });
 }
 
 async function saveMessage(db, p) {
@@ -394,7 +435,7 @@ const EDITABLE = {
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
 };
 
-const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts"];
+const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts", "shirt_orders"];
 
 async function admin(request, env, path) {
   if (!(await authorized(request, env))) return json({ ok: false, reason: "unauthorized" }, 401);
@@ -453,6 +494,18 @@ async function admin(request, env, path) {
     return json({ ok: true });
   }
   if (path === "/admin/walkup") return json(await addWalkup(db, p));
+  if (path === "/admin/image") {
+    if (p.key !== "shirt-design") return json({ ok: false, reason: "bad_request" }, 400);
+    if (!p.image) { await db.prepare("DELETE FROM site_images WHERE key = ?").bind(p.key).run(); return json({ ok: true }); }
+    if (!isImage(p.image, MAX_PHOTO)) return json({ ok: false, reason: "bad_image" }, 400);
+    await db.prepare("INSERT INTO site_images (key, image) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET image = excluded.image, updated = datetime('now')").bind(p.key, p.image).run();
+    return json({ ok: true });
+  }
+  if (path === "/admin/paid") {
+    if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.prepare("UPDATE shirt_orders SET paid = ? WHERE id = ?").bind(p.paid ? 1 : 0, p.id).run();
+    return json({ ok: true });
+  }
   if (path === "/admin/shirt") {
     const name = field(p, "name", 120);
     if (!name) return json({ ok: false, reason: "missing" });
@@ -497,6 +550,7 @@ export default {
       if (path.startsWith("/admin")) return await admin(request, env, path);
       const lm = path.match(/^\/logo\/(vendor|sponsor)\/(\d+)$/);
       if (lm && request.method === "GET") return await logo(env.DB, lm[1], Number(lm[2]));
+      if (path === "/image/shirt-design" && request.method === "GET") return await siteImage(env.DB, "shirt-design");
       const pm = path.match(/^\/photo\/(\d+)(\/thumb)?$/);
       if (pm && request.method === "GET") return await photo(env.DB, Number(pm[1]), Boolean(pm[2]));
       if (path !== "/") return json({ ok: false, reason: "not_found" }, 404);
@@ -525,6 +579,11 @@ export default {
         case "sponsor": {
           const r = await applySponsor(db, p);
           if (r.ok && emailReady(env)) { r.emailed = true; ctx.waitUntil(confirmSponsor(env, p).catch(err => console.error(err))); }
+          return json(r);
+        }
+        case "shirt_order": {
+          const r = await orderShirts(db, p);
+          if (r.ok && emailReady(env)) { r.emailed = true; ctx.waitUntil(confirmShirtOrder(env, p, r.items, r.total).catch(err => console.error(err))); }
           return json(r);
         }
         case "contact": return json(await saveMessage(db, p));
