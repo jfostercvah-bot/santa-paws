@@ -33,6 +33,9 @@ const VENDOR_MAX = 15;
 const SPONSOR_LEVELS = { "North Pole": 3, Reindeer: 5, "Elf Friends": 7 };
 // Event shirt sizes: toddler, youth, then adult. Sponsors pick from the adult ones.
 const SHIRT_SIZES = ["2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
+// Shirt orders and sponsors' free shirts close at the end of Friday, November 6 (Eastern).
+const SHIRT_DEADLINE = Date.parse("2026-11-07T05:00:00Z");
+const shirtsOpen = () => Date.now() < SHIRT_DEADLINE;
 const shirtField = p => (SHIRT_SIZES.includes(field(p, "shirt_size", 10)) ? field(p, "shirt_size", 10) : "");
 const MAX_PETS = 6;
 
@@ -167,7 +170,7 @@ async function applySponsor(db, p) {
   const r = await db.prepare(
     `INSERT INTO sponsors (business, level, show, contact, email, phone, website, logo, shirt_size)
      SELECT ?, ?, 0, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM sponsors WHERE level = ?) < ?`)
-    .bind(business, level, contact, email, field(p, "phone", 40), field(p, "website", 200), logoField(p), shirtField(p), level, SPONSOR_LEVELS[level])
+    .bind(business, level, contact, email, field(p, "phone", 40), field(p, "website", 200), logoField(p), shirtsOpen() ? shirtField(p) : "", level, SPONSOR_LEVELS[level])
     .run();
   if (!r.meta.changes) return { ok: false, reason: "full", status: await status(db) };
   return { ok: true, status: await status(db) };
@@ -208,6 +211,7 @@ const itemText = items => items.map(l => `${l.qty} × ${l.style} ${/^(XS|S|M|L|X
 async function orderShirts(db, p) {
   const first = field(p, "first_name", 80), last = field(p, "last_name", 80), email = field(p, "email", 120), phone = field(p, "phone", 40);
   if (!first || !last || !email || !phone) return { ok: false, reason: "missing" };
+  if (!shirtsOpen()) return { ok: false, reason: "closed" };
   const items = orderItems(p.items);
   if (!items) return { ok: false, reason: "bad_items" };
   const total = items.reduce((n, l) => n + SHIRT_PRICES[l.style] * l.qty, 0);
@@ -218,7 +222,8 @@ async function orderShirts(db, p) {
 
 async function confirmShirtOrder(env, p, items, total) {
   const text = `Hi ${field(p, "first_name", 80)},\n\nThank you for ordering Santa Paws event shirts! Here's your order:\n\n${items.map(l => "• " + itemText([l])).join("\n")}\n\nTotal: $${total}\n\n` +
-    `Your shirts are designed and printed by Double E Designs. We'll be in touch about paying and picking them up.`;
+    `How to pay: pay Carolina Virginia Animal Hospital with cash, Venmo, Cash App or PayPal. If you pay online, please put your name in the payment note.\n\n` +
+    `Pickup: your shirts will be waiting for you at Santa Paws on Saturday, November 21, 10 AM to 3 PM.\n\nYour shirts are designed and printed by Double E Designs. Thank you for supporting Santa Paws!`;
   await sendEmails(env, [letter(field(p, "email", 120), "Your Santa Paws shirt order", text, env)]);
 }
 
@@ -338,7 +343,7 @@ async function confirmSponsor(env, p) {
   const level = field(p, "level", 40);
   const price = { "North Pole": "$150", Reindeer: "$75", "Elf Friends": "$50" }[level] || "";
   const text = `Hi ${field(p, "contact", 120)},\n\nThank you for signing up ${field(p, "business", 120)} as a ${level} sponsor (${price}) of Santa Paws on Saturday, November 21, 2026! Your spot is held.\n\n` +
-    `You can pay by cash or check, made payable to Carolina Virginia Animal Hospital. We'll be in touch with the details and about your logo for the event shirt and digital sign.${shirtField(p) ? ` Your free event shirt will be a size ${shirtField(p)}.` : ""} Your business will appear on our website once everything is confirmed.\n\nThank you for helping keep Santa Paws free for every family.`;
+    `You can pay by cash or check, made payable to Carolina Virginia Animal Hospital. We'll be in touch with the details and about your logo for the event shirt and digital sign.${shirtsOpen() && shirtField(p) ? ` Your free event shirt will be a size ${shirtField(p)}, and you can pick it up at the event.` : ""} Your business will appear on our website once everything is confirmed.\n\nThank you for helping keep Santa Paws free for every family.`;
   await sendEmails(env, [letter(field(p, "email", 120), "Thank you for sponsoring Santa Paws!", text, env)]);
 }
 

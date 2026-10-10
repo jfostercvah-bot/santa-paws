@@ -260,6 +260,11 @@ button.zoom img { transition: transform .2s; }
 .line-x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--band); color: var(--ink); font-size: 1.3rem; cursor: pointer; }
 .small-btn { justify-self: start; padding: 8px 16px; font-size: .95rem; background: var(--band); color: var(--pine); border: 1.5px solid var(--pine); }
 .order-total { font-size: 1.2rem; margin: 4px 0 0; }
+.shirt-deadline { margin-top: 10px; background: var(--band); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; color: var(--ink); }
+.pay-box { background: var(--band); border-radius: 12px; padding: 12px 16px; display: grid; gap: 8px; }
+.pay-box p { margin: 0; }
+.pay-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.pay-links a { display: inline-block; background: var(--paper); border: 1.5px solid var(--pine); border-radius: 999px; padding: 6px 16px; font-weight: 700; color: var(--pine); text-decoration: none; }
 .order-total strong { font-family: var(--display); font-weight: 400; color: var(--berry); font-size: 1.6rem; }
 @media (max-width: 960px) { .shirt-cards { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) {
@@ -379,6 +384,11 @@ const FORM_KEY = "564b0e79-ea1f-4f77-9f8f-c629473bbf90";
 // spots count down on their own and booked photo times are crossed out automatically.
 // Web3Forms still emails each sign-up to the clinic.
 const API_URL = "https://api.cvahsantapaws.com";
+// Shirt orders (and sponsors' free shirts) close at the end of Friday, November 6 (Eastern).
+const SHIRT_DEADLINE = Date.parse("2026-11-07T05:00:00Z");
+const shirtsOpen = () => Date.now() < SHIRT_DEADLINE;
+// Payment links for shirt orders. Leave one empty to hide its button.
+const PAY = { Venmo: "", "Cash App": "", PayPal: "" };
 
 // Shrinks an uploaded logo (to fit 600px, then smaller if needed) and returns it as a data: URL.
 async function logoData(file) {
@@ -597,8 +607,9 @@ wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email",
 if (document.getElementById("sponsor-apply")) {
   const sel = document.getElementById("s-level");
   document.querySelectorAll("[data-pick]").forEach(a => a.addEventListener("click", () => { sel.value = a.dataset.pick; }));
+  if (!shirtsOpen()) { const w = document.getElementById("s-shirt-wrap"); w.hidden = true; w.querySelector("select").required = false; }
   wire("sponsor-apply", "sponsor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone."
-    : need(f, ["shirt_size"]) ? "Pick a shirt size for your free event shirt." : null,
+    : shirtsOpen() && need(f, ["shirt_size"]) ? "Pick a shirt size for your free event shirt." : null,
     f => `Thank you, ${f.elements.business.value}! Your ${f.elements.level.value} spot is held. You can pay by cash or check (payable to Carolina Virginia Animal Hospital), and we'll follow up with the details.`,
     f => ({ form: "sponsor", subject: `Sponsor sign-up: ${f.elements.business.value} (${f.elements.level.value})`, replyto: f.elements.email.value }),
     { full: () => `Sorry, the ${sel.value} level just sold out. Please pick another level.` });
@@ -671,7 +682,16 @@ if (document.getElementById("vendor-grid")) {
 }
 
 // --- event shirt orders ---
+if (document.getElementById("shirt-order") && !shirtsOpen()) {
+  document.getElementById("shirt-order").hidden = true;
+  document.getElementById("orders-closed").hidden = false;
+}
 if (document.getElementById("shirt-order")) {
+  const payLinks = document.getElementById("pay-links");
+  Object.entries(PAY).filter(([, url]) => url).forEach(([name, url]) => {
+    const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Pay with " + name;
+    payLinks.append(a); payLinks.hidden = false;
+  });
   const PRICES = { "Short sleeve": 15, "Long sleeve": 20, Crewneck: 25, Hoodie: 30 };
   const box = document.getElementById("order-lines"), tpl = document.getElementById("line-tpl");
   const lines = () => [...box.querySelectorAll(".order-line")].map(l => ({
@@ -693,8 +713,9 @@ if (document.getElementById("shirt-order")) {
   document.getElementById("add-line").onclick = addLine;
   wire("shirt-order", "shirt-done", f => need(f, ["first_name", "last_name", "email", "phone"]) ? "Add your name, email and phone."
     : lines().some(l => !l.size) ? "Pick a size for each shirt." : null,
-    () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. We'll be in touch about paying and picking up.`,
-    f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }));
+    () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. Pay with cash, Venmo, Cash App or PayPal, and pick up your shirts at Santa Paws on November 21.`,
+    f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }),
+    { closed: () => "Sorry, shirt orders closed on November 6." });
   document.addEventListener("sp-status", ({ detail: d }) => {
     if (!d.shirtDesign) return;
     const img = document.getElementById("design-img");
