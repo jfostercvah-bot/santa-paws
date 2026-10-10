@@ -680,7 +680,8 @@ wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email",
 if (document.getElementById("sponsor-apply")) {
   const sel = document.getElementById("s-level");
   document.querySelectorAll("[data-pick]").forEach(a => a.addEventListener("click", () => { sel.value = a.dataset.pick; }));
-  wire("sponsor-apply", "sponsor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone." : null,
+  wire("sponsor-apply", "sponsor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone."
+    : need(f, ["shirt_size"]) ? "Pick a shirt size for your free event shirt." : null,
     f => `Thank you, ${f.elements.business.value}! Your ${f.elements.level.value} spot is held. You can pay by cash or check (payable to Carolina Virginia Animal Hospital), and we'll follow up with the details.`,
     f => ({ form: "sponsor", subject: `Sponsor sign-up: ${f.elements.business.value} (${f.elements.level.value})`, replyto: f.elements.email.value }),
     { full: () => `Sorry, the ${sel.value} level just sold out. Please pick another level.` });

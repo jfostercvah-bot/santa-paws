@@ -28,6 +28,9 @@
 
 const VENDOR_MAX = 15;
 const SPONSOR_LEVELS = { "North Pole": 3, Reindeer: 5, "Elf Friends": 7 };
+// Every sponsor gets one event shirt in one of these sizes.
+const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
+const shirtField = p => (SHIRT_SIZES.includes(field(p, "shirt_size", 10)) ? field(p, "shirt_size", 10) : "");
 const MAX_PETS = 6;
 
 // Every bookable photo time: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM.
@@ -157,9 +160,9 @@ async function applySponsor(db, p) {
   const business = field(p, "business", 120), contact = field(p, "contact", 120), email = field(p, "email", 120), level = field(p, "level", 40);
   if (!business || !contact || !email || !(level in SPONSOR_LEVELS)) return { ok: false, reason: "missing" };
   const r = await db.prepare(
-    `INSERT INTO sponsors (business, level, show, contact, email, phone, website, logo)
-     SELECT ?, ?, 0, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM sponsors WHERE level = ?) < ?`)
-    .bind(business, level, contact, email, field(p, "phone", 40), field(p, "website", 200), logoField(p), level, SPONSOR_LEVELS[level])
+    `INSERT INTO sponsors (business, level, show, contact, email, phone, website, logo, shirt_size)
+     SELECT ?, ?, 0, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM sponsors WHERE level = ?) < ?`)
+    .bind(business, level, contact, email, field(p, "phone", 40), field(p, "website", 200), logoField(p), shirtField(p), level, SPONSOR_LEVELS[level])
     .run();
   if (!r.meta.changes) return { ok: false, reason: "full", status: await status(db) };
   return { ok: true, status: await status(db) };
@@ -293,7 +296,7 @@ async function confirmSponsor(env, p) {
   const level = field(p, "level", 40);
   const price = { "North Pole": "$150", Reindeer: "$75", "Elf Friends": "$50" }[level] || "";
   const text = `Hi ${field(p, "contact", 120)},\n\nThank you for signing up ${field(p, "business", 120)} as a ${level} sponsor (${price}) of Santa Paws on Saturday, November 21, 2026! Your spot is held.\n\n` +
-    `You can pay by cash or check, made payable to Carolina Virginia Animal Hospital. We'll be in touch with the details and about your logo for the event shirt and digital sign. Your business will appear on our website once everything is confirmed.\n\nThank you for helping keep Santa Paws free for every family.`;
+    `You can pay by cash or check, made payable to Carolina Virginia Animal Hospital. We'll be in touch with the details and about your logo for the event shirt and digital sign.${shirtField(p) ? ` Your free event shirt will be a size ${shirtField(p)}.` : ""} Your business will appear on our website once everything is confirmed.\n\nThank you for helping keep Santa Paws free for every family.`;
   await sendEmails(env, [letter(field(p, "email", 120), "Thank you for sponsoring Santa Paws!", text, env)]);
 }
 
@@ -385,7 +388,7 @@ async function addWalkup(db, p) {
 // Columns the admin page may edit, with their length limits.
 const EDITABLE = {
   vendors: { business: 120, contact: 120, email: 120, phone: 40, category: 80, website: 200, needs: 500, description: 2000 },
-  sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200 },
+  sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200, shirt_size: 10 },
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
 };
 
@@ -416,8 +419,8 @@ async function admin(request, env, path) {
     if (Number.isInteger(p.id)) {
       await db.prepare("UPDATE sponsors SET business = ?, level = ?, show = ? WHERE id = ?").bind(business, level, show, p.id).run();
     } else {
-      await db.prepare("INSERT INTO sponsors (business, level, show, website, logo) VALUES (?, ?, ?, ?, ?)")
-        .bind(business, level, show, field(p, "website", 200), logoField(p)).run();
+      await db.prepare("INSERT INTO sponsors (business, level, show, website, logo, shirt_size) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(business, level, show, field(p, "website", 200), logoField(p), shirtField(p)).run();
     }
     return json({ ok: true });
   }
@@ -439,6 +442,7 @@ async function admin(request, env, path) {
     if (!keys.length || !Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
     if (p.table === "photos" && "times" in fields) return json(await editPhoto(db, p.id, fields, keys));
     if (keys.includes("level") && !(fields.level in SPONSOR_LEVELS)) return json({ ok: false, reason: "bad_request" }, 400);
+    if (keys.includes("shirt_size") && fields.shirt_size && !SHIRT_SIZES.includes(fields.shirt_size)) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("business") && !field(fields, "business")) return json({ ok: false, reason: "bad_request" }, 400);
     await db.prepare(`UPDATE ${p.table} SET ${keys.map(k => `${k} = ?`).join(", ")} WHERE id = ?`)
       .bind(...keys.map(k => field(fields, k, allowed[k])), p.id).run();

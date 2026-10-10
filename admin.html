@@ -112,6 +112,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
         <option>North Pole</option><option>Reindeer</option><option>Elf Friends</option>
       </select>
       <input name="website" placeholder="Website (optional)" aria-label="Website">
+      <select name="shirt_size" aria-label="Shirt size"><option value="">Shirt size</option><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>2XL</option><option>3XL</option></select>
       <label class="muted" style="display:flex;align-items:center;gap:6px">Logo <input name="logo_file" type="file" accept="image/*"></label>
       <button type="submit">Add sponsor</button>
     </form>
@@ -188,7 +189,7 @@ const TABS = {
     remove: r => `Delete the vendor application from ${r.business}? The spot opens up for someone else.`,
   },
   sponsors: {
-    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
+    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["shirt_size", "Shirt"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
     note: "Every sponsor holds a spot. Click Show once they've paid to put them on the website. Click a logo to download it.",
     remove: r => `Remove ${r.business} as a sponsor?`,
   },
@@ -230,6 +231,14 @@ const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { m
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
 const cell = (r, k) => k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
 
+// " Shirts to order: 2 M, 1 XL." for the Sponsors tab
+function shirtTally() {
+  const n = {};
+  data.sponsors.forEach(r => { if (r.shirt_size) n[r.shirt_size] = (n[r.shirt_size] || 0) + 1; });
+  const order = ["XS", "S", "M", "L", "XL", "2XL", "3XL"].filter(z => n[z]);
+  return order.length ? ` Shirts to order: ${order.map(z => `${n[z]} ${z}`).join(", ")}.` : "";
+}
+
 function rows() {
   const list = [...(data[tab] || [])];
   // Waiting-list walk-ups (no time yet) go last, first come first served.
@@ -268,7 +277,7 @@ function render() {
   dayOf();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
   const T = TABS[tab], list = rows();
-  document.getElementById("note").textContent = T.note;
+  document.getElementById("note").textContent = T.note + (tab === "sponsors" ? shirtTally() : "");
   const table = document.getElementById("table");
   table.innerHTML = "";
   const head = table.createTHead().insertRow();
@@ -456,7 +465,7 @@ document.getElementById("gallery-form").addEventListener("submit", async e => {
 
 const EDIT_FIELDS = {
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
-  sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+  sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
 // Every photo time, in order: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM (same as the server).
@@ -499,7 +508,7 @@ function editRow(table, r, adding) {
   EDIT_FIELDS[table].forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
     let input;
-    if (Array.isArray(kind)) { input = document.createElement("select"); kind.forEach(o => input.add(new Option(o))); }
+    if (Array.isArray(kind)) { input = document.createElement("select"); kind.forEach(o => input.add(new Option(o || "Not picked", o))); }
     else if (kind === "area") { input = document.createElement("textarea"); input.rows = 5; }
     else input = document.createElement("input");
     input.name = k; input.value = r[k] ?? "";
@@ -566,7 +575,7 @@ document.getElementById("sponsor-form").addEventListener("submit", e => {
   act(async () => {
     let logo = "";
     try { logo = await logoData(f.logo_file.files[0]); } catch { alert("That logo file couldn't be read. Try a PNG or JPG."); return; }
-    await api("/admin/sponsor", { business: f.business.value, level: f.level.value, website: f.website.value, logo });
+    await api("/admin/sponsor", { business: f.business.value, level: f.level.value, website: f.website.value, shirt_size: f.shirt_size.value, logo });
     f.reset();
   });
 });
