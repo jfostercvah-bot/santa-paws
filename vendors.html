@@ -89,6 +89,13 @@ header.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; 
 .btn.berry { background: var(--berry); color: var(--berry-ink); box-shadow: 0 4px 0 #7d1522; }
 .btn.berry:active { transform: translateY(2px); box-shadow: 0 2px 0 #7d1522; }
 .btn.ghost { background: transparent; color: var(--on-pine); border: 2px solid var(--on-pine); }
+.photog { display: flex; align-items: center; gap: 20px; margin-bottom: 22px; padding: 22px 26px; border-radius: 18px; border: 2px solid var(--gold); background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 12%, var(--paper)), var(--paper) 60%); }
+.photog .photog-logo { width: 120px; height: 120px; }
+.photog > div { flex: 1; display: grid; gap: 6px; }
+.photog h3 { font-size: 1.45rem; }
+.photog p { color: var(--muted); margin: 0; }
+.photog .btn { flex: none; }
+@media (max-width: 680px) { .photog { flex-wrap: wrap; } .photog > div { flex-basis: 100%; } }
 .pup { width: 100%; max-width: 400px; justify-self: center; }
 .hero-hills { position: absolute; bottom: -1px; left: 0; width: 100%; height: 48px; display: block; }
 .hero-hills path { fill: var(--snow); }
