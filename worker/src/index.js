@@ -17,6 +17,7 @@
  *   POST /admin/logo       { table: vendors|sponsors, id, logo }  (empty logo removes it)
  *   POST /admin/walkup     { times, first_name, last_name, phone, email, pets, notes } (checked in right away)
  *   POST /admin/vendor     { business, contact, email, phone, category, website, needs, description } (shown right away)
+ *   POST /admin/shirt      { name, team, size, notes }
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
@@ -389,10 +390,11 @@ async function addWalkup(db, p) {
 const EDITABLE = {
   vendors: { business: 120, contact: 120, email: 120, phone: 40, category: 80, website: 200, needs: 500, description: 2000 },
   sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200, shirt_size: 10 },
+  shirts: { name: 120, team: 40, size: 10, notes: 500 },
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
 };
 
-const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery"];
+const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts"];
 
 async function admin(request, env, path) {
   if (!(await authorized(request, env))) return json({ ok: false, reason: "unauthorized" }, 401);
@@ -443,12 +445,21 @@ async function admin(request, env, path) {
     if (p.table === "photos" && "times" in fields) return json(await editPhoto(db, p.id, fields, keys));
     if (keys.includes("level") && !(fields.level in SPONSOR_LEVELS)) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("shirt_size") && fields.shirt_size && !SHIRT_SIZES.includes(fields.shirt_size)) return json({ ok: false, reason: "bad_request" }, 400);
+    if (keys.includes("size") && fields.size && !SHIRT_SIZES.includes(fields.size)) return json({ ok: false, reason: "bad_request" }, 400);
+    if (keys.includes("name") && !field(fields, "name")) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("business") && !field(fields, "business")) return json({ ok: false, reason: "bad_request" }, 400);
     await db.prepare(`UPDATE ${p.table} SET ${keys.map(k => `${k} = ?`).join(", ")} WHERE id = ?`)
       .bind(...keys.map(k => field(fields, k, allowed[k])), p.id).run();
     return json({ ok: true });
   }
   if (path === "/admin/walkup") return json(await addWalkup(db, p));
+  if (path === "/admin/shirt") {
+    const name = field(p, "name", 120);
+    if (!name) return json({ ok: false, reason: "missing" });
+    await db.prepare("INSERT INTO shirts (name, team, size, notes) VALUES (?, ?, ?, ?)")
+      .bind(name, field(p, "team", 40), shirtField({ shirt_size: p.size }), field(p, "notes", 500)).run();
+    return json({ ok: true });
+  }
   if (path === "/admin/vendor") {
     // Added by Josh, so it skips the 15-spot limit and shows on the website right away.
     const business = field(p, "business", 120);

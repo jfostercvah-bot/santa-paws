@@ -104,6 +104,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button data-tab="sponsors" aria-pressed="false">Sponsors</button>
       <button data-tab="messages" aria-pressed="false">Messages</button>
       <button data-tab="gallery" aria-pressed="false">Gallery</button>
+      <button data-tab="shirts" aria-pressed="false">Shirts</button>
       <button data-tab="emails" aria-pressed="false">Send email</button>
     </div>
     <form class="sponsor-form" id="sponsor-form" hidden>
@@ -145,6 +146,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
         <span id="e-msg" class="muted" role="status"></span>
       </div>
     </form>
+    <div class="card dayof" id="shirt-totals" hidden></div>
     <div class="card dayof" id="dayof" hidden>
       <div class="bar" style="margin:0">
         <strong class="grow" id="dayof-count"></strong>
@@ -158,6 +160,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button class="ghost small" id="copy-emails" hidden>Copy all emails</button>
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="small" id="add-vendor" hidden>Add vendor</button>
+      <button class="small" id="add-shirt" hidden>Add person</button>
       <button class="ghost small" id="refresh">Refresh</button>
       <button class="small" id="csv">Download spreadsheet (CSV)</button>
     </div>
@@ -203,6 +206,11 @@ const TABS = {
     note: "Emails you've sent from here.",
     remove: null,
   },
+  shirts: {
+    cols: [["team", "Group"], ["name", "Name"], ["size", "Size"], ["notes", "Notes", true], ["created", "Added"]],
+    note: "Add staff, event help and anyone else who gets a shirt. Sponsors are listed automatically; change their size on the Sponsors tab.",
+    remove: r => `Remove ${r.name} from the shirt list?`,
+  },
   messages: {
     cols: [["name", "Name"], ["email", "Email"], ["phone", "Phone"], ["topic", "Topic"], ["message", "Message", true], ["created", "Sent"]],
     note: "Messages also go to your email. Reply to people from there.",
@@ -239,7 +247,33 @@ function shirtTally() {
   return order.length ? ` Shirts to order: ${order.map(z => `${n[z]} ${z}`).join(", ")}.` : "";
 }
 
+const SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
+const TEAMS = ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"];
+
+// Everyone getting a shirt: people added on the Shirts tab, plus every sponsor.
+function shirtRows() {
+  const sponsors = data.sponsors.map(s => ({ id: "s" + s.id, sponsor: true, team: "Sponsor", name: s.contact ? `${s.contact} (${s.business})` : s.business, size: s.shirt_size, notes: s.level + " sponsor", created: s.created }));
+  const order = t => { const i = ["Sponsor", ...TEAMS].indexOf(t); return i < 0 ? 99 : i; };
+  return [...data.shirts, ...sponsors].sort((a, b) => order(a.team) - order(b.team) || String(a.name).localeCompare(String(b.name)));
+}
+
+function shirtTotals() {
+  const box = document.getElementById("shirt-totals");
+  box.hidden = tab !== "shirts";
+  if (box.hidden) return;
+  const all = shirtRows(), sized = all.filter(r => SIZES.includes(r.size)), missing = all.length - sized.length;
+  const teams = [...new Set(sized.map(r => r.team || "Other"))];
+  const count = (team, z) => sized.filter(r => (!team || (r.team || "Other") === team) && r.size === z).length;
+  const used = SIZES.filter(z => count(null, z));
+  const row = (label, team, bold) => `<tr${bold ? ' style="font-weight:700"' : ""}><td>${label}</td>${used.map(z => `<td>${count(team, z) || ""}</td>`).join("")}<td>${used.reduce((n, z) => n + count(team, z), 0)}</td></tr>`;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  box.innerHTML = `<strong>${sized.length} shirt${sized.length === 1 ? "" : "s"} to order</strong>` +
+    (used.length ? `<div class="scroll"><table><thead><tr><th></th>${used.map(z => `<th>${z}</th>`).join("")}<th>Total</th></tr></thead><tbody>${teams.map(t => row(esc(t), t)).join("")}${row("All", null, true)}</tbody></table></div>` : "") +
+    (missing ? `<span class="err">${missing} ${missing === 1 ? "person hasn't" : "people haven't"} picked a size yet.</span>` : "");
+}
+
 function rows() {
+  if (tab === "shirts") return shirtRows();
   const list = [...(data[tab] || [])];
   // Waiting-list walk-ups (no time yet) go last, first come first served.
   if (tab === "photos") list.sort((a, b) => minutes(a.times) - minutes(b.times) || a.id - b.id);
@@ -276,6 +310,8 @@ function render() {
   document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors"].includes(tab);
   dayOf();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
+  document.getElementById("add-shirt").hidden = tab !== "shirts";
+  shirtTotals();
   const T = TABS[tab], list = rows();
   document.getElementById("note").textContent = T.note + (tab === "sponsors" ? shirtTally() : "");
   const table = document.getElementById("table");
@@ -309,6 +345,12 @@ function render() {
       if (k === "times" || k === "checked_in") td.style.whiteSpace = "nowrap";
     });
     const td = tr.insertCell(); td.style.whiteSpace = "nowrap";
+    if (tab === "shirts") {
+      if (r.sponsor) { td.innerHTML = '<span class="muted">Edit on Sponsors tab</span>'; return; }
+      const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
+      ed.onclick = () => editRow(tab, r);
+      td.append(ed, " ");
+    }
     if (tab === "photos") {
       const ci = document.createElement("button"); ci.className = r.checked_in ? "ghost small" : "small";
       ci.textContent = r.checked_in ? "Undo check-in" : "Check in";
@@ -464,6 +506,7 @@ document.getElementById("gallery-form").addEventListener("submit", async e => {
 });
 
 const EDIT_FIELDS = {
+  shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["notes", "Notes"]],
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
@@ -503,7 +546,7 @@ function walkup(time) {
 
 function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = adding ? (table === "photos" ? "Add a walk-up" : "Add a vendor") : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business);
+  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business || r.name);
   box.innerHTML = "";
   EDIT_FIELDS[table].forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
@@ -521,10 +564,11 @@ function editRow(table, r, adding) {
     // On a problem, say what's wrong and reopen the form with what was typed.
     const problem = msg => { alert(msg); dlg.returnValue = ""; dlg.showModal(); };
     if ("business" in fields && !fields.business.trim()) return problem("Business name can't be empty.");
+    if (table === "shirts" && !fields.name.trim()) return problem("Add their name.");
     if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
     if (adding && table === "photos" && !fields.email.trim() && !fields.phone.trim()) return problem("Add an email (best, so they get their photo link) or a phone number.");
     act(async () => {
-      try { await (adding ? api(table === "photos" ? "/admin/walkup" : "/admin/vendor", fields) : api("/admin/edit", { table, id: r.id, fields })); }
+      try { await (adding ? api({ photos: "/admin/walkup", vendors: "/admin/vendor", shirts: "/admin/shirt" }[table], fields) : api("/admin/edit", { table, id: r.id, fields })); }
       catch (e) {
         if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
         else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
@@ -561,6 +605,7 @@ async function start() {
 
 document.getElementById("login").addEventListener("submit", e => { e.preventDefault(); pw = document.getElementById("pw").value; start(); });
 document.getElementById("logout").onclick = () => logout();
+document.getElementById("add-shirt").onclick = () => editRow("shirts", { team: "Staff" }, true);
 document.getElementById("add-vendor").onclick = () => {
   const v = data.status.vendors;
   if (v.taken >= v.max && !confirm(`All ${v.max} vendor spots are taken. Add this vendor anyway?`)) return;
