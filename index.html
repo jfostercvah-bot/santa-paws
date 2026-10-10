@@ -311,14 +311,15 @@ footer p { opacity: .85; font-size: .95rem; }
 .event-strip { background: var(--band); border-bottom: 1px solid var(--line); }
 .event-strip .wrap { display: flex; flex-wrap: wrap; gap: 4px 18px; padding-block: 10px; font-weight: 600; font-size: .92rem; color: var(--pine); }
 .nav ul a[aria-current="page"] { opacity: 1; text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 3px; text-underline-offset: 6px; }
-.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
 .tile { display: grid; gap: 10px; align-content: start; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 22px; text-decoration: none; color: var(--ink); transition: transform .15s, border-color .15s; }
 .tile:hover { transform: translateY(-3px); border-color: var(--pine); }
 .tile svg { width: 40px; height: 40px; }
 .tile h3 { font-size: 1.35rem; }
 .tile p { color: var(--muted); font-size: .95rem; }
 .tile .go { font-weight: 700; color: var(--berry); margin-top: auto; }
-@media (max-width: 960px) { .tiles { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 760px) { .tiles { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 520px) { .tiles { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
 </style>
@@ -469,6 +470,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <a class="tile" href="treats.html"><svg style="color:var(--gold)"><use href="#paw"/></svg><h3>Treats &amp; Eats</h3><p>Coffee, hot chocolate, Christmas Pup Cups and Tiffany's food truck.</p><span class="go">See what's cooking</span></a>
         <a class="tile" href="vendors.html"><svg style="color:var(--pine)"><use href="#paw"/></svg><h3>Vendors</h3><p>15 outdoor spots for local small businesses. $20 per spot.</p><span class="go">Apply to be a vendor</span></a>
         <a class="tile" href="gallery.html"><svg style="color:var(--berry)"><use href="#paw"/></svg><h3>Gallery</h3><p>Favorite moments from past Santa Paws events.</p><span class="go">View photos</span></a>
+        <a class="tile" href="shirts.html"><svg style="color:var(--gold)"><use href="#paw"/></svg><h3>Event Shirts</h3><p>T-shirts, long sleeves, crewnecks and hoodies by Double E Designs. Order by November 6.</p><span class="go">Order a shirt</span></a>
       </div>
     </div>
   </section>
