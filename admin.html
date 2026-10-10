@@ -192,7 +192,7 @@ const TABS = {
     remove: r => `Delete the vendor application from ${r.business}? The spot opens up for someone else.`,
   },
   sponsors: {
-    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["shirt_size", "Shirt"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
+    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["shirt_size", "Shirt"], ["shirt_style", "Type"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
     note: "Every sponsor holds a spot. Click Show once they've paid to put them on the website. Click a logo to download it.",
     remove: r => `Remove ${r.business} as a sponsor?`,
   },
@@ -207,7 +207,7 @@ const TABS = {
     remove: null,
   },
   shirts: {
-    cols: [["team", "Group"], ["name", "Name"], ["size", "Size"], ["notes", "Notes", true], ["created", "Added"]],
+    cols: [["team", "Group"], ["name", "Name"], ["style", "Type"], ["size", "Size"], ["notes", "Notes", true], ["created", "Added"]],
     note: "Add staff, event help and anyone else who gets a shirt. Sponsors are listed automatically; change their size on the Sponsors tab.",
     remove: r => `Remove ${r.name} from the shirt list?`,
   },
@@ -250,11 +250,12 @@ function shirtTally() {
 const SIZES = ["2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
 // "M" -> "Adult M" so adult sizes don't get mixed up with youth ones.
 const sizeLabel = z => /^(XS|S|M|L|XL|2XL|3XL)$/.test(z) ? "Adult " + z : z;
+const STYLES = ["T-shirt", "Long sleeve", "Sweatshirt", "Hoodie"];
 const TEAMS = ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"];
 
 // Everyone getting a shirt: people added on the Shirts tab, plus every sponsor.
 function shirtRows() {
-  const sponsors = data.sponsors.map(s => ({ id: "s" + s.id, sponsor: true, team: "Sponsor", name: s.contact ? `${s.contact} (${s.business})` : s.business, size: s.shirt_size, notes: s.level + " sponsor", created: s.created }));
+  const sponsors = data.sponsors.map(s => ({ id: "s" + s.id, sponsor: true, team: "Sponsor", name: s.contact ? `${s.contact} (${s.business})` : s.business, size: s.shirt_size, style: s.shirt_style || "T-shirt", notes: s.level + " sponsor", created: s.created }));
   const order = t => { const i = ["Sponsor", ...TEAMS].indexOf(t); return i < 0 ? 99 : i; };
   return [...data.shirts, ...sponsors].sort((a, b) => order(a.team) - order(b.team) || String(a.name).localeCompare(String(b.name)));
 }
@@ -264,13 +265,18 @@ function shirtTotals() {
   box.hidden = tab !== "shirts";
   if (box.hidden) return;
   const all = shirtRows(), sized = all.filter(r => SIZES.includes(r.size)), missing = all.length - sized.length;
-  const teams = [...new Set(sized.map(r => r.team || "Other"))];
-  const count = (team, z) => sized.filter(r => (!team || (r.team || "Other") === team) && r.size === z).length;
+  // Rows are shirt types, columns are sizes: exactly what goes on the order.
+  const style = r => r.style || "T-shirt";
+  const types = [...STYLES, ...new Set(sized.map(style).filter(t => !STYLES.includes(t)))].filter(t => sized.some(r => style(r) === t));
+  const count = (type, z) => sized.filter(r => (!type || style(r) === type) && r.size === z).length;
   const used = SIZES.filter(z => count(null, z));
-  const row = (label, team, bold) => `<tr${bold ? ' style="font-weight:700"' : ""}><td>${label}</td>${used.map(z => `<td>${count(team, z) || ""}</td>`).join("")}<td>${used.reduce((n, z) => n + count(team, z), 0)}</td></tr>`;
+  const row = (label, type, bold) => `<tr${bold ? ' style="font-weight:700"' : ""}><td>${label}</td>${used.map(z => `<td>${count(type, z) || ""}</td>`).join("")}<td>${used.reduce((n, z) => n + count(type, z), 0)}</td></tr>`;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const groups = {};
+  sized.forEach(r => { const g = r.team || "Other"; groups[g] = (groups[g] || 0) + 1; });
   box.innerHTML = `<strong>${sized.length} shirt${sized.length === 1 ? "" : "s"} to order</strong>` +
-    (used.length ? `<div class="scroll"><table><thead><tr><th></th>${used.map(z => `<th>${sizeLabel(z)}</th>`).join("")}<th>Total</th></tr></thead><tbody>${teams.map(t => row(esc(t), t)).join("")}${row("All", null, true)}</tbody></table></div>` : "") +
+    (used.length ? `<div class="scroll"><table><thead><tr><th></th>${used.map(z => `<th>${sizeLabel(z)}</th>`).join("")}<th>Total</th></tr></thead><tbody>${types.map(t => row(esc(t), t)).join("")}${types.length > 1 ? row("All", null, true) : ""}</tbody></table></div>` : "") +
+    (sized.length ? `<span class="muted">By group: ${Object.entries(groups).map(([g, n]) => `${esc(g)} ${n}`).join(" · ")}</span>` : "") +
     (missing ? `<span class="err">${missing} ${missing === 1 ? "person hasn't" : "people haven't"} picked a size yet.</span>` : "");
 }
 
@@ -508,9 +514,9 @@ document.getElementById("gallery-form").addEventListener("submit", async e => {
 });
 
 const EDIT_FIELDS = {
-  shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["size", "Shirt size", ["", "2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["notes", "Notes"]],
+  shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["style", "Shirt type", ["T-shirt", "Long sleeve", "Sweatshirt", "Hoodie"]], ["size", "Shirt size", ["", "2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["notes", "Notes"]],
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
-  sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+  sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["shirt_style", "Shirt type", ["T-shirt", "Long sleeve", "Sweatshirt", "Hoodie"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
 // Every photo time, in order: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM (same as the server).

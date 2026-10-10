@@ -17,7 +17,7 @@
  *   POST /admin/logo       { table: vendors|sponsors, id, logo }  (empty logo removes it)
  *   POST /admin/walkup     { times, first_name, last_name, phone, email, pets, notes } (checked in right away)
  *   POST /admin/vendor     { business, contact, email, phone, category, website, needs, description } (shown right away)
- *   POST /admin/shirt      { name, team, size, notes }
+ *   POST /admin/shirt      { name, team, size, style, notes }
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
@@ -389,8 +389,8 @@ async function addWalkup(db, p) {
 // Columns the admin page may edit, with their length limits.
 const EDITABLE = {
   vendors: { business: 120, contact: 120, email: 120, phone: 40, category: 80, website: 200, needs: 500, description: 2000 },
-  sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200, shirt_size: 10 },
-  shirts: { name: 120, team: 40, size: 10, notes: 500 },
+  sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200, shirt_size: 10, shirt_style: 20 },
+  shirts: { name: 120, team: 40, size: 10, style: 20, notes: 500 },
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
 };
 
@@ -456,8 +456,8 @@ async function admin(request, env, path) {
   if (path === "/admin/shirt") {
     const name = field(p, "name", 120);
     if (!name) return json({ ok: false, reason: "missing" });
-    await db.prepare("INSERT INTO shirts (name, team, size, notes) VALUES (?, ?, ?, ?)")
-      .bind(name, field(p, "team", 40), shirtField({ shirt_size: p.size }), field(p, "notes", 500)).run();
+    await db.prepare("INSERT INTO shirts (name, team, size, style, notes) VALUES (?, ?, ?, ?, ?)")
+      .bind(name, field(p, "team", 40), shirtField({ shirt_size: p.size }), field(p, "style", 20) || "T-shirt", field(p, "notes", 500)).run();
     return json({ ok: true });
   }
   if (path === "/admin/vendor") {
