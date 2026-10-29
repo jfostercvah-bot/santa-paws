@@ -77,6 +77,9 @@ img.thumb.photo { width: 120px; height: 90px; object-fit: cover; }
 img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: block; }
 .edit-dialog { width: min(560px, 94vw); padding: 20px; color: var(--ink); }
 .edit-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.reply-orig { margin: 0 0 12px; padding: 10px 14px; border-left: 4px solid var(--line, #ccc); white-space: pre-wrap; max-height: 180px; overflow: auto; }
+.reply-past { margin: 0 0 12px; font-size: .9rem; white-space: pre-wrap; max-height: 140px; overflow: auto; }
+#reply-text { width: 100%; box-sizing: border-box; }
 .edit-fields { display: grid; gap: 10px; }
 .edit-fields label { display: grid; gap: 4px; font-weight: 600; font-size: .92rem; }
 .sponsor-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -178,6 +181,20 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
     </div>
   </form>
 </dialog>
+<dialog id="reply" class="card edit-dialog">
+  <form method="dialog">
+    <h2 id="reply-title" style="margin:0 0 6px;font-size:1.2rem">Reply</h2>
+    <p class="muted" id="reply-to" style="margin:0 0 8px"></p>
+    <blockquote id="reply-orig" class="reply-orig"></blockquote>
+    <div id="reply-past"></div>
+    <label>Your reply<textarea id="reply-text" rows="8"></textarea></label>
+    <p class="muted" style="margin:6px 0 0;font-size:.85rem">Sent from hello@cvahsantapaws.com with their message quoted below yours. If they answer, it comes to your email.</p>
+    <div class="bar" style="margin:12px 0 0">
+      <button type="submit" value="send">Send reply</button>
+      <button type="submit" value="cancel" class="ghost small" formnovalidate>Cancel</button>
+    </div>
+  </form>
+</dialog>
 <script>
 const API_URL = "https://api.cvahsantapaws.com";
 
@@ -218,8 +235,8 @@ const TABS = {
     remove: r => `Remove ${r.name} from the shirt list?`,
   },
   messages: {
-    cols: [["name", "Name"], ["email", "Email"], ["phone", "Phone"], ["topic", "Topic"], ["message", "Message", true], ["created", "Sent"]],
-    note: "Messages also go to your email. Reply to people from there.",
+    cols: [["name", "Name"], ["email", "Email"], ["phone", "Phone"], ["topic", "Topic"], ["message", "Message", true], ["created", "Sent"], ["replied", "Replied"]],
+    note: "Tap Reply to answer by email from hello@cvahsantapaws.com. If they write back, it comes to your email. Messages also still go to your email.",
     remove: r => `Delete the message from ${r.name}?`,
   },
 };
@@ -243,7 +260,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : r[k] ?? "";
+const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "replied" ? (r.replied ? "✓ " + when(r.replied) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -397,6 +414,11 @@ function render() {
       const pb = document.createElement("button"); pb.className = r.paid ? "ghost small" : "small"; pb.textContent = r.paid ? "Mark unpaid" : "Paid";
       pb.onclick = () => act(() => api("/admin/paid", { id: r.id, paid: !r.paid }));
       td.append(pb, " ");
+    }
+    if (tab === "messages") {
+      const rb = document.createElement("button"); rb.className = r.replied ? "ghost small" : "small"; rb.textContent = r.replied ? "Reply again" : "Reply";
+      rb.onclick = () => replyTo(r);
+      td.append(rb, " ");
     }
     if (tab === "shirts") {
       if (r.sponsor) { td.innerHTML = '<span class="muted">Edit on Sponsors tab</span>'; return; }
@@ -595,6 +617,33 @@ function dayOf() {
 
 function walkup(time) {
   editRow("photos", { times: time }, true);
+}
+
+function replyTo(r, draft) {
+  const dlg = document.getElementById("reply"), ta = document.getElementById("reply-text");
+  if (!data.emailReady) { alert("Email sending isn't set up yet, so replies can't go out. Reply from your own email for now."); return; }
+  document.getElementById("reply-title").textContent = "Reply to " + r.name;
+  document.getElementById("reply-to").textContent = `To ${r.email}${r.topic ? " · " + r.topic : ""} · sent ${when(r.created)}`;
+  document.getElementById("reply-orig").textContent = r.message;
+  const past = document.getElementById("reply-past");
+  past.className = r.replies ? "reply-past" : ""; past.textContent = r.replies ? "Already sent:\n" + r.replies : "";
+  ta.value = draft ?? `Hi ${String(r.name).trim().split(/\s+/)[0]},\n\n\n\nThanks,\nThe Santa Paws team at Carolina Virginia Animal Hospital`;
+  dlg.onclose = () => {
+    if (dlg.returnValue !== "send") return;
+    const text = ta.value;
+    if (!text.trim()) { alert("Type your reply first."); return replyTo(r, text); }
+    act(async () => {
+      try { await api("/admin/reply", { id: r.id, message: text }); alert("Reply sent to " + r.email + "."); }
+      catch (e) {
+        if (e.message === "unauthorized") throw e;
+        alert(e.message === "bad_email" ? "That email address doesn't look right, so the reply can't be sent." : "The reply didn't go out. Your text is still there, so try again.");
+        if (e.message !== "bad_email") replyTo(r, text);
+      }
+    });
+  };
+  dlg.returnValue = "";
+  dlg.showModal();
+  ta.focus(); const at = ta.value.indexOf("\n\n") + 2; ta.setSelectionRange(at, at);
 }
 
 function editRow(table, r, adding) {

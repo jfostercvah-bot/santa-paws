@@ -375,6 +375,24 @@ async function announce(env, p) {
   return { ok: result.sent > 0, reason: result.sent ? undefined : "send_failed", ...result };
 }
 
+// Answers a contact-form message by email. Their reply comes back to REPLY_TO_EMAIL.
+async function replyMessage(env, p) {
+  const db = env.DB, text = field(p, "message", 10000);
+  if (!emailReady(env)) return { ok: false, reason: "email_not_set_up" };
+  if (!Number.isInteger(p.id) || !text) return { ok: false, reason: "bad_request" };
+  const m = await db.prepare("SELECT * FROM messages WHERE id = ?").bind(p.id).first();
+  if (!m) return { ok: false, reason: "not_found" };
+  if (!looksLikeEmail(String(m.email).trim())) return { ok: false, reason: "bad_email" };
+  const quoted = String(m.message).split("\n").map(l => "> " + l).join("\n");
+  const body = `${text}\n\n${m.name} wrote on ${String(m.created).slice(0, 10)}:\n${quoted}`;
+  const result = await sendEmails(env, [letter(String(m.email).trim(), "Re: your message to Santa Paws", body, env)]);
+  if (!result.sent) return { ok: false, reason: "send_failed", error: result.error };
+  const stamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.prepare("UPDATE messages SET replied = ?, replies = CASE WHEN replies = '' THEN ? ELSE replies || char(10) || char(10) || ? END WHERE id = ?")
+    .bind(stamp, `[${stamp}] ${text}`, `[${stamp}] ${text}`, p.id).run();
+  return { ok: true };
+}
+
 async function authorized(request, env) {
   const given = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!env.ADMIN_PASSWORD || !given) return false;
@@ -473,6 +491,7 @@ async function admin(request, env, path) {
     return json({ ok: true });
   }
   if (path === "/admin/email") return json(await announce(env, p));
+  if (path === "/admin/reply") return json(await replyMessage(env, p));
   if (path === "/admin/gallery") {
     const year = field(p, "year", 4), caption = field(p, "caption", 140);
     if (!/^\d{4}$/.test(year)) return json({ ok: false, reason: "bad_request" }, 400);
