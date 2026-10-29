@@ -235,7 +235,7 @@ const TABS = {
     remove: r => `Remove ${r.name} from the shirt list?`,
   },
   messages: {
-    cols: [["name", "Name"], ["email", "Email"], ["phone", "Phone"], ["topic", "Topic"], ["message", "Message", true], ["created", "Sent"], ["replied", "Replied"]],
+    cols: [["name", "Name"], ["email", "Email"], ["phone", "Phone"], ["topic", "Topic"], ["message", "Message", true], ["created", "Sent"], ["replies", "Your reply", true]],
     note: "Tap Reply to answer by email from hello@cvahsantapaws.com. If they write back, it comes to your email. Messages also still go to your email.",
     remove: r => `Delete the message from ${r.name}?`,
   },
@@ -260,7 +260,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "replied" ? (r.replied ? "✓ " + when(r.replied) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -626,7 +626,7 @@ function replyTo(r, draft) {
   document.getElementById("reply-to").textContent = `To ${r.email}${r.topic ? " · " + r.topic : ""} · sent ${when(r.created)}`;
   document.getElementById("reply-orig").textContent = r.message;
   const past = document.getElementById("reply-past");
-  past.className = r.replies ? "reply-past" : ""; past.textContent = r.replies ? "Already sent:\n" + r.replies : "";
+  past.className = r.replies ? "reply-past" : ""; past.textContent = r.replies ? "Already sent:\n" + cell(r, "replies") : "";
   ta.value = draft ?? `Hi ${String(r.name).trim().split(/\s+/)[0]},\n\n\n\nThanks,\nThe Santa Paws team at Carolina Virginia Animal Hospital`;
   dlg.onclose = () => {
     if (dlg.returnValue !== "send") return;
