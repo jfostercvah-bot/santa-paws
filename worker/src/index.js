@@ -223,7 +223,7 @@ async function orderShirts(db, p) {
 async function confirmShirtOrder(env, p, items, total) {
   const text = `Hi ${field(p, "first_name", 80)},\n\nThank you for ordering Santa Paws event shirts! Here's your order:\n\n${items.map(l => "• " + itemText([l])).join("\n")}\n\nTotal: $${total}\n\n` +
     `How to pay: pay Carolina Virginia Animal Hospital with cash, Venmo, Cash App or PayPal. If you pay online, please put your name in the payment note.\n\n` +
-    `Pickup: your shirts will be waiting for you at Santa Paws on Saturday, November 21, 10 AM to 3 PM.\n\nYour shirts are designed and printed by Double E Designs. Thank you for supporting Santa Paws!`;
+    `Pickup: your shirts will be waiting for you at Santa Paws on Saturday, November 21, 10 AM to 3 PM.\n\nThank you for supporting Santa Paws!`;
   await sendEmails(env, [letter(field(p, "email", 120), "Your Santa Paws shirt order", text, env)]);
 }
 
