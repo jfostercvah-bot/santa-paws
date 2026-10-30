@@ -219,13 +219,13 @@ const TABS = {
     remove: r => `Delete the ${r.times || "waiting list"} booking for ${r.first_name} ${r.last_name}? The time opens up for someone else.`,
   },
   vendors: {
-    cols: [["logo", "Logo"], ["business", "Business"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["category", "Category"], ["website", "Website"], ["needs", "Booth needs", true], ["description", "About", true], ["created", "Applied"]],
-    note: "Click Show to list a vendor on the Vendors page. Vendors you add yourself show right away. Click a logo to download it. Delete an application to open the spot again.",
+    cols: [["logo", "Logo"], ["business", "Business"], ["paid", "Paid"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["category", "Category"], ["website", "Website"], ["needs", "Booth needs", true], ["description", "About", true], ["created", "Applied"]],
+    note: "Tap Paid when a vendor pays their $20. Click Show to list a vendor on the Vendors page. Vendors you add yourself show right away. Click a logo to download it. Delete an application to open the spot again.",
     remove: r => `Delete the vendor application from ${r.business}? The spot opens up for someone else.`,
   },
   sponsors: {
-    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["shirt_size", "Shirt"], ["shirt_style", "Type"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
-    note: "Every sponsor holds a spot. Click Show once they've paid to put them on the website. Click a logo to download it.",
+    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["paid", "Paid"], ["shirt_size", "Shirt"], ["shirt_style", "Type"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
+    note: "Every sponsor holds a spot. Tap Paid when they pay, then Show to put them on the website. Click a logo to download it.",
     remove: r => `Remove ${r.business} as a sponsor?`,
   },
   gallery: {
@@ -240,7 +240,7 @@ const TABS = {
   },
   budget: {
     cols: [["kind", "Type"], ["item", "Item"], ["amount", "Amount"], ["notes", "Notes", true], ["created", "Added"]],
-    note: "Add what the event costs (Santa, decorations, treats, the shirt printer bill...). Vendor, sponsor and paid shirt money is counted for you. Use Add other income for donations or anything else.",
+    note: "Add what the event costs (Santa, decorations, treats, the shirt printer bill...). Vendor, sponsor and shirt money is counted for you once you tap Paid on their tab. Use Add other income for donations or anything else.",
     remove: r => `Remove ${r.item} from the budget?`,
   },
   shirt_orders: {
@@ -279,7 +279,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -315,16 +315,22 @@ function budgetBox() {
   box.hidden = tab !== "budget";
   if (box.hidden) return;
   const s = data.status, sum = (list, f) => list.reduce((n, r) => n + Number(f(r) || 0), 0);
-  const nv = data.vendors.length, sponsors = Object.keys(SPONSOR_PRICES).map(l => [l, data.sponsors.filter(r => r.level === l).length]);
-  const shirtsPaid = sum(data.shirt_orders.filter(r => r.paid), r => r.total), shirtsAll = sum(data.shirt_orders, r => r.total);
-  const other = data.budget.filter(r => r.kind === "Income"), costs = data.budget.filter(r => r.kind !== "Income");
-  const lines = [[`Vendors: ${nv} × ${usd(VENDOR_FEE)}`, nv * VENDOR_FEE],
-    ...sponsors.map(([l, n]) => [`${l} sponsors: ${n} × ${usd(SPONSOR_PRICES[l])}`, n * SPONSOR_PRICES[l]]),
-    [`Shirt orders paid${shirtsAll > shirtsPaid ? ` (${usd(shirtsAll - shirtsPaid)} more still owed)` : ""}`, shirtsPaid],
-    [`Other income${other.length ? ` (${other.length})` : ""}`, sum(other, r => r.amount)]];
+  const paid = list => list.filter(r => r.paid);
+  const pv = paid(data.vendors).length, nv = data.vendors.length;
+  const sponsors = Object.keys(SPONSOR_PRICES).map(l => { const all = data.sponsors.filter(r => r.level === l); return [l, paid(all).length, all.length]; });
+  const shirtsPaid = sum(paid(data.shirt_orders), r => r.total), shirtsAll = sum(data.shirt_orders, r => r.total);
+  const other = data.budget.filter(r => r.kind === "Income"), costs = data.budget.filter(r => r.kind !== "Income"), otherIn = sum(other, r => r.amount);
+  const owed = (n, all, price) => all > n ? ` (${all - n} unpaid, ${usd((all - n) * price)})` : "";
+  // Money actually received; unpaid sign-ups are shown next to each line.
+  const lines = [[`Vendors paid: ${pv} × ${usd(VENDOR_FEE)}${owed(pv, nv, VENDOR_FEE)}`, pv * VENDOR_FEE],
+    ...sponsors.map(([l, n, all]) => [`${l} sponsors paid: ${n} × ${usd(SPONSOR_PRICES[l])}${owed(n, all, SPONSOR_PRICES[l])}`, n * SPONSOR_PRICES[l]]),
+    [`Shirt orders paid${shirtsAll > shirtsPaid ? ` (${usd(shirtsAll - shirtsPaid)} unpaid)` : ""}`, shirtsPaid],
+    [`Other income${other.length ? ` (${other.length})` : ""}`, otherIn]];
   const moneyIn = sum(lines, l => l[1]), moneyOut = sum(costs, r => r.amount), net = moneyIn - moneyOut;
-  // If every vendor and sponsor spot filled (and every shirt order got paid).
-  const full = Math.max(nv, s.vendors.max) * VENDOR_FEE + Object.entries(SPONSOR_PRICES).reduce((n, [l, p]) => n + Math.max(s.sponsors[l]?.max || 0, sponsors.find(x => x[0] === l)[1]) * p, 0) + shirtsAll + sum(other, r => r.amount);
+  const signed = nv * VENDOR_FEE + sum(sponsors, ([l, , all]) => all * SPONSOR_PRICES[l]) + shirtsAll + otherIn;
+  // If every vendor and sponsor spot filled and everyone paid.
+  const full = Math.max(nv, s.vendors.max) * VENDOR_FEE + sponsors.reduce((n, [l, , all]) => n + Math.max(s.sponsors[l]?.max || 0, all) * SPONSOR_PRICES[l], 0) + shirtsAll + otherIn;
+  const outlook = n => n - moneyOut >= 0 ? `${usd(n - moneyOut)} ahead` : `still ${usd(moneyOut - n)} short`;
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const row = (label, n, cls = "") => `<tr class="${cls}"><td>${esc(label)}</td><td class="amt">${usd(n)}</td></tr>`;
   box.innerHTML = `<div class="be ${net >= 0 ? "good" : "short"}"><b>${net >= 0 ? (net ? `${usd(net)} ahead` : "Exactly break even") : `${usd(-net)} to break even`}</b>
@@ -333,7 +339,7 @@ function budgetBox() {
       <table><thead><tr><th>Money in</th><th class="amt"></th></tr></thead><tbody>${lines.map(([l, n]) => row(l, n)).join("")}${row("Total in", moneyIn, "tot")}</tbody></table>
       <table><thead><tr><th>Costs</th><th class="amt"></th></tr></thead><tbody>${costs.length ? costs.map(r => row(r.item, r.amount)).join("") : '<tr><td class="muted" colspan="2">No costs added yet</td></tr>'}${row("Total costs", moneyOut, "tot")}</tbody></table>
     </div>
-    <span class="muted">Counts everyone signed up, paid or not. If every vendor and sponsor spot fills: ${usd(full)} in, ${full - moneyOut >= 0 ? `${usd(full - moneyOut)} ahead` : `still ${usd(moneyOut - full)} short`}.</span>`;
+    <span class="muted">Counts money received (marked Paid). Once everyone signed up pays: ${usd(signed)} in, ${outlook(signed)}. If every vendor and sponsor spot fills: ${usd(full)} in, ${outlook(full)}.</span>`;
 }
 
 // Totals box for the Shirts tab (free shirts) and Shirt orders tab (sold shirts).
@@ -461,9 +467,9 @@ function render() {
       if (k === "times" || k === "checked_in") td.style.whiteSpace = "nowrap";
     });
     const td = tr.insertCell(); td.style.whiteSpace = "nowrap";
-    if (tab === "shirt_orders") {
+    if (["shirt_orders", "vendors", "sponsors"].includes(tab)) {
       const pb = document.createElement("button"); pb.className = r.paid ? "ghost small" : "small"; pb.textContent = r.paid ? "Mark unpaid" : "Paid";
-      pb.onclick = () => act(() => api("/admin/paid", { id: r.id, paid: !r.paid }));
+      pb.onclick = () => act(() => api("/admin/paid", { table: tab, id: r.id, paid: !r.paid }));
       td.append(pb, " ");
     }
     if (tab === "messages") {

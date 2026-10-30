@@ -543,7 +543,8 @@ async function admin(request, env, path) {
   }
   if (path === "/admin/paid") {
     if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
-    await db.prepare("UPDATE shirt_orders SET paid = ? WHERE id = ?").bind(p.paid ? 1 : 0, p.id).run();
+    const table = ["vendors", "sponsors"].includes(p.table) ? p.table : "shirt_orders";
+    await db.prepare(`UPDATE ${table} SET paid = ? WHERE id = ?`).bind(p.paid ? 1 : 0, p.id).run();
     return json({ ok: true });
   }
   if (path === "/admin/shirt") {
