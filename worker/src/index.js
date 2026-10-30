@@ -30,7 +30,7 @@
  */
 
 const VENDOR_MAX = 15;
-const SPONSOR_LEVELS = { "North Pole": 3, Reindeer: 5, "Elf Friends": 7 };
+const SPONSOR_LEVELS = { "North Pole": 4, Reindeer: 5, "Elf Friends": 7 };
 // Event shirt sizes: toddler, youth, then adult. Sponsors pick from the adult ones.
 const SHIRT_SIZES = ["2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
 // Shirt orders and sponsors' free shirts close at the end of Friday, November 6 (Eastern).
