@@ -76,6 +76,16 @@ tr.here td { background: color-mix(in srgb, var(--pine) 10%, transparent); }
 img.thumb.photo { width: 120px; height: 90px; object-fit: cover; }
 img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: block; }
 .edit-dialog { width: min(560px, 94vw); padding: 20px; color: var(--ink); }
+.budget { display: grid; gap: 12px; }
+.be { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 12px 16px; border-radius: 12px; }
+.be b { font-size: 1.5rem; }
+.be.good { background: #e3f3ea; color: #1f5b43; }
+.be.short { background: #fbe6e8; color: #a3192b; }
+.be-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.be-cols table { width: 100%; }
+.be-cols .amt { text-align: right; white-space: nowrap; }
+.be-cols tr.tot td { font-weight: 700; border-top: 2px solid var(--line, #ccc); }
+@media (max-width: 700px) { .be-cols { grid-template-columns: 1fr; } }
 .edit-dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .reply-orig { margin: 0 0 12px; padding: 10px 14px; border-left: 4px solid var(--line, #ccc); white-space: pre-wrap; max-height: 180px; overflow: auto; }
 .reply-past { margin: 0 0 12px; font-size: .9rem; white-space: pre-wrap; max-height: 140px; overflow: auto; }
@@ -109,6 +119,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button data-tab="gallery" aria-pressed="false">Gallery</button>
       <button data-tab="shirts" aria-pressed="false">Shirts</button>
       <button data-tab="shirt_orders" aria-pressed="false">Shirt orders</button>
+      <button data-tab="budget" aria-pressed="false">Budget</button>
       <button data-tab="emails" aria-pressed="false">Send email</button>
     </div>
     <form class="sponsor-form" id="sponsor-form" hidden>
@@ -151,6 +162,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       </div>
     </form>
     <div class="card dayof" id="shirt-totals" hidden></div>
+    <div class="card budget" id="budget-box" hidden></div>
     <div class="card dayof" id="dayof" hidden>
       <div class="bar" style="margin:0">
         <strong class="grow" id="dayof-count"></strong>
@@ -165,6 +177,8 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="small" id="add-vendor" hidden>Add vendor</button>
       <button class="small" id="add-shirt" hidden>Add person</button>
+      <button class="small" id="add-cost" hidden>Add a cost</button>
+      <button class="ghost small" id="add-income" hidden>Add other income</button>
       <button class="ghost small" id="refresh">Refresh</button>
       <button class="small" id="csv">Download spreadsheet (CSV)</button>
     </div>
@@ -224,6 +238,11 @@ const TABS = {
     note: "Emails you've sent from here.",
     remove: null,
   },
+  budget: {
+    cols: [["kind", "Type"], ["item", "Item"], ["amount", "Amount"], ["notes", "Notes", true], ["created", "Added"]],
+    note: "Add what the event costs (Santa, decorations, treats, the shirt printer bill...). Vendor, sponsor and paid shirt money is counted for you. Use Add other income for donations or anything else.",
+    remove: r => `Remove ${r.item} from the budget?`,
+  },
   shirt_orders: {
     cols: [["first_name", "First name"], ["last_name", "Last name"], ["email", "Email"], ["phone", "Phone"], ["items", "Shirts", true], ["total", "Total"], ["paid", "Paid"], ["notes", "Notes", true], ["created", "Ordered"]],
     note: "Orders from the Event Shirts page. Tap Paid when someone pays.",
@@ -260,7 +279,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : tab === "shirt_orders" && k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -286,6 +305,36 @@ function shirtRows() {
 const ORDER_STYLES = ["Short sleeve", "Long sleeve", "Crewneck", "Hoodie"];
 const orderItems = r => { try { return JSON.parse(r.items) || []; } catch { return []; } };
 const itemText = r => orderItems(r).map(l => `${l.qty} × ${l.style} ${sizeLabel(l.size)}`).join(", ");
+
+// Budget tab: money in (sign-ups, paid shirts, other income) vs. costs.
+const VENDOR_FEE = 20;
+const SPONSOR_PRICES = { "North Pole": 150, Reindeer: 75, "Elf Friends": 50 };
+const usd = n => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 });
+function budgetBox() {
+  const box = document.getElementById("budget-box");
+  box.hidden = tab !== "budget";
+  if (box.hidden) return;
+  const s = data.status, sum = (list, f) => list.reduce((n, r) => n + Number(f(r) || 0), 0);
+  const nv = data.vendors.length, sponsors = Object.keys(SPONSOR_PRICES).map(l => [l, data.sponsors.filter(r => r.level === l).length]);
+  const shirtsPaid = sum(data.shirt_orders.filter(r => r.paid), r => r.total), shirtsAll = sum(data.shirt_orders, r => r.total);
+  const other = data.budget.filter(r => r.kind === "Income"), costs = data.budget.filter(r => r.kind !== "Income");
+  const lines = [[`Vendors: ${nv} × ${usd(VENDOR_FEE)}`, nv * VENDOR_FEE],
+    ...sponsors.map(([l, n]) => [`${l} sponsors: ${n} × ${usd(SPONSOR_PRICES[l])}`, n * SPONSOR_PRICES[l]]),
+    [`Shirt orders paid${shirtsAll > shirtsPaid ? ` (${usd(shirtsAll - shirtsPaid)} more still owed)` : ""}`, shirtsPaid],
+    [`Other income${other.length ? ` (${other.length})` : ""}`, sum(other, r => r.amount)]];
+  const moneyIn = sum(lines, l => l[1]), moneyOut = sum(costs, r => r.amount), net = moneyIn - moneyOut;
+  // If every vendor and sponsor spot filled (and every shirt order got paid).
+  const full = Math.max(nv, s.vendors.max) * VENDOR_FEE + Object.entries(SPONSOR_PRICES).reduce((n, [l, p]) => n + Math.max(s.sponsors[l]?.max || 0, sponsors.find(x => x[0] === l)[1]) * p, 0) + shirtsAll + sum(other, r => r.amount);
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const row = (label, n, cls = "") => `<tr class="${cls}"><td>${esc(label)}</td><td class="amt">${usd(n)}</td></tr>`;
+  box.innerHTML = `<div class="be ${net >= 0 ? "good" : "short"}"><b>${net >= 0 ? (net ? `${usd(net)} ahead` : "Exactly break even") : `${usd(-net)} to break even`}</b>
+      <span>${usd(moneyIn)} in · ${usd(moneyOut)} costs</span></div>
+    <div class="be-cols">
+      <table><thead><tr><th>Money in</th><th class="amt"></th></tr></thead><tbody>${lines.map(([l, n]) => row(l, n)).join("")}${row("Total in", moneyIn, "tot")}</tbody></table>
+      <table><thead><tr><th>Costs</th><th class="amt"></th></tr></thead><tbody>${costs.length ? costs.map(r => row(r.item, r.amount)).join("") : '<tr><td class="muted" colspan="2">No costs added yet</td></tr>'}${row("Total costs", moneyOut, "tot")}</tbody></table>
+    </div>
+    <span class="muted">Counts everyone signed up, paid or not. If every vendor and sponsor spot fills: ${usd(full)} in, ${full - moneyOut >= 0 ? `${usd(full - moneyOut)} ahead` : `still ${usd(moneyOut - full)} short`}.</span>`;
+}
 
 // Totals box for the Shirts tab (free shirts) and Shirt orders tab (sold shirts).
 function shirtTotals() {
@@ -376,7 +425,9 @@ function render() {
   dayOf();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
   document.getElementById("add-shirt").hidden = tab !== "shirts";
+  document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
   shirtTotals();
+  budgetBox();
   const T = TABS[tab], list = rows();
   document.getElementById("note").textContent = T.note + (tab === "sponsors" ? shirtTally() : "");
   const table = document.getElementById("table");
@@ -419,6 +470,11 @@ function render() {
       const rb = document.createElement("button"); rb.className = r.replied ? "ghost small" : "small"; rb.textContent = r.replied ? "Reply again" : "Reply";
       rb.onclick = () => replyTo(r);
       td.append(rb, " ");
+    }
+    if (tab === "budget") {
+      const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
+      ed.onclick = () => editRow(tab, r);
+      td.append(ed, " ");
     }
     if (tab === "shirts") {
       if (r.sponsor) { td.innerHTML = '<span class="muted">Edit on Sponsors tab</span>'; return; }
@@ -584,6 +640,7 @@ const EDIT_FIELDS = {
   shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["style", "Shirt type", ["T-shirt", "Long sleeve", "Sweatshirt", "Hoodie"]], ["size", "Shirt size", ["", "2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["notes", "Notes"]],
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "XS", "S", "M", "L", "XL", "2XL", "3XL"]], ["shirt_style", "Shirt type", ["T-shirt", "Long sleeve", "Sweatshirt", "Hoodie"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+  budget: [["kind", "Type", ["Cost", "Income"]], ["item", "What is it?"], ["amount", "Amount ($)", "money"], ["notes", "Notes"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
 // Every photo time, in order: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM (same as the server).
@@ -648,13 +705,14 @@ function replyTo(r, draft) {
 
 function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business || r.name);
+  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business || r.name);
   box.innerHTML = "";
   EDIT_FIELDS[table].forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
     let input;
     if (Array.isArray(kind)) { input = document.createElement("select"); kind.forEach(o => input.add(new Option(o ? sizeLabel(o) : "Not picked", o))); }
     else if (kind === "area") { input = document.createElement("textarea"); input.rows = 5; }
+    else if (kind === "money") { input = document.createElement("input"); input.inputMode = "decimal"; input.placeholder = "0.00"; }
     else input = document.createElement("input");
     input.name = k; input.value = r[k] ?? "";
     l.append(input); box.append(l);
@@ -667,10 +725,12 @@ function editRow(table, r, adding) {
     const problem = msg => { alert(msg); dlg.returnValue = ""; dlg.showModal(); };
     if ("business" in fields && !fields.business.trim()) return problem("Business name can't be empty.");
     if (table === "shirts" && !fields.name.trim()) return problem("Add their name.");
+    if (table === "budget" && !fields.item.trim()) return problem("Say what it's for, like Santa suit rental.");
+    if (table === "budget" && !/^\$?\s*[\d,]*\.?\d+$/.test(fields.amount.trim())) return problem("Enter the amount as a number, like 45 or 12.50.");
     if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
     if (adding && table === "photos" && !fields.email.trim() && !fields.phone.trim()) return problem("Add an email (best, so they get their photo link) or a phone number.");
     act(async () => {
-      try { await (adding ? api({ photos: "/admin/walkup", vendors: "/admin/vendor", shirts: "/admin/shirt" }[table], fields) : api("/admin/edit", { table, id: r.id, fields })); }
+      try { await (adding ? api({ photos: "/admin/walkup", vendors: "/admin/vendor", shirts: "/admin/shirt", budget: "/admin/budget" }[table], fields) : api("/admin/edit", { table, id: r.id, fields })); }
       catch (e) {
         if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
         else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
@@ -708,6 +768,8 @@ async function start() {
 document.getElementById("login").addEventListener("submit", e => { e.preventDefault(); pw = document.getElementById("pw").value; start(); });
 document.getElementById("logout").onclick = () => logout();
 document.getElementById("add-shirt").onclick = () => editRow("shirts", { team: "Staff" }, true);
+document.getElementById("add-cost").onclick = () => editRow("budget", { kind: "Cost" }, true);
+document.getElementById("add-income").onclick = () => editRow("budget", { kind: "Income" }, true);
 document.getElementById("add-vendor").onclick = () => {
   const v = data.status.vendors;
   if (v.taken >= v.max && !confirm(`All ${v.max} vendor spots are taken. Add this vendor anyway?`)) return;

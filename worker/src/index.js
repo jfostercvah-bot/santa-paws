@@ -456,9 +456,14 @@ const EDITABLE = {
   sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200, shirt_size: 10, shirt_style: 20 },
   shirts: { name: 120, team: 40, size: 10, style: 20, notes: 500 },
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
+  budget: { kind: 10, item: 120, amount: 20, notes: 500 },
 };
 
-const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts", "shirt_orders"];
+// Budget tab: costs of putting on the event, plus income that isn't a sign-up (donations, raffle...).
+const BUDGET_KINDS = ["Cost", "Income"];
+const budgetAmount = v => { const t = String(v ?? "").replace(/[$,\s]/g, ""), n = t === "" ? NaN : Number(t); return Number.isFinite(n) && n >= 0 && n < 1e7 ? Math.round(n * 100) / 100 : null; };
+
+const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts", "shirt_orders", "budget"];
 
 async function admin(request, env, path) {
   if (!(await authorized(request, env))) return json({ ok: false, reason: "unauthorized" }, 401);
@@ -503,6 +508,12 @@ async function admin(request, env, path) {
     const r = await db.prepare("INSERT INTO gallery (year, caption, thumb, image) VALUES (?, ?, ?, ?)").bind(year, caption, p.thumb, p.image).run();
     return json({ ok: true, id: r.meta.last_row_id });
   }
+  if (path === "/admin/budget") {
+    const item = field(p, "item", 120), amount = budgetAmount(p.amount), kind = BUDGET_KINDS.includes(p.kind) ? p.kind : "Cost";
+    if (!item || amount === null) return json({ ok: false, reason: "missing" });
+    await db.prepare("INSERT INTO budget (kind, item, amount, notes) VALUES (?, ?, ?, ?)").bind(kind, item, amount, field(p, "notes", 500)).run();
+    return json({ ok: true });
+  }
   if (path === "/admin/edit") {
     const allowed = EDITABLE[p.table], fields = p.fields || {};
     const keys = allowed ? Object.keys(fields).filter(k => k in allowed) : [];
@@ -513,6 +524,11 @@ async function admin(request, env, path) {
     if (keys.includes("size") && fields.size && !SHIRT_SIZES.includes(fields.size)) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("name") && !field(fields, "name")) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("business") && !field(fields, "business")) return json({ ok: false, reason: "bad_request" }, 400);
+    if (p.table === "budget") {
+      if (keys.includes("item") && !field(fields, "item")) return json({ ok: false, reason: "missing" });
+      if (keys.includes("kind") && !BUDGET_KINDS.includes(fields.kind)) return json({ ok: false, reason: "bad_request" }, 400);
+      if (keys.includes("amount")) { const a = budgetAmount(fields.amount); if (a === null) return json({ ok: false, reason: "missing" }); fields.amount = String(a); }
+    }
     await db.prepare(`UPDATE ${p.table} SET ${keys.map(k => `${k} = ?`).join(", ")} WHERE id = ?`)
       .bind(...keys.map(k => field(fields, k, allowed[k])), p.id).run();
     return json({ ok: true });
