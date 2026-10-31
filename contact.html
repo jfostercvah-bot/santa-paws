@@ -761,45 +761,6 @@ if (document.getElementById("shirt-order")) {
   document.querySelectorAll(".design-zoom").forEach(b => {
     b.onclick = () => zoomLogo(b.dataset.logo, b.getAttribute("aria-label").replace(/^View the | larger$/g, "")).click();
   });
-  // Print our real sponsors' names on the back of the Santa Paws shirt picture (the mockup's sample logos were painted out).
-  document.addEventListener("sp-status", async ({ detail: d }) => {
-    const tiers = [["North Pole", 30], ["Reindeer", 23], ["Elf Friends", 18]]
-      .map(([l, size]) => [((d.sponsors && d.sponsors[l] && d.sponsors[l].names) || []).filter(Boolean), size]).filter(([n]) => n.length);
-    const btn = document.querySelector('.design-zoom[data-logo="shirt-santa-paws-2026.jpg"]');
-    if (!tiers.length || !btn) return;
-    const img = new Image(); img.src = btn.dataset.logo;
-    try { await img.decode(); await document.fonts.load('700 20px "Figtree"'); } catch {}
-    const c = document.createElement("canvas"), k = img.naturalWidth / 1320;
-    c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g = c.getContext("2d"); g.drawImage(img, 0, 0);
-    // The empty space on the back, in the 1320-wide original: x 790-1160, y 118-352.
-    const box = { x: 790 * k, w: 370 * k, y: 118 * k, h: 234 * k };
-    const layout = scale => {
-      const rows = [];
-      tiers.forEach(([names, size], t) => {
-        const px = size * k * scale; g.font = `700 ${px}px Figtree, system-ui, sans-serif`;
-        let line = "";
-        names.forEach(n => {
-          const next = line ? line + "   •   " + n : n;
-          if (line && g.measureText(next).width > box.w) { rows.push([line, px]); line = n; } else line = next;
-        });
-        rows.push([line, px]);
-        if (t < tiers.length - 1) rows.push(["", px * .5]);
-      });
-      return rows;
-    };
-    let scale = 1, rows = layout(1);
-    const height = r => r.reduce((n, [, px]) => n + px * 1.35, 0);
-    while (scale > .45 && (height(rows) > box.h || rows.some(([t, px]) => { g.font = `700 ${px}px Figtree, system-ui, sans-serif`; return g.measureText(t).width > box.w; }))) rows = layout(scale -= .05);
-    let y = box.y + (box.h - height(rows)) / 2;
-    g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
-    g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 4 * k;
-    rows.forEach(([t, px]) => { g.font = `700 ${px}px Figtree, system-ui, sans-serif`; y += px * 1.35 / 2; if (t) g.fillText(t, box.x + box.w / 2, y); y += px * 1.35 / 2; });
-    try {
-      const url = c.toDataURL("image/jpeg", .88);
-      btn.querySelector("img").src = url; btn.dataset.logo = url;
-    } catch {}
-  });
 
 }
 
