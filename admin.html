@@ -304,7 +304,9 @@ function shirtRows() {
 
 const ORDER_STYLES = ["Short sleeve", "Long sleeve", "Crewneck", "Hoodie"];
 const orderItems = r => { try { return JSON.parse(r.items) || []; } catch { return []; } };
-const itemText = r => orderItems(r).map(l => `${l.qty} × ${l.style} ${sizeLabel(l.size)}`).join(", ");
+// Orders from before the holiday shirt was added have no design: they're all Santa Paws shirts.
+const designOf = l => l.design || "Santa Paws";
+const itemText = r => orderItems(r).map(l => `${l.qty} × ${designOf(l)} ${l.style} ${sizeLabel(l.size)}`).join(", ");
 
 // Budget tab: money in (sign-ups, paid shirts, other income) vs. costs.
 const VENDOR_FEE = 20;
@@ -348,10 +350,10 @@ function shirtTotals() {
   box.hidden = !["shirts", "shirt_orders"].includes(tab);
   if (box.hidden) return;
   const orders = tab === "shirt_orders";
-  const all = orders ? data.shirt_orders.flatMap(r => orderItems(r).flatMap(l => Array(l.qty).fill({ style: l.style, size: l.size }))) : shirtRows();
+  const all = orders ? data.shirt_orders.flatMap(r => orderItems(r).flatMap(l => Array(l.qty).fill({ style: `${designOf(l)} · ${l.style}`, size: l.size }))) : shirtRows();
   const sized = all.filter(r => SIZES.includes(r.size)), missing = all.length - sized.length;
   // Rows are shirt types, columns are sizes: exactly what goes on the order.
-  const kinds = orders ? ORDER_STYLES : STYLES;
+  const kinds = orders ? ["Santa Paws", "Holiday"].flatMap(d => ORDER_STYLES.map(st => `${d} · ${st}`)) : STYLES;
   const style = r => r.style || "T-shirt";
   const types = [...kinds, ...new Set(sized.map(style).filter(t => !kinds.includes(t)))].filter(t => sized.some(r => style(r) === t));
   const count = (type, z) => sized.filter(r => (!type || style(r) === type) && r.size === z).length;
@@ -366,30 +368,6 @@ function shirtTotals() {
     money +
     (sized.length && !orders ? `<span class="muted">By group: ${Object.entries(groups).map(([g, n]) => `${esc(g)} ${n}`).join(" · ")}</span>` : "") +
     (missing && !orders ? `<span class="err">${missing} ${missing === 1 ? "person hasn't" : "people haven't"} picked a size yet.</span>` : "");
-  if (orders) designCard(box);
-}
-
-// Upload or remove the shirt design shown on the Event Shirts page.
-function designCard(box) {
-  const wrap = document.createElement("div"); wrap.className = "bar"; wrap.style.margin = "6px 0 0";
-  const v = data.status.shirtDesign;
-  wrap.innerHTML = `<strong class="grow">Shirt design on the website: ${v ? "posted" : "not posted yet (the page shows \u201ccoming soon\u201d)"}</strong>`;
-  if (v) { const img = document.createElement("img"); img.src = `${API_URL}/image/shirt-design?v=${encodeURIComponent(v)}`; img.className = "thumb"; img.alt = "Shirt design"; wrap.prepend(img); }
-  const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/*"; pick.hidden = true;
-  const up = document.createElement("button"); up.className = "small"; up.textContent = v ? "Replace design" : "Post shirt design";
-  up.onclick = () => pick.click();
-  pick.onchange = () => act(async () => {
-    let image;
-    try { image = await photoData(pick.files[0], 1600, 0.88, 1400000); } catch { alert("That picture couldn't be read. Try a PNG or JPG."); return; }
-    await api("/admin/image", { key: "shirt-design", image });
-  });
-  wrap.append(pick, up);
-  if (v) {
-    const rm = document.createElement("button"); rm.className = "ghost small"; rm.textContent = "Remove";
-    rm.onclick = () => { if (confirm("Take the shirt design off the website? It will say coming soon again.")) act(() => api("/admin/image", { key: "shirt-design", image: "" })); };
-    wrap.append(rm);
-  }
-  box.append(wrap);
 }
 
 function rows() {

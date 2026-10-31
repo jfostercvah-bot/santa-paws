@@ -197,16 +197,18 @@ async function photo(db, id, thumb) {
 }
 
 // Event shirts sold on the Event Shirts page.
-const SHIRT_PRICES = { "Short sleeve": 15, "Long sleeve": 20, Crewneck: 25, Hoodie: 30 };
+// 2026 prices (Josh, Oct 31); both designs cost the same. Orders placed earlier keep the total they were given.
+const SHIRT_PRICES = { "Short sleeve": 30, "Long sleeve": 35, Crewneck: 40, Hoodie: 45 };
+const SHIRT_DESIGNS = ["Santa Paws", "Holiday"];
 
 function orderItems(raw) {
   let list;
   try { list = JSON.parse(String(raw || "")); } catch { return null; }
   if (!Array.isArray(list) || !list.length || list.length > 20) return null;
-  const items = list.map(l => ({ style: String(l.style), size: String(l.size), qty: Number(l.qty) }));
-  return items.every(l => l.style in SHIRT_PRICES && SHIRT_SIZES.includes(l.size) && Number.isInteger(l.qty) && l.qty >= 1 && l.qty <= 20) ? items : null;
+  const items = list.map(l => ({ design: String(l.design), style: String(l.style), size: String(l.size), qty: Number(l.qty) }));
+  return items.every(l => SHIRT_DESIGNS.includes(l.design) && l.style in SHIRT_PRICES && SHIRT_SIZES.includes(l.size) && Number.isInteger(l.qty) && l.qty >= 1 && l.qty <= 20) ? items : null;
 }
-const itemText = items => items.map(l => `${l.qty} × ${l.style} ${/^(XS|S|M|L|XL|2XL|3XL)$/.test(l.size) ? "Adult " + l.size : l.size}`).join(", ");
+const itemText = items => items.map(l => `${l.qty} × ${l.design ? l.design + " design, " : ""}${l.style} ${/^(XS|S|M|L|XL|2XL|3XL)$/.test(l.size) ? "Adult " + l.size : l.size}`).join(", ");
 
 async function orderShirts(db, p) {
   const first = field(p, "first_name", 80), last = field(p, "last_name", 80), email = field(p, "email", 120), phone = field(p, "phone", 40);

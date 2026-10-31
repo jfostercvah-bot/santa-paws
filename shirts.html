@@ -7,7 +7,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Santa Paws">
 <meta property="og:title" content="Event Shirts · Santa Paws">
-<meta property="og:description" content="Order your Santa Paws event shirt: T-shirts, long sleeves, crewnecks and hoodies. Order by November 6.">
+<meta property="og:description" content="Order your Santa Paws 2026 event shirt or our holiday shirt: tees, long sleeves, crewnecks and hoodies. Order by November 6.">
 <meta property="og:url" content="https://cvahsantapaws.com/shirts.html">
 <meta property="og:image" content="https://cvahsantapaws.com/og.png">
 <meta property="og:image:width" content="1200">
@@ -253,7 +253,13 @@ button.zoom img { transition: transform .2s; }
 .maker-links a { display: inline-block; background: var(--band); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 600; color: var(--pine); text-decoration: none; overflow-wrap: anywhere; }
 .maker-links a:hover { border-color: var(--pine); }
 @media (max-width: 640px) { .maker-links { justify-content: center; } }
-.design { margin-bottom: 24px; }
+.designs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 14px; }
+.design-pick { margin: 0; padding: 16px; display: grid; gap: 12px; align-content: start; }
+.design-zoom { padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 12px; overflow: hidden; }
+.design-zoom img { width: 100%; height: auto; display: block; }
+.design-pick h3 { font-size: 1.4rem; margin: 2px 0 4px; }
+.design-pick figcaption p:last-child { color: var(--muted); }
+.shirt-fabric { color: var(--muted); font-weight: 600; margin: 0 0 22px; }
 .design-soon { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center; }
 .design-soon svg { width: 100%; color: var(--pine); }
 .design-soon h3 { font-size: 1.5rem; margin-bottom: 6px; }
@@ -271,7 +277,7 @@ button.zoom img { transition: transform .2s; }
 .order-lines { border: 0; padding: 0; margin: 0; display: grid; gap: 10px; }
 .order-lines legend { font-weight: 600; margin-bottom: 6px; }
 #order-lines { display: grid; gap: 10px; }
-.order-line { display: grid; grid-template-columns: 1.6fr 1fr 80px 40px; gap: 8px; align-items: center; }
+.order-line { display: grid; grid-template-columns: 1.2fr 1.6fr 1fr 70px 40px; gap: 8px; align-items: center; }
 .order-line > * { min-width: 0; }
 .line-x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--band); color: var(--ink); font-size: 1.3rem; cursor: pointer; }
 .small-btn { justify-self: start; padding: 8px 16px; font-size: .95rem; background: var(--band); color: var(--pine); border: 1.5px solid var(--pine); }
@@ -288,7 +294,8 @@ button.zoom img { transition: transform .2s; }
   .maker img { max-width: 220px; margin: 0 auto; }
   .design-soon svg { max-width: 200px; margin: 0 auto; }
   .order-line { grid-template-columns: 1fr 1fr; }
-  .order-line select[data-k="style"] { grid-column: 1 / -1; }
+  .order-line select[data-k="style"], .order-line select[data-k="design"] { grid-column: 1 / -1; }
+  .designs { grid-template-columns: 1fr; }
 }
 @media (max-width: 420px) { .shirt-cards { grid-template-columns: 1fr; } }
 .level { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -375,51 +382,45 @@ footer p { opacity: .85; font-size: .95rem; }
       <div class="head">
         <p class="eyebrow">Wear the cheer</p>
         <h2>Santa Paws event shirts</h2>
-        <p>Make it official with a Santa Paws shirt! Pick your favorite style below and order one for everyone in the family (pets not included, but we won't tell).</p>
+        <p>Make it official with a Santa Paws shirt! This year there are two designs to pick from. Choose your favorite style and order one for everyone in the family (pets not included, but we won't tell).</p>
         <p class="shirt-deadline"><strong>Order by Friday, November 6.</strong> Pick up your shirts at Santa Paws on Saturday, November 21.</p>
       </div>
 
-      <div class="design card" id="shirt-design">
-        <div class="design-soon" id="design-soon">
-          <svg viewBox="0 0 200 170" aria-hidden="true">
-            <g fill="#e7b23c"><path d="M30 30l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/><path d="M172 46l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/><path d="M160 132l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></g>
-            <path d="M70 24 L48 34 L28 62 L46 76 L56 66 V150 H144 V66 L154 76 L172 62 L152 34 L130 24 C126 36 114 42 100 42 C86 42 74 36 70 24Z" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="10 8" stroke-linejoin="round"/>
-            <g fill="#c8283a"><path d="M100 70c-14-14-34-10-30 2s22 6 30-2z"/><path d="M100 70c14-14 34-10 30 2s-22 6-30-2z"/><path d="M98 72l-12 30 10-4 4 10z"/><path d="M102 72l12 30-10-4-4 10z"/><circle cx="100" cy="71" r="7"/></g>
-          </svg>
-          <div>
-            <h3>The design is still in Santa's workshop</h3>
-            <p>Our shirt elves are adding the final sprinkle of sparkle. Check back soon for the big reveal! You can order now, and your shirt will have the finished design.</p>
-          </div>
-        </div>
-        <figure class="design-ready" id="design-ready" hidden>
-          <img id="design-img" alt="This year's Santa Paws shirt design">
-          <figcaption>This year's Santa Paws shirt design</figcaption>
+      <div class="designs">
+        <figure class="design-pick card">
+          <button type="button" class="design-zoom" data-logo="shirt-santa-paws-2026.jpg" aria-label="View the Santa Paws 2026 shirt larger"><img src="shirt-santa-paws-2026.jpg" alt="Santa Paws 2026 shirt, front and back: forest green with snowy pine trees, the Santa Paws logo on the chest, and a pup waiting outside Santa's glowing barn on the back" loading="lazy"></button>
+          <figcaption><p class="eyebrow" style="margin:0">The event shirt</p><h3>Santa Paws 2026</h3><p>Forest green with snowy pines and the Santa Paws logo up front. On the back, a pup waits by the glowing doors of Santa's barn, with our sponsors' names above.</p></figcaption>
+        </figure>
+        <figure class="design-pick card">
+          <button type="button" class="design-zoom" data-logo="shirt-holiday-2026.jpg" aria-label="View the holiday shirt larger"><img src="shirt-holiday-2026.jpg" alt="Carolina Virginia Animal Hospital holiday shirt, front and back: soft tan with tiny paw prints and a Santa-hat paw with a stethoscope" loading="lazy"></button>
+          <figcaption><p class="eyebrow" style="margin:0">Also available</p><h3>Holiday shirt</h3><p>Soft tan covered in little paw prints, with a Santa-hat paw and stethoscope for Carolina Virginia Animal Hospital. Cozy enough to wear all season long.</p></figcaption>
         </figure>
       </div>
+      <p class="shirt-fabric">Both designs come in every style below, same price. Unisex sizing, polyester blend fabric. Tap a shirt to see it bigger.</p>
 
       <div class="shirt-cards">
         <article class="shirt-card">
           <svg viewBox="0 0 64 64" style="color:var(--berry)" aria-hidden="true"><path d="M22 8 L12 12 L4 22 L12 28 L16 24 V56 H48 V24 L52 28 L60 22 L52 12 L42 8 C40 13 36 15 32 15 C28 15 24 13 22 8Z" fill="currentColor"/></svg>
           <h3>Short sleeve T-shirt</h3>
-          <p class="level-price">$15</p>
+          <p class="level-price">$30</p>
           <p>Classic and comfy, perfect for layering under your holiday sweater.</p>
         </article>
         <article class="shirt-card">
           <svg viewBox="0 0 64 64" style="color:var(--pine)" aria-hidden="true"><path d="M22 8 L12 12 L7 30 L4 52 L12 53 L16 30 V56 H48 V30 L52 53 L60 52 L57 30 L52 12 L42 8 C40 13 36 15 32 15 C28 15 24 13 22 8Z" fill="currentColor"/></svg>
           <h3>Long sleeve shirt</h3>
-          <p class="level-price">$20</p>
+          <p class="level-price">$35</p>
           <p>A little extra warmth for chilly November mornings.</p>
         </article>
         <article class="shirt-card">
           <svg viewBox="0 0 64 64" style="color:var(--gold)" aria-hidden="true"><path d="M22 8 L12 12 L7 30 L4 52 L12 53 L16 30 V56 H48 V30 L52 53 L60 52 L57 30 L52 12 L42 8 C40 13 36 15 32 15 C28 15 24 13 22 8Z" fill="currentColor"/><path d="M16 51h32M4.6 48l7.6 1M59.4 48l-7.6 1M25 10c2 4 4.5 6 7 6s5-2 7-6" stroke="var(--paper)" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
           <h3>Crewneck sweatshirt</h3>
-          <p class="level-price">$25</p>
+          <p class="level-price">$40</p>
           <p>Soft and cozy, made for cocoa and Christmas movies.</p>
         </article>
         <article class="shirt-card">
           <svg viewBox="0 0 64 64" style="color:var(--berry)" aria-hidden="true"><path d="M22 8 L12 12 L7 30 L4 52 L12 53 L16 30 V56 H48 V30 L52 53 L60 52 L57 30 L52 12 L42 8 C40 13 36 15 32 15 C28 15 24 13 22 8Z" fill="currentColor"/><path d="M21 9c0-8 22-8 22 0c-2 7-6 10-11 10s-9-3-11-10Z" fill="currentColor" stroke="var(--paper)" stroke-width="2.2"/><path d="M23 40h18l-3 9H26Z" fill="none" stroke="var(--paper)" stroke-width="2.2" stroke-linejoin="round"/><path d="M29 19v9M35 19v9" stroke="var(--paper)" stroke-width="2" stroke-linecap="round"/></svg>
           <h3>Hoodie</h3>
-          <p class="level-price">$30</p>
+          <p class="level-price">$45</p>
           <p>The coziest choice. Room in the hood for a Santa hat? Maybe.</p>
         </article>
       </div>
@@ -441,14 +442,15 @@ footer p { opacity: .85; font-size: .95rem; }
         </fieldset>
         <template id="line-tpl">
           <div class="order-line">
-            <select aria-label="Style" data-k="style"><option value="Short sleeve">Short sleeve T-shirt ($15)</option><option value="Long sleeve">Long sleeve ($20)</option><option value="Crewneck">Crewneck sweatshirt ($25)</option><option value="Hoodie">Hoodie ($30)</option></select>
+            <select aria-label="Design" data-k="design"><option value="Santa Paws">Santa Paws 2026</option><option value="Holiday">Holiday shirt</option></select>
+            <select aria-label="Style" data-k="style"><option value="Short sleeve">Short sleeve T-shirt ($30)</option><option value="Long sleeve">Long sleeve ($35)</option><option value="Crewneck">Crewneck sweatshirt ($40)</option><option value="Hoodie">Hoodie ($45)</option></select>
             <select aria-label="Size" data-k="size"><option value="">Size</option><optgroup label="Toddler"><option>2T</option><option>3T</option><option>4T</option><option>5T</option></optgroup><optgroup label="Youth"><option>Youth XS</option><option>Youth S</option><option>Youth M</option><option>Youth L</option><option>Youth XL</option></optgroup><optgroup label="Adult"><option value="XS">Adult XS</option><option value="S">Adult S</option><option value="M">Adult M</option><option value="L">Adult L</option><option value="XL">Adult XL</option><option value="2XL">Adult 2XL</option><option value="3XL">Adult 3XL</option></optgroup></select>
             <input aria-label="How many" data-k="qty" type="number" min="1" max="20" value="1" inputmode="numeric">
             <button type="button" class="line-x" aria-label="Remove this shirt">×</button>
           </div>
         </template>
         <label for="o-notes">Anything else? <span class="hint">optional</span><textarea id="o-notes" name="notes" placeholder="Who each shirt is for, questions, anything"></textarea></label>
-        <p class="order-total">Total: <strong id="order-total">$15</strong></p>
+        <p class="order-total">Total: <strong id="order-total">$30</strong></p>
         <div class="pay-box">
           <p><strong>How to pay:</strong> pay Carolina Virginia Animal Hospital with cash, Venmo, Cash App or PayPal. Online payments go to Josh Foster for the hospital. Please put your name and "Santa Paws shirts" in the payment note.</p>
           <div class="pay-links" id="pay-links" hidden></div>
@@ -794,10 +796,10 @@ if (document.getElementById("shirt-order")) {
     const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = `${name} ${handle}`;
     payLinks.append(a); payLinks.hidden = false;
   });
-  const PRICES = { "Short sleeve": 15, "Long sleeve": 20, Crewneck: 25, Hoodie: 30 };
+  const PRICES = { "Short sleeve": 30, "Long sleeve": 35, Crewneck: 40, Hoodie: 45 };
   const box = document.getElementById("order-lines"), tpl = document.getElementById("line-tpl");
   const lines = () => [...box.querySelectorAll(".order-line")].map(l => ({
-    style: l.querySelector('[data-k="style"]').value, size: l.querySelector('[data-k="size"]').value,
+    design: l.querySelector('[data-k="design"]').value, style: l.querySelector('[data-k="style"]').value, size: l.querySelector('[data-k="size"]').value,
     qty: Math.max(1, Math.min(20, parseInt(l.querySelector('[data-k="qty"]').value, 10) || 1)),
   }));
   const total = () => lines().reduce((n, l) => n + PRICES[l.style] * l.qty, 0);
@@ -818,14 +820,10 @@ if (document.getElementById("shirt-order")) {
     () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. Pay with cash, Venmo, Cash App or PayPal, and pick up your shirts at Santa Paws on November 21.`,
     f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }),
     { closed: () => "Sorry, shirt orders closed on November 6." });
-  document.addEventListener("sp-status", ({ detail: d }) => {
-    if (!d.shirtDesign) return;
-    const img = document.getElementById("design-img");
-    img.src = `${API_URL}/image/shirt-design?v=${encodeURIComponent(d.shirtDesign)}`;
-    document.getElementById("design-soon").hidden = true;
-    document.getElementById("design-ready").hidden = false;
-    img.onclick = () => zoomLogo(img.src, "Santa Paws shirt design").click();
+  document.querySelectorAll(".design-zoom").forEach(b => {
+    b.onclick = () => zoomLogo(b.dataset.logo, b.getAttribute("aria-label").replace(/^View the | larger$/g, "")).click();
   });
+
 }
 
 document.querySelectorAll(".treat-logo").forEach(b => {
