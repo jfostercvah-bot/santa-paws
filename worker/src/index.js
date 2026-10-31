@@ -168,8 +168,8 @@ async function applySponsor(db, p) {
   const business = field(p, "business", 120), contact = field(p, "contact", 120), email = field(p, "email", 120), level = field(p, "level", 40);
   if (!business || !contact || !email || !(level in SPONSOR_LEVELS)) return { ok: false, reason: "missing" };
   const r = await db.prepare(
-    `INSERT INTO sponsors (business, level, show, contact, email, phone, website, logo, shirt_size)
-     SELECT ?, ?, 0, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM sponsors WHERE level = ?) < ?`)
+    `INSERT INTO sponsors (business, level, show, contact, email, phone, website, logo, shirt_size, shirt_style)
+     SELECT ?, ?, 0, ?, ?, ?, ?, ?, ?, 'Long sleeve' WHERE (SELECT COUNT(*) FROM sponsors WHERE level = ?) < ?`)
     .bind(business, level, contact, email, field(p, "phone", 40), field(p, "website", 200), logoField(p), shirtsOpen() ? shirtField(p) : "", level, SPONSOR_LEVELS[level])
     .run();
   if (!r.meta.changes) return { ok: false, reason: "full", status: await status(db) };
@@ -492,7 +492,7 @@ async function admin(request, env, path) {
     if (Number.isInteger(p.id)) {
       await db.prepare("UPDATE sponsors SET business = ?, level = ?, show = ? WHERE id = ?").bind(business, level, show, p.id).run();
     } else {
-      await db.prepare("INSERT INTO sponsors (business, level, show, website, logo, shirt_size) VALUES (?, ?, ?, ?, ?, ?)")
+      await db.prepare("INSERT INTO sponsors (business, level, show, website, logo, shirt_size, shirt_style) VALUES (?, ?, ?, ?, ?, ?, 'Long sleeve')")
         .bind(business, level, show, field(p, "website", 200), logoField(p), shirtField(p)).run();
     }
     return json({ ok: true });
