@@ -261,6 +261,12 @@ button.zoom img { transition: transform .2s; }
 .design-pick figcaption p:last-child { color: var(--muted); }
 .shirt-fabric { color: var(--muted); font-weight: 600; margin: 0 0 22px; }
 .size-help-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--berry); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.staff-form { display: grid; gap: 16px; }
+.staff-pick { border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin: 0; display: grid; grid-template-columns: 170px 1fr; gap: 16px; align-items: center; background: var(--snow); }
+.staff-pick img { width: 100%; border-radius: 10px; display: block; }
+.staff-pick h3 { font-size: 1.25rem; margin-bottom: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 560px) { .staff-pick { grid-template-columns: 1fr; } .staff-pick img { max-width: 260px; } }
 .line-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .size-help { width: min(680px, 94vw); max-height: 90vh; overflow: auto; border: 0; border-top: 6px solid var(--berry); border-radius: 18px; padding: 26px; background: var(--paper); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
 .size-help::backdrop { background: rgba(0, 0, 0, .55); }
@@ -765,14 +771,31 @@ if (document.getElementById("shirt-order")) {
     () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. Pay with cash, Venmo, Cash App or PayPal, and pick up your shirts at Santa Paws on November 21.`,
     f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }),
     { closed: () => "Sorry, shirt orders closed on November 6." });
-  const sizeHelp = document.getElementById("size-help");
-  document.querySelectorAll("[data-size-help]").forEach(b => (b.onclick = () => sizeHelp.showModal()));
-  sizeHelp.querySelector(".size-close").onclick = () => sizeHelp.close();
-  sizeHelp.addEventListener("click", e => { if (e.target === sizeHelp) sizeHelp.close(); });
   document.querySelectorAll(".design-zoom").forEach(b => {
     b.onclick = () => zoomLogo(b.dataset.logo, b.getAttribute("aria-label").replace(/^View the | larger$/g, "")).click();
   });
 
+}
+
+const sizeHelp = document.getElementById("size-help");
+if (sizeHelp) {
+  document.querySelectorAll("[data-size-help]").forEach(b => (b.onclick = () => sizeHelp.showModal()));
+  sizeHelp.querySelector(".size-close").onclick = () => sizeHelp.close();
+  sizeHelp.addEventListener("click", e => { if (e.target === sizeHelp) sizeHelp.close(); });
+}
+
+// --- staff shirt picks (staff.html) ---
+if (document.getElementById("staff-form")) {
+  if (!shirtsOpen()) { document.getElementById("staff-form").hidden = true; document.getElementById("staff-closed").hidden = false; }
+  const picks = () => [...document.querySelectorAll(".staff-pick")].map(f => ({
+    design: f.dataset.design, style: f.querySelector('[data-k="style"]').value, size: f.querySelector('[data-k="size"]').value,
+  }));
+  wire("staff-form", "staff-done", f => need(f, ["name"]) ? "Add your name."
+    : picks().some(l => !l.style || !l.size) ? "Pick a style and size for both shirts."
+    : picks().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie" && l.style !== "Crewneck") ? "Adult 5XL and 6XL only come in hoodies and crewnecks." : null,
+    f => `Thanks, ${f.elements.name.value.trim().split(/\s+/)[0]}! Your picks are in: ${picks().map(l => `${l.design === "Holiday" ? "Holiday" : "Santa Paws"} ${l.style.toLowerCase()} in ${/^(S|M|L|XL|[2-6]XL)$/.test(l.size) ? "adult " + l.size : l.size}`).join(" and ")}.`,
+    f => ({ form: "staff_shirts", shirts: JSON.stringify(picks()), subject: `Staff shirts: ${f.elements.name.value}` }),
+    { closed: () => "Sorry, shirt picks closed on November 6.", bad_items: () => "Something's off with your picks. Check the style and size for each shirt." });
 }
 
 document.querySelectorAll(".treat-logo").forEach(b => {

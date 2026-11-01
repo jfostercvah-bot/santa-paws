@@ -213,6 +213,25 @@ function orderItems(raw) {
 }
 const itemText = items => items.map(l => `${l.qty} × ${l.design ? l.design + " design, " : ""}${l.style} ${/^(XS|S|M|L|XL|[2-6]XL)$/.test(l.size) ? "Adult " + l.size : l.size}`).join(", ");
 
+// Staff page (staff.html): each person picks a style and size for each design they want, free.
+const STAFF_TEAMS = ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"];
+const STAFF_STYLES = ["T-shirt", "Long sleeve", "Crewneck", "Hoodie"];
+async function staffShirts(db, p) {
+  const name = field(p, "name", 120), team = STAFF_TEAMS.includes(p.team) ? p.team : "Staff";
+  if (!name) return { ok: false, reason: "missing" };
+  if (!shirtsOpen()) return { ok: false, reason: "closed" };
+  let list;
+  try { list = JSON.parse(String(p.shirts || "")); } catch { list = null; }
+  if (!Array.isArray(list) || !list.length || list.length > SHIRT_DESIGNS.length) return { ok: false, reason: "bad_items" };
+  const items = list.map(l => ({ design: String(l.design), style: String(l.style), size: String(l.size) }));
+  const ok = items.every(l => SHIRT_DESIGNS.includes(l.design) && STAFF_STYLES.includes(l.style) && SHIRT_SIZES.includes(l.size)
+    && (l.style === "Hoodie" || l.style === "Crewneck" || !HOODIE_ONLY.includes(l.size)));
+  if (!ok || new Set(items.map(l => l.design)).size !== items.length) return { ok: false, reason: "bad_items" };
+  await db.batch(items.map(l => db.prepare("INSERT INTO shirts (name, team, design, style, size, notes) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(name, team, l.design, l.style, l.size, "Picked on the staff page")));
+  return { ok: true, items };
+}
+
 async function orderShirts(db, p) {
   const first = field(p, "first_name", 80), last = field(p, "last_name", 80), email = field(p, "email", 120), phone = field(p, "phone", 40);
   if (!first || !last || !email || !phone) return { ok: false, reason: "missing" };
@@ -459,7 +478,7 @@ async function addWalkup(db, p) {
 const EDITABLE = {
   vendors: { business: 120, contact: 120, email: 120, phone: 40, category: 80, website: 200, needs: 500, description: 2000 },
   sponsors: { business: 120, level: 40, contact: 120, email: 120, phone: 40, website: 200, shirt_size: 10, shirt_style: 20 },
-  shirts: { name: 120, team: 40, size: 10, style: 20, notes: 500 },
+  shirts: { name: 120, team: 40, design: 20, size: 10, style: 20, notes: 500 },
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
   budget: { kind: 10, item: 120, amount: 20, notes: 500 },
 };
@@ -555,8 +574,8 @@ async function admin(request, env, path) {
   if (path === "/admin/shirt") {
     const name = field(p, "name", 120);
     if (!name) return json({ ok: false, reason: "missing" });
-    await db.prepare("INSERT INTO shirts (name, team, size, style, notes) VALUES (?, ?, ?, ?, ?)")
-      .bind(name, field(p, "team", 40), shirtField({ shirt_size: p.size }), field(p, "style", 20) || "T-shirt", field(p, "notes", 500)).run();
+    await db.prepare("INSERT INTO shirts (name, team, design, size, style, notes) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(name, field(p, "team", 40), SHIRT_DESIGNS.includes(p.design) ? p.design : "Santa Paws", shirtField({ shirt_size: p.size }), field(p, "style", 20) || "T-shirt", field(p, "notes", 500)).run();
     return json({ ok: true });
   }
   if (path === "/admin/vendor") {
@@ -632,6 +651,7 @@ export default {
           if (r.ok && emailReady(env)) { r.emailed = true; ctx.waitUntil(confirmShirtOrder(env, p, r.items, r.total).catch(err => console.error(err))); }
           return json(r);
         }
+        case "staff_shirts": return json(await staffShirts(db, p));
         case "contact": return json(await saveMessage(db, p));
         case "cancel": return json(await cancel(db, field(p, "code", 64)));
         case "find": return json(await find(db, p));
