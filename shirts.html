@@ -270,6 +270,12 @@ button.zoom img { transition: transform .2s; }
 .size-tip { background: var(--band); border-left: 4px solid var(--gold); border-radius: 10px; padding: 10px 14px; margin: 0 0 10px; }
 .size-how { color: var(--muted); font-size: .95rem; margin: 0 0 6px; }
 .size-scroll { overflow-x: auto; margin-bottom: 8px; }
+.measure { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: center; background: var(--band); border-radius: 14px; padding: 14px 16px; margin: 4px 0 6px; }
+.measure svg { width: 100%; height: auto; }
+.measure-text { display: grid; gap: 8px; font-size: .95rem; }
+.measure-text p { margin: 0; }
+.mk { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--berry); color: #fff; font-weight: 700; font-size: .85rem; margin-right: 4px; }
+@media (max-width: 560px) { .measure { grid-template-columns: 1fr; } .measure svg { max-width: 300px; margin: 0 auto; } }
 .size-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; text-align: center; }
 .size-table th, .size-table td { border: 1px solid var(--line); padding: 7px 8px; white-space: nowrap; }
 .size-table thead th { background: var(--pine); color: #fff; font-weight: 700; }
@@ -445,7 +451,23 @@ footer p { opacity: .85; font-size: .95rem; }
         <p class="eyebrow" style="margin:0">Finding your fit</p>
         <h3 id="size-help-title">Shirt size guide</h3>
         <p class="size-tip"><strong>These shirts are unisex.</strong> Women usually order one size smaller than they normally wear.</p>
-        <p class="size-how">Measurements are in inches, with the shirt laid flat. <strong>A</strong> is chest width, straight across the front just below the arms, side seam to side seam. <strong>B</strong> is length, from the top of the shoulder by the collar down to the bottom hem.</p>
+        <div class="measure">
+          <svg viewBox="0 0 300 150" role="img" aria-label="Two shirts laid flat. A: an arrow straight across the chest, just below the arms, from side seam to side seam. B: an arrow from the top of the shoulder next to the collar down to the bottom hem.">
+            <defs><marker id="mh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--berry)"/></marker></defs>
+            <g transform="translate(10 18)"><path d="M30 8 L14 14 L2 36 L18 44 L24 36 V112 H96 V36 L102 44 L118 36 L106 14 L90 8 C86 18 74 22 60 22 C46 22 34 18 30 8Z" fill="var(--paper)" stroke="var(--pine)" stroke-width="2.5" stroke-linejoin="round"/>
+              <line x1="27" y1="50" x2="93" y2="50" stroke="var(--berry)" stroke-width="2.5" marker-start="url(#mh)" marker-end="url(#mh)"/>
+              <circle cx="60" cy="50" r="10" fill="var(--berry)"/><text x="60" y="54.5" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="Figtree, sans-serif">A</text></g>
+            <g transform="translate(160 18)"><path d="M30 8 L14 14 L2 36 L18 44 L24 36 V112 H96 V36 L102 44 L118 36 L106 14 L90 8 C86 18 74 22 60 22 C46 22 34 18 30 8Z" fill="var(--paper)" stroke="var(--pine)" stroke-width="2.5" stroke-linejoin="round"/>
+              <line x1="88" y1="12" x2="88" y2="110" stroke="var(--berry)" stroke-width="2.5" marker-start="url(#mh)" marker-end="url(#mh)"/>
+              <circle cx="88" cy="62" r="10" fill="var(--berry)"/><text x="88" y="66.5" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="Figtree, sans-serif">B</text>
+              <circle cx="88" cy="9" r="3" fill="var(--gold)"/></g>
+          </svg>
+          <div class="measure-text">
+            <p class="size-how" style="margin:0">All measurements are in inches. Lay the shirt flat on a table first.</p>
+            <p><span class="mk">A</span> <strong>Chest width:</strong> measure straight across the front, side seam to side seam, just below the arms. Front only, not all the way around.</p>
+            <p><span class="mk">B</span> <strong>Length:</strong> start at the top of the shoulder, where the shoulder seam meets the collar (the gold dot), and measure straight down to the bottom hem.</p>
+          </div>
+        </div>
         <h4>T-shirts and long sleeves</h4>
         <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Youth XS</th><th>Youth S</th><th>Youth M</th><th>Youth L</th><th>Youth XL</th></tr></thead>
           <tbody><tr><th>A chest</th><td>17</td><td>18</td><td>19</td><td>20</td><td>21</td></tr><tr><th>B length</th><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td></tr></tbody></table></div>

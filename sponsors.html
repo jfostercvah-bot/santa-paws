@@ -270,6 +270,12 @@ button.zoom img { transition: transform .2s; }
 .size-tip { background: var(--band); border-left: 4px solid var(--gold); border-radius: 10px; padding: 10px 14px; margin: 0 0 10px; }
 .size-how { color: var(--muted); font-size: .95rem; margin: 0 0 6px; }
 .size-scroll { overflow-x: auto; margin-bottom: 8px; }
+.measure { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: center; background: var(--band); border-radius: 14px; padding: 14px 16px; margin: 4px 0 6px; }
+.measure svg { width: 100%; height: auto; }
+.measure-text { display: grid; gap: 8px; font-size: .95rem; }
+.measure-text p { margin: 0; }
+.mk { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--berry); color: #fff; font-weight: 700; font-size: .85rem; margin-right: 4px; }
+@media (max-width: 560px) { .measure { grid-template-columns: 1fr; } .measure svg { max-width: 300px; margin: 0 auto; } }
 .size-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; text-align: center; }
 .size-table th, .size-table td { border: 1px solid var(--line); padding: 7px 8px; white-space: nowrap; }
 .size-table thead th { background: var(--pine); color: #fff; font-weight: 700; }
