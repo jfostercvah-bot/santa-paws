@@ -451,7 +451,7 @@ footer p { opacity: .85; font-size: .95rem; }
           <tbody><tr><th>A chest</th><td>17</td><td>18</td><td>19</td><td>20</td><td>21</td></tr><tr><th>B length</th><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td></tr></tbody></table></div>
         <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Adult S</th><th>M</th><th>L</th><th>XL</th><th>2XL</th><th>3XL</th><th>4XL</th></tr></thead>
           <tbody><tr><th>A chest</th><td>22</td><td>23</td><td>24</td><td>25</td><td>27</td><td>28</td><td>29</td></tr><tr><th>B length</th><td>30</td><td>31</td><td>32</td><td>33</td><td>35</td><td>37</td><td>38</td></tr></tbody></table></div>
-        <h4>Hoodies</h4>
+        <h4>Hoodies and crewneck sweatshirts</h4>
         <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Youth XS</th><th>Youth S</th><th>Youth M</th><th>Youth L</th><th>Youth XL</th><th>Adult S</th><th>M</th></tr></thead>
           <tbody><tr><th>A chest</th><td>18</td><td>19</td><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td></tr><tr><th>B length</th><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td></tr></tbody></table></div>
         <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Adult L</th><th>XL</th><th>2XL</th><th>3XL</th><th>4XL</th><th>5XL</th><th>6XL</th></tr></thead>
@@ -477,7 +477,7 @@ footer p { opacity: .85; font-size: .95rem; }
           <div class="order-line">
             <select aria-label="Design" data-k="design"><option value="Santa Paws">Santa Paws 2026</option><option value="Holiday">Holiday shirt</option></select>
             <select aria-label="Style" data-k="style"><option value="Short sleeve">Short sleeve T-shirt ($30)</option><option value="Long sleeve">Long sleeve ($35)</option><option value="Crewneck">Crewneck sweatshirt ($40)</option><option value="Hoodie">Hoodie ($45)</option></select>
-            <select aria-label="Size" data-k="size"><option value="">Size</option><optgroup label="Toddler"><option>2T</option><option>3T</option><option>4T</option><option>5T</option></optgroup><optgroup label="Youth"><option>Youth XS</option><option>Youth S</option><option>Youth M</option><option>Youth L</option><option>Youth XL</option></optgroup><optgroup label="Adult"><option value="XS">Adult XS</option><option value="S">Adult S</option><option value="M">Adult M</option><option value="L">Adult L</option><option value="XL">Adult XL</option><option value="2XL">Adult 2XL</option><option value="3XL">Adult 3XL</option><option value="4XL">Adult 4XL</option><option value="5XL">Adult 5XL (hoodie only)</option><option value="6XL">Adult 6XL (hoodie only)</option></optgroup></select>
+            <select aria-label="Size" data-k="size"><option value="">Size</option><optgroup label="Youth"><option>Youth XS</option><option>Youth S</option><option>Youth M</option><option>Youth L</option><option>Youth XL</option></optgroup><optgroup label="Adult"><option value="XS">Adult XS</option><option value="S">Adult S</option><option value="M">Adult M</option><option value="L">Adult L</option><option value="XL">Adult XL</option><option value="2XL">Adult 2XL</option><option value="3XL">Adult 3XL</option><option value="4XL">Adult 4XL</option><option value="5XL">Adult 5XL (hoodie or crewneck)</option><option value="6XL">Adult 6XL (hoodie or crewneck)</option></optgroup></select>
             <input aria-label="How many" data-k="qty" type="number" min="1" max="20" value="1" inputmode="numeric">
             <button type="button" class="line-x" aria-label="Remove this shirt">×</button>
           </div>
@@ -850,7 +850,7 @@ if (document.getElementById("shirt-order")) {
   document.getElementById("add-line").onclick = addLine;
   wire("shirt-order", "shirt-done", f => need(f, ["first_name", "last_name", "email", "phone"]) ? "Add your name, email and phone."
     : lines().some(l => !l.size) ? "Pick a size for each shirt."
-    : lines().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie") ? "Adult 5XL and 6XL only come in hoodies. Pick a hoodie or a smaller size." : null,
+    : lines().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie" && l.style !== "Crewneck") ? "Adult 5XL and 6XL only come in hoodies and crewnecks. Pick one of those or a smaller size." : null,
     () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. Pay with cash, Venmo, Cash App or PayPal, and pick up your shirts at Santa Paws on November 21.`,
     f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }),
     { closed: () => "Sorry, shirt orders closed on November 6." });

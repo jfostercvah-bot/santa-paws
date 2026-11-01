@@ -798,7 +798,7 @@ if (document.getElementById("shirt-order")) {
   document.getElementById("add-line").onclick = addLine;
   wire("shirt-order", "shirt-done", f => need(f, ["first_name", "last_name", "email", "phone"]) ? "Add your name, email and phone."
     : lines().some(l => !l.size) ? "Pick a size for each shirt."
-    : lines().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie") ? "Adult 5XL and 6XL only come in hoodies. Pick a hoodie or a smaller size." : null,
+    : lines().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie" && l.style !== "Crewneck") ? "Adult 5XL and 6XL only come in hoodies and crewnecks. Pick one of those or a smaller size." : null,
     () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. Pay with cash, Venmo, Cash App or PayPal, and pick up your shirts at Santa Paws on November 21.`,
     f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }),
     { closed: () => "Sorry, shirt orders closed on November 6." });
