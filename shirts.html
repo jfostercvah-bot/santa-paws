@@ -260,6 +260,21 @@ button.zoom img { transition: transform .2s; }
 .design-pick h3 { font-size: 1.4rem; margin: 2px 0 4px; }
 .design-pick figcaption p:last-child { color: var(--muted); }
 .shirt-fabric { color: var(--muted); font-weight: 600; margin: 0 0 22px; }
+.size-help-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--berry); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.line-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.size-help { width: min(680px, 94vw); max-height: 90vh; overflow: auto; border: 0; border-top: 6px solid var(--berry); border-radius: 18px; padding: 26px; background: var(--paper); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.size-help::backdrop { background: rgba(0, 0, 0, .55); }
+.size-help h3 { font-size: 1.6rem; margin: 2px 0 10px; }
+.size-help h4 { font-family: var(--display); font-weight: 400; color: var(--pine); font-size: 1.2rem; margin: 18px 0 6px; }
+.size-close { position: absolute; top: 12px; right: 14px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--band); color: var(--ink); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.size-tip { background: var(--band); border-left: 4px solid var(--gold); border-radius: 10px; padding: 10px 14px; margin: 0 0 10px; }
+.size-how { color: var(--muted); font-size: .95rem; margin: 0 0 6px; }
+.size-scroll { overflow-x: auto; margin-bottom: 8px; }
+.size-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; text-align: center; }
+.size-table th, .size-table td { border: 1px solid var(--line); padding: 7px 8px; white-space: nowrap; }
+.size-table thead th { background: var(--pine); color: #fff; font-weight: 700; }
+.size-table tbody th { background: var(--band); color: var(--berry); text-align: left; }
+.size-table thead th:first-child { background: var(--pine-deep, var(--pine)); }
 .design-soon { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center; }
 .design-soon svg { width: 100%; color: var(--pine); }
 .design-soon h3 { font-size: 1.5rem; margin-bottom: 6px; }
@@ -392,11 +407,11 @@ footer p { opacity: .85; font-size: .95rem; }
           <figcaption><p class="eyebrow" style="margin:0">The event shirt</p><h3>Santa Paws 2026</h3><p>Forest green with snowy pines and the Santa Paws logo up front. On the back, a pup waits by the glowing doors of Santa's barn, with our sponsors' names above.</p></figcaption>
         </figure>
         <figure class="design-pick card">
-          <button type="button" class="design-zoom" data-logo="shirt-holiday-2026.jpg" aria-label="View the holiday shirt larger"><img src="shirt-holiday-2026.jpg" alt="Carolina Virginia Animal Hospital holiday shirt, front and back: soft tan with tiny paw prints and a Santa-hat paw with a stethoscope" loading="lazy"></button>
-          <figcaption><p class="eyebrow" style="margin:0">Also available</p><h3>Holiday shirt</h3><p>Soft tan covered in little paw prints, with a Santa-hat paw and stethoscope for Carolina Virginia Animal Hospital. Cozy enough to wear all season long.</p></figcaption>
+          <button type="button" class="design-zoom" data-logo="shirt-holiday-2026-ls.jpg" aria-label="View the holiday shirt larger"><img src="shirt-holiday-2026-ls.jpg" alt="Carolina Virginia Animal Hospital holiday shirt, front and back: soft tan long sleeve with paw prints, holly, and a Santa-hat paw with a stethoscope" loading="lazy"></button>
+          <figcaption><p class="eyebrow" style="margin:0">Also available</p><h3>Holiday shirt</h3><p>Soft tan covered in little paw prints, with a Santa-hat paw, a sprig of holly and a stethoscope for Carolina Virginia Animal Hospital. Cozy enough to wear all season long.</p></figcaption>
         </figure>
       </div>
-      <p class="shirt-fabric">Both designs come in every style below, same price. Unisex sizing, polyester blend fabric. Tap a shirt to see it bigger.</p>
+      <p class="shirt-fabric">Both designs come in every style below, same price. Unisex sizing, polyester blend fabric. Tap a shirt to see it bigger. <button type="button" class="size-help-link" data-size-help>Need help with sizing?</button></p>
 
       <div class="shirt-cards">
         <article class="shirt-card">
@@ -425,6 +440,24 @@ footer p { opacity: .85; font-size: .95rem; }
         </article>
       </div>
 
+      <dialog class="size-help" id="size-help" aria-labelledby="size-help-title">
+        <button type="button" class="size-close" aria-label="Close">×</button>
+        <p class="eyebrow" style="margin:0">Finding your fit</p>
+        <h3 id="size-help-title">Shirt size guide</h3>
+        <p class="size-tip"><strong>These shirts are unisex.</strong> Women usually order one size smaller than they normally wear.</p>
+        <p class="size-how">Measurements are in inches, with the shirt laid flat. <strong>A</strong> is chest width, straight across the front just below the arms, side seam to side seam. <strong>B</strong> is length, from the top of the shoulder by the collar down to the bottom hem.</p>
+        <h4>T-shirts and long sleeves</h4>
+        <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Youth XS</th><th>Youth S</th><th>Youth M</th><th>Youth L</th><th>Youth XL</th></tr></thead>
+          <tbody><tr><th>A chest</th><td>17</td><td>18</td><td>19</td><td>20</td><td>21</td></tr><tr><th>B length</th><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td></tr></tbody></table></div>
+        <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Adult S</th><th>M</th><th>L</th><th>XL</th><th>2XL</th><th>3XL</th><th>4XL</th></tr></thead>
+          <tbody><tr><th>A chest</th><td>22</td><td>23</td><td>24</td><td>25</td><td>27</td><td>28</td><td>29</td></tr><tr><th>B length</th><td>30</td><td>31</td><td>32</td><td>33</td><td>35</td><td>37</td><td>38</td></tr></tbody></table></div>
+        <h4>Hoodies</h4>
+        <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Youth XS</th><th>Youth S</th><th>Youth M</th><th>Youth L</th><th>Youth XL</th><th>Adult S</th><th>M</th></tr></thead>
+          <tbody><tr><th>A chest</th><td>18</td><td>19</td><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td></tr><tr><th>B length</th><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td></tr></tbody></table></div>
+        <div class="size-scroll"><table class="size-table"><thead><tr><th></th><th>Adult L</th><th>XL</th><th>2XL</th><th>3XL</th><th>4XL</th><th>5XL</th><th>6XL</th></tr></thead>
+          <tbody><tr><th>A chest</th><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td></tr><tr><th>B length</th><td>31</td><td>32</td><td>33</td><td>34</td><td>35</td><td>36</td><td>37</td></tr></tbody></table></div>
+        <p class="size-how">Tip: lay a shirt that fits you well flat and measure it the same way, then pick the closest size.</p>
+      </dialog>
       <form class="card shirt-order" id="shirt-order" novalidate>
         <h3>Order your shirts</h3>
         <div class="row">
@@ -438,13 +471,13 @@ footer p { opacity: .85; font-size: .95rem; }
         <fieldset class="order-lines">
           <legend>Shirts</legend>
           <div id="order-lines"></div>
-          <button type="button" class="btn small-btn" id="add-line">Add another shirt</button>
+          <div class="line-tools"><button type="button" class="btn small-btn" id="add-line">Add another shirt</button><button type="button" class="size-help-link" data-size-help>Need help with sizing?</button></div>
         </fieldset>
         <template id="line-tpl">
           <div class="order-line">
             <select aria-label="Design" data-k="design"><option value="Santa Paws">Santa Paws 2026</option><option value="Holiday">Holiday shirt</option></select>
             <select aria-label="Style" data-k="style"><option value="Short sleeve">Short sleeve T-shirt ($30)</option><option value="Long sleeve">Long sleeve ($35)</option><option value="Crewneck">Crewneck sweatshirt ($40)</option><option value="Hoodie">Hoodie ($45)</option></select>
-            <select aria-label="Size" data-k="size"><option value="">Size</option><optgroup label="Toddler"><option>2T</option><option>3T</option><option>4T</option><option>5T</option></optgroup><optgroup label="Youth"><option>Youth XS</option><option>Youth S</option><option>Youth M</option><option>Youth L</option><option>Youth XL</option></optgroup><optgroup label="Adult"><option value="XS">Adult XS</option><option value="S">Adult S</option><option value="M">Adult M</option><option value="L">Adult L</option><option value="XL">Adult XL</option><option value="2XL">Adult 2XL</option><option value="3XL">Adult 3XL</option></optgroup></select>
+            <select aria-label="Size" data-k="size"><option value="">Size</option><optgroup label="Toddler"><option>2T</option><option>3T</option><option>4T</option><option>5T</option></optgroup><optgroup label="Youth"><option>Youth XS</option><option>Youth S</option><option>Youth M</option><option>Youth L</option><option>Youth XL</option></optgroup><optgroup label="Adult"><option value="XS">Adult XS</option><option value="S">Adult S</option><option value="M">Adult M</option><option value="L">Adult L</option><option value="XL">Adult XL</option><option value="2XL">Adult 2XL</option><option value="3XL">Adult 3XL</option><option value="4XL">Adult 4XL</option><option value="5XL">Adult 5XL (hoodie only)</option><option value="6XL">Adult 6XL (hoodie only)</option></optgroup></select>
             <input aria-label="How many" data-k="qty" type="number" min="1" max="20" value="1" inputmode="numeric">
             <button type="button" class="line-x" aria-label="Remove this shirt">×</button>
           </div>
@@ -816,10 +849,15 @@ if (document.getElementById("shirt-order")) {
   addLine();
   document.getElementById("add-line").onclick = addLine;
   wire("shirt-order", "shirt-done", f => need(f, ["first_name", "last_name", "email", "phone"]) ? "Add your name, email and phone."
-    : lines().some(l => !l.size) ? "Pick a size for each shirt." : null,
+    : lines().some(l => !l.size) ? "Pick a size for each shirt."
+    : lines().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie") ? "Adult 5XL and 6XL only come in hoodies. Pick a hoodie or a smaller size." : null,
     () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. Pay with cash, Venmo, Cash App or PayPal, and pick up your shirts at Santa Paws on November 21.`,
     f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }),
     { closed: () => "Sorry, shirt orders closed on November 6." });
+  const sizeHelp = document.getElementById("size-help");
+  document.querySelectorAll("[data-size-help]").forEach(b => (b.onclick = () => sizeHelp.showModal()));
+  sizeHelp.querySelector(".size-close").onclick = () => sizeHelp.close();
+  sizeHelp.addEventListener("click", e => { if (e.target === sizeHelp) sizeHelp.close(); });
   document.querySelectorAll(".design-zoom").forEach(b => {
     b.onclick = () => zoomLogo(b.dataset.logo, b.getAttribute("aria-label").replace(/^View the | larger$/g, "")).click();
   });

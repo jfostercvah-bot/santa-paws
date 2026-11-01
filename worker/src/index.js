@@ -32,7 +32,9 @@
 const VENDOR_MAX = 15;
 const SPONSOR_LEVELS = { "North Pole": 4, Reindeer: 5, "Elf Friends": 7 };
 // Event shirt sizes: toddler, youth, then adult. Sponsors pick from the adult ones.
-const SHIRT_SIZES = ["2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
+const SHIRT_SIZES = ["2T", "3T", "4T", "5T", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"];
+// 5XL and 6XL only come in hoodies (printer's size charts, Nov 1).
+const HOODIE_ONLY = ["5XL", "6XL"];
 // Shirt orders and sponsors' free shirts close at the end of Friday, November 6 (Eastern).
 const SHIRT_DEADLINE = Date.parse("2026-11-07T05:00:00Z");
 const shirtsOpen = () => Date.now() < SHIRT_DEADLINE;
@@ -206,9 +208,9 @@ function orderItems(raw) {
   try { list = JSON.parse(String(raw || "")); } catch { return null; }
   if (!Array.isArray(list) || !list.length || list.length > 20) return null;
   const items = list.map(l => ({ design: String(l.design), style: String(l.style), size: String(l.size), qty: Number(l.qty) }));
-  return items.every(l => SHIRT_DESIGNS.includes(l.design) && l.style in SHIRT_PRICES && SHIRT_SIZES.includes(l.size) && Number.isInteger(l.qty) && l.qty >= 1 && l.qty <= 20) ? items : null;
+  return items.every(l => SHIRT_DESIGNS.includes(l.design) && l.style in SHIRT_PRICES && SHIRT_SIZES.includes(l.size) && (l.style === "Hoodie" || !HOODIE_ONLY.includes(l.size)) && Number.isInteger(l.qty) && l.qty >= 1 && l.qty <= 20) ? items : null;
 }
-const itemText = items => items.map(l => `${l.qty} × ${l.design ? l.design + " design, " : ""}${l.style} ${/^(XS|S|M|L|XL|2XL|3XL)$/.test(l.size) ? "Adult " + l.size : l.size}`).join(", ");
+const itemText = items => items.map(l => `${l.qty} × ${l.design ? l.design + " design, " : ""}${l.style} ${/^(XS|S|M|L|XL|[2-6]XL)$/.test(l.size) ? "Adult " + l.size : l.size}`).join(", ");
 
 async function orderShirts(db, p) {
   const first = field(p, "first_name", 80), last = field(p, "last_name", 80), email = field(p, "email", 120), phone = field(p, "phone", 40);
