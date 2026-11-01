@@ -32,8 +32,8 @@
 const VENDOR_MAX = 15;
 const SPONSOR_LEVELS = { "North Pole": 4, Reindeer: 5, "Elf Friends": 7 };
 // Event shirt sizes: toddler, youth, then adult. Sponsors pick from the adult ones.
-// No toddler sizes (Josh, Nov 1).
-const SHIRT_SIZES = ["Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"];
+// No toddler or Adult XS sizes (Josh, Nov 1).
+const SHIRT_SIZES = ["Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"];
 // 5XL and 6XL only come in hoodies and crewnecks, which share the hoodie size chart (Nov 1).
 const HOODIE_ONLY = ["5XL", "6XL"];
 // Shirt orders and sponsors' free shirts close at the end of Friday, November 6 (Eastern).
