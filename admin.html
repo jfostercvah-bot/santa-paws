@@ -177,6 +177,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="small" id="add-vendor" hidden>Add vendor</button>
       <button class="small" id="add-shirt" hidden>Add person</button>
+      <button class="small" id="designer-sheet" hidden>Sheet for shirt designer</button>
       <button class="small" id="add-cost" hidden>Add a cost</button>
       <button class="ghost small" id="add-income" hidden>Add other income</button>
       <button class="ghost small" id="refresh">Refresh</button>
@@ -411,6 +412,7 @@ function render() {
   dayOf();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
   document.getElementById("add-shirt").hidden = tab !== "shirts";
+  document.getElementById("designer-sheet").hidden = !["shirts", "shirt_orders", "sponsors"].includes(tab);
   document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
   shirtTotals();
   budgetBox();
@@ -753,6 +755,61 @@ async function start() {
 
 document.getElementById("login").addEventListener("submit", e => { e.preventDefault(); pw = document.getElementById("pw").value; start(); });
 document.getElementById("logout").onclick = () => logout();
+// One printable page for the shirt designer: every shirt to print (sold + free) by type and size, plus the sponsors for the shirt with their logos.
+function designerSheet() {
+  const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const type = st => st === "T-shirt" ? "Short sleeve" : st || "Short sleeve";
+  const sold = data.shirt_orders.flatMap(r => orderItems(r).flatMap(l => Array(l.qty).fill({ design: designOf(l), style: type(l.style), size: l.size, from: "Sold" })));
+  const free = shirtRows().map(r => ({ design: r.design || "Santa Paws", style: type(r.style), size: r.size, from: r.sponsor ? "Sponsors" : "Staff & helpers" }));
+  const all = [...sold, ...free], sized = all.filter(r => SIZES.includes(r.size)), missing = all.length - sized.length;
+  const used = SIZES.filter(z => sized.some(r => r.size === z));
+  const n = (f) => sized.filter(f).length;
+  const table = design => {
+    const types = ORDER_STYLES.filter(st => n(r => r.design === design && r.style === st));
+    if (!types.length) return "";
+    const used = SIZES.filter(z => n(r => r.design === design && r.size === z));
+    const line = (label, f, bold) => `<tr${bold ? ' class="tot"' : ""}><th>${label}</th>${used.map(z => `<td>${n(r => f(r) && r.size === z) || ""}</td>`).join("")}<td class="sum">${n(f)}</td></tr>`;
+    return `<h2>${esc(design)} design <span>${n(r => r.design === design)} shirts</span></h2>
+      <table><thead><tr><th></th>${used.map(z => `<th>${esc(sizeLabel(z))}</th>`).join("")}<th>Total</th></tr></thead>
+      <tbody>${types.map(st => line(esc(st), r => r.design === design && r.style === st)).join("")}${types.length > 1 ? line("All", r => r.design === design, true) : ""}</tbody></table>`;
+  };
+  const from = ["Sold", "Staff & helpers", "Sponsors"].map(k => `${k}: ${n(r => r.from === k)}`).join(" · ");
+  const levels = Object.keys(SPONSOR_PRICES);
+  const sponsors = levels.map(l => {
+    const list = data.sponsors.filter(r => r.level === l).sort((a, b) => a.business.localeCompare(b.business));
+    if (!list.length) return "";
+    return `<h3>${esc(l)} sponsors (${list.length})</h3><div class="logos">${list.map(r => {
+      const ext = (String(r.logo).match(/^data:image\/(\w+)/) || [, "png"])[1].replace("jpeg", "jpg");
+      return `<figure>${r.logo ? `<a href="${r.logo}" download="${esc(r.business)} logo.${ext}" title="Download logo"><img src="${r.logo}" alt=""></a>` : '<div class="nologo">No logo yet</div>'}<figcaption>${esc(r.business)}</figcaption></figure>`;
+    }).join("")}</div>`;
+  }).join("");
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Santa Paws shirts for Local Legend Apparel</title>
+<style>
+body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1d2b24; background: #fff; margin: 0 auto; padding: 24px 16px 48px; max-width: 900px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; color: #123d2c; } h2 { font-size: 1.2rem; margin: 26px 0 8px; color: #123d2c; } h2 span { font-weight: 400; color: #5b6b63; font-size: .95rem; margin-left: 6px; }
+h3 { font-size: 1.05rem; margin: 18px 0 8px; } .muted { color: #5b6b63; } .warn { color: #a3242f; font-weight: 600; }
+.scroll { overflow-x: auto; } table { border-collapse: collapse; min-width: 100%; } th, td { border: 1px solid #cfd8d2; padding: 6px 8px; text-align: center; white-space: nowrap; }
+thead th { background: #123d2c; color: #fff; font-weight: 600; } tbody th { text-align: left; background: #f3f6f4; } .tot td, .tot th { font-weight: 700; background: #fbf3dd; } .sum { font-weight: 700; }
+.logos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; } figure { margin: 0; border: 1px solid #cfd8d2; border-radius: 10px; padding: 10px; text-align: center; break-inside: avoid; }
+figure img { width: 100%; height: 110px; object-fit: contain; } .nologo { height: 110px; display: grid; place-items: center; color: #a3242f; background: #fdf1f1; border-radius: 6px; } figcaption { font-weight: 600; margin-top: 6px; }
+.print { background: #a3242f; color: #fff; border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-weight: 600; cursor: pointer; margin-top: 12px; }
+@media print { .print, .tip { display: none; } body { padding: 0; } thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+<h1>Santa Paws 2026 shirts</h1>
+<p class="muted">For Local Legend Apparel from Carolina Virginia Animal Hospital · as of ${today}. Orders close Friday, November 6.</p>
+<p><strong>${sized.length} shirts to print.</strong> <span class="muted">${from}.</span>${missing ? ` <span class="warn">${missing} more still need a size.</span>` : ""}</p>
+<p class="muted">All shirts are unisex. Sponsor shirts are the Santa Paws design.</p>
+${used.length ? DESIGNS.map(d => `<div class="scroll">${table(d)}</div>`).join("") : "<p>No shirts with sizes yet.</p>"}
+<h2>Sponsors for the shirt <span>${data.sponsors.length} sponsors</span></h2>
+<p class="muted tip">Tap a logo to download it.</p>
+${sponsors || "<p>No sponsors yet.</p>"}
+<button class="print" onclick="print()">Print or save as PDF</button>
+</body></html>`;
+  const w = window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
+  if (!w) alert("Your browser blocked the new tab. Allow pop-ups for this page and try again.");
+}
+document.getElementById("designer-sheet").onclick = designerSheet;
 document.getElementById("add-shirt").onclick = () => editRow("shirts", { team: "Staff", design: "Santa Paws" }, true);
 document.getElementById("add-cost").onclick = () => editRow("budget", { kind: "Cost" }, true);
 document.getElementById("add-income").onclick = () => editRow("budget", { kind: "Income" }, true);
