@@ -20,6 +20,7 @@
  *   POST /admin/shirt      { name, team, size, style, notes }
  *   POST /admin/image      { key: "shirt-design", image }  (empty image removes it)
  *   POST /admin/paid       { id, paid }  (shirt orders)
+ *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
@@ -499,6 +500,7 @@ async function admin(request, env, path) {
     const res = await db.batch(tables.map(t => db.prepare(`SELECT ${cols(t)} FROM ${t} ORDER BY id DESC`)));
     const out = { ok: true, status: await status(db), emailReady: emailReady(env) };
     tables.forEach((t, i) => (out[t] = res[i].results));
+    out.settings = Object.fromEntries((await db.prepare("SELECT key, value FROM settings").all()).results.map(r => [r.key, r.value]));
     return json(out);
   }
   if (request.method !== "POST") return json({ ok: false, reason: "not_found" }, 404);
@@ -537,6 +539,17 @@ async function admin(request, env, path) {
     if (!item || amount === null) return json({ ok: false, reason: "missing" });
     await db.prepare("INSERT INTO budget (kind, item, amount, notes) VALUES (?, ?, ?, ?)").bind(kind, item, amount, field(p, "notes", 500)).run();
     return json({ ok: true });
+  }
+  // Printer prices per shirt type (plus an extra charge for 2XL and up), used for the Budget tab's shirt cost.
+  if (path === "/admin/shirt-costs") {
+    const costs = {};
+    for (const k of [...STAFF_STYLES, "big"]) {
+      const a = budgetAmount(p[k] ?? "");
+      if (String(p[k] ?? "").trim() !== "" && a === null) return json({ ok: false, reason: "missing" });
+      if (a !== null && a > 0) costs[k] = a;
+    }
+    await db.prepare("INSERT INTO settings (key, value) VALUES ('shirt-costs', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated = datetime('now')").bind(JSON.stringify(costs)).run();
+    return json({ ok: true, costs });
   }
   if (path === "/admin/edit") {
     const allowed = EDITABLE[p.table], fields = p.fields || {};

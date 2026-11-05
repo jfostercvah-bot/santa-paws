@@ -86,6 +86,10 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
 .be-cols .amt { text-align: right; white-space: nowrap; }
 .be-cols tr.tot td { font-weight: 700; border-top: 2px solid var(--line, #ccc); }
 @media (max-width: 700px) { .be-cols { grid-template-columns: 1fr; } }
+.shirt-costs { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line, #ccc); }
+.sc-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.sc-row label { display: grid; gap: 4px; font-size: .9rem; min-width: 0; }
+.sc-row input { width: 100%; min-width: 0; box-sizing: border-box; }
 .edit-dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .reply-orig { margin: 0 0 12px; padding: 10px 14px; border-left: 4px solid var(--line, #ccc); white-space: pre-wrap; max-height: 180px; overflow: auto; }
 .reply-past { margin: 0 0 12px; font-size: .9rem; white-space: pre-wrap; max-height: 140px; overflow: auto; }
@@ -318,6 +322,8 @@ function budgetBox() {
   const box = document.getElementById("budget-box");
   box.hidden = tab !== "budget";
   if (box.hidden) return;
+  // The page refreshes every minute; keep any prices being typed but not saved yet.
+  const typing = box.querySelector("#shirt-costs[data-dirty]") ? Object.fromEntries(new FormData(box.querySelector("#shirt-costs"))) : null;
   const s = data.status, sum = (list, f) => list.reduce((n, r) => n + Number(f(r) || 0), 0);
   const paid = list => list.filter(r => r.paid);
   const pv = paid(data.vendors).length, nv = data.vendors.length;
@@ -330,7 +336,13 @@ function budgetBox() {
     ...sponsors.map(([l, n, all]) => [`${l} sponsors paid: ${n} × ${usd(SPONSOR_PRICES[l])}${owed(n, all, SPONSOR_PRICES[l])}`, n * SPONSOR_PRICES[l]]),
     [`Shirt orders paid${shirtsAll > shirtsPaid ? ` (${usd(shirtsAll - shirtsPaid)} unpaid)` : ""}`, shirtsPaid],
     [`Other income${other.length ? ` (${other.length})` : ""}`, otherIn]];
-  const moneyIn = sum(lines, l => l[1]), moneyOut = sum(costs, r => r.amount), net = moneyIn - moneyOut;
+  // Shirt printing: every shirt (sold, staff and sponsors) times the printer's price for its type.
+  const pc = shirtCosts(), shirts = allShirts();
+  const big = z => /^[2-6]XL$/.test(z || "");
+  const priced = shirts.filter(r => pc[r.style]), unpriced = shirts.length - priced.length;
+  const printCost = sum(priced, r => pc[r.style] + (big(r.size) ? pc.big || 0 : 0));
+  const costLines = [...costs.map(r => [r.item, r.amount]), ...(Object.keys(pc).length ? [[`Shirt printing (${priced.length} shirts, figured from your prices)`, printCost]] : [])];
+  const moneyIn = sum(lines, l => l[1]), moneyOut = sum(costLines, l => l[1]), net = moneyIn - moneyOut;
   const signed = nv * VENDOR_FEE + sum(sponsors, ([l, , all]) => all * SPONSOR_PRICES[l]) + shirtsAll + otherIn;
   // If every vendor and sponsor spot filled and everyone paid.
   const full = Math.max(nv, s.vendors.max) * VENDOR_FEE + sponsors.reduce((n, [l, , all]) => n + Math.max(s.sponsors[l]?.max || 0, all) * SPONSOR_PRICES[l], 0) + shirtsAll + otherIn;
@@ -341,10 +353,34 @@ function budgetBox() {
       <span>${usd(moneyIn)} in · ${usd(moneyOut)} costs</span></div>
     <div class="be-cols">
       <table><thead><tr><th>Money in</th><th class="amt"></th></tr></thead><tbody>${lines.map(([l, n]) => row(l, n)).join("")}${row("Total in", moneyIn, "tot")}</tbody></table>
-      <table><thead><tr><th>Costs</th><th class="amt"></th></tr></thead><tbody>${costs.length ? costs.map(r => row(r.item, r.amount)).join("") : '<tr><td class="muted" colspan="2">No costs added yet</td></tr>'}${row("Total costs", moneyOut, "tot")}</tbody></table>
+      <table><thead><tr><th>Costs</th><th class="amt"></th></tr></thead><tbody>${costLines.length ? costLines.map(([l, n]) => row(l, n)).join("") : '<tr><td class="muted" colspan="2">No costs added yet</td></tr>'}${row("Total costs", moneyOut, "tot")}</tbody></table>
     </div>
+    <form class="shirt-costs" id="shirt-costs">
+      <strong>Shirt printing prices</strong>
+      <span class="muted">Enter Local Legend's price for each shirt. The budget multiplies it by every shirt on the order: ${shirts.length} so far (sold, staff and sponsors), and it updates as shirts are added.${unpriced && Object.keys(pc).length ? ` <span class="err">${unpriced} shirt${unpriced === 1 ? " has a type" : "s have types"} with no price yet.</span>` : ""}</span>
+      <div class="sc-row">${[...STYLES.map(st => [st, st === "T-shirt" ? "T-shirt (short sleeve)" : st]), ["big", "Extra for 2XL and up"]].map(([k, l]) => `<label>${esc(l)}<input name="${esc(k)}" inputmode="decimal" placeholder="$0" value="${pc[k] ?? ""}"></label>`).join("")}</div>
+      <div><button type="submit" class="small">Save prices</button></div>
+    </form>
     <span class="muted">Counts money received (marked Paid). Once everyone signed up pays: ${usd(signed)} in, ${outlook(signed)}. If every vendor and sponsor spot fills: ${usd(full)} in, ${outlook(full)}.</span>`;
+  const form = box.querySelector("#shirt-costs");
+  if (typing) { form.dataset.dirty = "1"; Object.entries(typing).forEach(([k, v]) => form.elements[k] && (form.elements[k].value = v)); }
+  form.oninput = () => (form.dataset.dirty = "1");
 }
+
+// Every shirt being printed, one entry each: sold orders plus free shirts (staff, helpers, sponsors). Sold "Short sleeve" is the same shirt as "T-shirt".
+function allShirts() {
+  const st = x => x === "Short sleeve" || !x ? "T-shirt" : x;
+  return [...data.shirt_orders.flatMap(r => orderItems(r).flatMap(l => Array(l.qty).fill({ style: st(l.style), size: l.size }))),
+    ...shirtRows().map(r => ({ style: st(r.style), size: r.size }))];
+}
+const shirtCosts = () => { try { return JSON.parse((data.settings || {})["shirt-costs"] || "{}") || {}; } catch { return {}; } };
+document.addEventListener("submit", e => {
+  if (e.target.id !== "shirt-costs") return;
+  e.preventDefault();
+  const f = new FormData(e.target), body = Object.fromEntries([...f.entries()].map(([k, v]) => [k, String(v).trim()]));
+  if (Object.values(body).some(v => v && !/^\$?\s*[\d,]*\.?\d+$/.test(v))) return alert("Enter each price as a number, like 12 or 12.50.");
+  act(() => api("/admin/shirt-costs", body));
+});
 
 // Totals box for the Shirts tab (free shirts) and Shirt orders tab (sold shirts).
 function shirtTotals() {
