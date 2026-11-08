@@ -90,6 +90,14 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
 .sc-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .sc-row label { display: grid; gap: 4px; font-size: .9rem; min-width: 0; }
 .sc-row input { width: 100%; min-width: 0; box-sizing: border-box; }
+.order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.order-line { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 60px auto; gap: 6px; margin-bottom: 6px; align-items: center; }
+.order-line select, .order-line input { width: 100%; min-width: 0; box-sizing: border-box; }
+#order-form label { display: grid; gap: 4px; }
+#order-form > label { margin-top: 10px; }
+#order-form .order-line button { padding: 6px 10px; }
+@media (max-width: 560px) { .order-grid { grid-template-columns: 1fr; } .order-line { grid-template-columns: 1fr 1fr 64px 44px; padding-bottom: 8px; border-bottom: 1px solid var(--line, #ddd); }
+  .order-line [data-k=design], .order-line [data-k=style], .order-line [data-k=size] { grid-column: span 2; } }
 .edit-dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .reply-orig { margin: 0 0 12px; padding: 10px 14px; border-left: 4px solid var(--line, #ccc); white-space: pre-wrap; max-height: 180px; overflow: auto; }
 .reply-past { margin: 0 0 12px; font-size: .9rem; white-space: pre-wrap; max-height: 140px; overflow: auto; }
@@ -182,6 +190,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="small" id="add-vendor" hidden>Add vendor</button>
       <button class="small" id="add-shirt" hidden>Add person</button>
+      <button class="small" id="add-order" hidden>Add order</button>
       <button class="small" id="designer-sheet" hidden>Sheet for shirt designer</button>
       <button class="small" id="add-cost" hidden>Add a cost</button>
       <button class="ghost small" id="add-income" hidden>Add other income</button>
@@ -198,6 +207,28 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
     <div class="bar" style="margin:12px 0 0">
       <button type="submit" value="save">Save</button>
       <button type="submit" value="cancel" class="ghost small" formnovalidate>Cancel</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="order" class="card edit-dialog">
+  <form id="order-form" novalidate>
+    <h2 style="margin:0 0 10px;font-size:1.2rem">Add a shirt order</h2>
+    <div class="order-grid">
+      <label>First name<input name="first_name" autocomplete="off"></label>
+      <label>Last name<input name="last_name" autocomplete="off"></label>
+      <label>Phone<input name="phone" autocomplete="off"></label>
+      <label>Email<input name="email" type="email" autocomplete="off"></label>
+    </div>
+    <strong style="display:block;margin:12px 0 6px">Shirts</strong>
+    <div id="order-lines"></div>
+    <div><button type="button" class="ghost small" id="order-more">Add another shirt</button></div>
+    <label>Notes<input name="notes" placeholder="Optional"></label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" name="paid" style="width:auto"> Already paid</label>
+    <p id="order-total" style="font-weight:700;margin:10px 0 0"></p>
+    <p id="order-err" class="err" style="margin:6px 0 0"></p>
+    <div class="bar" style="margin:12px 0 0">
+      <button type="submit">Save order</button>
+      <button type="button" class="ghost small" id="order-cancel">Cancel</button>
     </div>
   </form>
 </dialog>
@@ -251,7 +282,7 @@ const TABS = {
   },
   shirt_orders: {
     cols: [["first_name", "First name"], ["last_name", "Last name"], ["email", "Email"], ["phone", "Phone"], ["items", "Shirts", true], ["total", "Total"], ["paid", "Paid"], ["notes", "Notes", true], ["created", "Ordered"]],
-    note: "Orders from the Event Shirts page. Tap Paid when someone pays.",
+    note: "Orders from the Event Shirts page. Use Add order for orders taken by phone or in person. Tap Paid when someone pays.",
     remove: r => `Delete the shirt order from ${r.first_name} ${r.last_name}?`,
   },
   shirts: {
@@ -449,6 +480,7 @@ function render() {
   dayOf();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
   document.getElementById("add-shirt").hidden = tab !== "shirts";
+  document.getElementById("add-order").hidden = tab !== "shirt_orders";
   document.getElementById("designer-sheet").hidden = !["shirts", "shirt_orders", "sponsors"].includes(tab);
   document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
   shirtTotals();
@@ -856,6 +888,48 @@ ${sponsors || "<p>No sponsors yet.</p>"}
   if (!w) alert("Your browser blocked the new tab. Allow pop-ups for this page and try again.");
 }
 document.getElementById("designer-sheet").onclick = designerSheet;
+// Add order (Shirt orders tab): for orders taken by phone or in person. Prices match the Event Shirts page.
+const ORDER_PRICES = { "Short sleeve": 30, "Long sleeve": 35, Crewneck: 40, Hoodie: 45 };
+const ORDER_SIZES = SIZES.filter(z => !/^\dT$/.test(z));
+function orderLine() {
+  const d = document.createElement("div"); d.className = "order-line";
+  const sel = (k, opts, label) => `<select data-k="${k}" aria-label="${label}">${opts.map(o => `<option value="${o}">${k === "size" ? sizeLabel(o) : o}</option>`).join("")}</select>`;
+  d.innerHTML = sel("design", DESIGNS, "Design") + sel("style", ORDER_STYLES, "Shirt type") + sel("size", ["", ...ORDER_SIZES], "Size").replace('<option value="">', '<option value="">Size') +
+    '<input data-k="qty" type="number" min="1" max="20" value="1" aria-label="How many"><button type="button" class="ghost small" aria-label="Remove this shirt">✕</button>';
+  d.querySelector("button").onclick = () => { if (document.querySelectorAll(".order-line").length > 1) d.remove(); orderTotal(); };
+  d.oninput = orderTotal;
+  document.getElementById("order-lines").append(d);
+}
+const orderLines = () => [...document.querySelectorAll(".order-line")].map(d => ({ design: d.querySelector('[data-k=design]').value, style: d.querySelector('[data-k=style]').value, size: d.querySelector('[data-k=size]').value, qty: Number(d.querySelector('[data-k=qty]').value) }));
+function orderTotal() {
+  const t = orderLines().reduce((n, l) => n + (ORDER_PRICES[l.style] || 0) * (Number.isInteger(l.qty) && l.qty > 0 ? l.qty : 0), 0);
+  document.getElementById("order-total").textContent = "Total: $" + t;
+}
+document.getElementById("add-order").onclick = () => {
+  const f = document.getElementById("order-form"); f.reset();
+  document.getElementById("order-lines").innerHTML = ""; orderLine(); orderTotal();
+  document.getElementById("order-err").textContent = "";
+  document.getElementById("order").showModal();
+};
+document.getElementById("order-form").oninput = () => (document.getElementById("order-err").textContent = "");
+document.getElementById("order-more").onclick = () => { orderLine(); orderTotal(); };
+document.getElementById("order-cancel").onclick = () => document.getElementById("order").close();
+document.getElementById("order-form").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target, err = document.getElementById("order-err"), lines = orderLines();
+  err.textContent = !f.first_name.value.trim() || !f.last_name.value.trim() ? "Add their first and last name."
+    : lines.some(l => !l.size) ? "Pick a size for each shirt."
+    : lines.some(l => !Number.isInteger(l.qty) || l.qty < 1 || l.qty > 20) ? "How many should be a number from 1 to 20."
+    : lines.some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie" && l.style !== "Crewneck") ? "Adult 5XL and 6XL only come in hoodies and crewnecks." : "";
+  if (err.textContent) return;
+  const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
+  try {
+    await api("/admin/order", { first_name: f.first_name.value, last_name: f.last_name.value, phone: f.phone.value, email: f.email.value, notes: f.notes.value, paid: f.paid.checked, items: JSON.stringify(lines) });
+    document.getElementById("order").close();
+    await act(async () => {});
+  } catch (x) { if (x.message !== "unauthorized") err.textContent = "That didn't save. Check the shirts and try again."; }
+  finally { btn.disabled = false; }
+};
 document.getElementById("add-shirt").onclick = () => editRow("shirts", { team: "Staff", design: "Santa Paws" }, true);
 document.getElementById("add-cost").onclick = () => editRow("budget", { kind: "Cost" }, true);
 document.getElementById("add-income").onclick = () => editRow("budget", { kind: "Income" }, true);

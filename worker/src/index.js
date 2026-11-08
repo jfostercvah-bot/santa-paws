@@ -19,6 +19,7 @@
  *   POST /admin/vendor     { business, contact, email, phone, category, website, needs, description } (shown right away)
  *   POST /admin/shirt      { name, team, size, style, notes }
  *   POST /admin/image      { key: "shirt-design", image }  (empty image removes it)
+ *   POST /admin/order      { first_name, last_name, email, phone, items (JSON [{design, style, size, qty}]), notes, paid }
  *   POST /admin/paid       { id, paid }  (shirt orders)
  *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
  *   POST /admin/checkin    { id, on }
@@ -583,6 +584,17 @@ async function admin(request, env, path) {
     const table = ["vendors", "sponsors"].includes(p.table) ? p.table : "shirt_orders";
     await db.prepare(`UPDATE ${table} SET paid = ? WHERE id = ?`).bind(p.paid ? 1 : 0, p.id).run();
     return json({ ok: true });
+  }
+  // Shirt order added by hand on the admin page (phone or in-person orders); works after the order deadline too.
+  if (path === "/admin/order") {
+    const first = field(p, "first_name", 80), last = field(p, "last_name", 80);
+    if (!first || !last) return json({ ok: false, reason: "missing" });
+    const items = orderItems(p.items);
+    if (!items) return json({ ok: false, reason: "bad_items" });
+    const total = items.reduce((n, l) => n + SHIRT_PRICES[l.style] * l.qty, 0);
+    await db.prepare("INSERT INTO shirt_orders (first_name, last_name, email, phone, items, total, notes, paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(first, last, field(p, "email", 120), field(p, "phone", 40), JSON.stringify(items), total, field(p, "notes", 1000) || "Added on the admin page", p.paid ? 1 : 0).run();
+    return json({ ok: true, total });
   }
   if (path === "/admin/shirt") {
     const name = field(p, "name", 120);
