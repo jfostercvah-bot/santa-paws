@@ -172,6 +172,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
         <strong class="grow" id="dayof-count"></strong>
         <button type="button" id="walkup-btn">Add walk-up</button>
       </div>
+      <div id="pet-count" style="font-weight:600"></div>
       <div><strong>Open times</strong> <span class="muted">(tap one to give it to a walk-up)</span></div>
       <div class="open" id="open-times"></div>
     </div>
@@ -689,6 +690,15 @@ function dayOf() {
   if (box.hidden) return;
   const here = data.photos.filter(r => r.checked_in).length, waiting = data.photos.filter(r => !r.times).length;
   document.getElementById("dayof-count").textContent = `${here} of ${data.photos.length} families checked in` + (waiting ? ` · ${waiting} on the waiting list` : "");
+  // Pets are saved like "Biscuit (Dog), Mittens (Cat)"; walk-ups typed by hand may just say dog or cat.
+  const kinds = list => list.reduce((n, r) => {
+    const pets = String(r.pets || "").split(",").map(x => x.trim()).filter(Boolean);
+    pets.forEach(x => { const m = x.match(/\((dog|cat)\)\s*$/i) || x.match(/\b(dog|cat)s?\b/i); n[m ? m[1].toLowerCase() : "other"]++; });
+    return n;
+  }, { dog: 0, cat: 0, other: 0 });
+  const all = kinds(data.photos), came = kinds(data.photos.filter(r => r.checked_in)), pl = (k, w) => `${k} ${w}${k === 1 ? "" : "s"}`;
+  document.getElementById("pet-count").textContent = `${pl(all.dog, "dog")} and ${pl(all.cat, "cat")} signed up for Santa photos` +
+    (all.other ? ` (plus ${pl(all.other, "pet")} not marked dog or cat)` : "") + (here ? ` · here so far: ${pl(came.dog, "dog")}, ${pl(came.cat, "cat")}` : "") + ".";
   const open = openTimes(), wrap = document.getElementById("open-times");
   wrap.innerHTML = "";
   if (!open.length) wrap.innerHTML = '<span class="muted">No open times left. Add walk-up still works: leave the time blank to put them on the waiting list, then use Edit to give them a time when one opens.</span>';
