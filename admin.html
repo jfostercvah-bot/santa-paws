@@ -262,7 +262,7 @@ const TABS = {
   },
   sponsors: {
     cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["paid", "Paid"], ["shirt_size", "Shirt"], ["shirt_style", "Type"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
-    note: "Every sponsor holds a spot. Tap Paid when they pay, then Show to put them on the website. Click a logo to download it.",
+    note: "Every sponsor holds a spot. Tap Paid when they pay, then Show to put them on the website. Tap No shirt if a sponsor doesn't want their free shirt. Click a logo to download it.",
     remove: r => `Remove ${r.business} as a sponsor?`,
   },
   gallery: {
@@ -316,12 +316,12 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
   const n = {};
-  data.sponsors.forEach(r => { if (r.shirt_size) n[r.shirt_size] = (n[r.shirt_size] || 0) + 1; });
+  data.sponsors.forEach(r => { if (r.shirt_size && !r.no_shirt) n[r.shirt_size] = (n[r.shirt_size] || 0) + 1; });
   const order = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"].filter(z => n[z]);
   return order.length ? ` Shirts to order: ${order.map(z => `${n[z]} ${z}`).join(", ")}.` : "";
 }
@@ -335,7 +335,7 @@ const TEAMS = ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"];
 
 // Everyone getting a shirt: people added on the Shirts tab, plus every sponsor.
 function shirtRows() {
-  const sponsors = data.sponsors.map(s => ({ id: "s" + s.id, sponsor: true, team: "Sponsor", name: s.contact ? `${s.contact} (${s.business})` : s.business, design: "Santa Paws", size: s.shirt_size, style: s.shirt_style || "T-shirt", notes: s.level + " sponsor", created: s.created }));
+  const sponsors = data.sponsors.filter(s => !s.no_shirt).map(s => ({ id: "s" + s.id, sponsor: true, team: "Sponsor", name: s.contact ? `${s.contact} (${s.business})` : s.business, design: "Santa Paws", size: s.shirt_size, style: s.shirt_style || "T-shirt", notes: s.level + " sponsor", created: s.created }));
   const order = t => { const i = ["Sponsor", ...TEAMS].indexOf(t); return i < 0 ? 99 : i; };
   return [...data.shirts, ...sponsors].sort((a, b) => order(a.team) - order(b.team) || String(a.name).localeCompare(String(b.name)));
 }
@@ -522,6 +522,12 @@ function render() {
       const pb = document.createElement("button"); pb.className = r.paid ? "ghost small" : "small"; pb.textContent = r.paid ? "Mark unpaid" : "Paid";
       pb.onclick = () => act(() => api("/admin/paid", { table: tab, id: r.id, paid: !r.paid }));
       td.append(pb, " ");
+    }
+    if (tab === "sponsors") {
+      const nb = document.createElement("button"); nb.className = "ghost small"; nb.textContent = r.no_shirt ? "Wants a shirt" : "No shirt";
+      nb.title = r.no_shirt ? "Put their free shirt back on the order" : "They don't want a shirt: take it off the shirt order and budget";
+      nb.onclick = () => act(() => api("/admin/no-shirt", { id: r.id, no_shirt: !r.no_shirt }));
+      td.append(nb, " ");
     }
     if (tab === "messages") {
       const rb = document.createElement("button"); rb.className = r.replied ? "ghost small" : "small"; rb.textContent = r.replied ? "Reply again" : "Reply";

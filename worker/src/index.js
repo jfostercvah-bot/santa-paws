@@ -19,6 +19,7 @@
  *   POST /admin/vendor     { business, contact, email, phone, category, website, needs, description } (shown right away)
  *   POST /admin/shirt      { name, team, size, style, notes }
  *   POST /admin/image      { key: "shirt-design", image }  (empty image removes it)
+ *   POST /admin/no-shirt   { id, no_shirt }  (sponsor doesn't want their free shirt)
  *   POST /admin/order      { first_name, last_name, email, phone, items (JSON [{design, style, size, qty}]), notes, paid }
  *   POST /admin/paid       { id, paid }  (shirt orders)
  *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
@@ -577,6 +578,11 @@ async function admin(request, env, path) {
     if (!p.image) { await db.prepare("DELETE FROM site_images WHERE key = ?").bind(p.key).run(); return json({ ok: true }); }
     if (!isImage(p.image, MAX_PHOTO)) return json({ ok: false, reason: "bad_image" }, 400);
     await db.prepare("INSERT INTO site_images (key, image) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET image = excluded.image, updated = datetime('now')").bind(p.key, p.image).run();
+    return json({ ok: true });
+  }
+  if (path === "/admin/no-shirt") {
+    if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.prepare("UPDATE sponsors SET no_shirt = ? WHERE id = ?").bind(p.no_shirt ? 1 : 0, p.id).run();
     return json({ ok: true });
   }
   if (path === "/admin/paid") {
