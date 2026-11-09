@@ -961,7 +961,7 @@ if (document.getElementById("prize-grid")) {
       else { box = holidayArt(i); box.classList.add("vlogo"); }
       const h = document.createElement("h3"); h.textContent = v.name;
       card.append(box, h);
-      if (v.donor) { const p = document.createElement("p"); p.className = "donor"; p.textContent = "Donated by " + v.donor; card.append(p); }
+      if (v.donor) { const p = document.createElement("p"); p.className = "donor"; p.textContent = "Sponsored by " + v.donor; card.append(p); }
       if (v.description) { const p = document.createElement("p"); p.textContent = v.description; card.append(p); }
       grid.append(card);
     });
