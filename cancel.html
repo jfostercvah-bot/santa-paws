@@ -235,6 +235,14 @@ button.zoom:hover img { transform: scale(1.03); }
 button.zoom img { transition: transform .2s; }
 .viewer.logo-view img { background: #fff; padding: 18px; max-height: 80vh; }
 .vendor-card h3 { font-size: 1.3rem; }
+.hunt-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 18px; }
+.hunt-step { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 8px; align-content: start; }
+.hunt-step .num { font-size: 2rem; line-height: 1; color: var(--berry); font-weight: 800; }
+.hunt-step h3 { font-size: 1.2rem; }
+.hunt-step p { margin: 0; color: var(--muted); }
+.hunt-rules { background: var(--band); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; font-weight: 600; margin: 0 0 36px; }
+.prizes-empty { color: var(--muted); font-weight: 600; }
+.vendor-card .donor { font-weight: 700; color: var(--pine); }
 .vendor-card .cat { justify-self: start; font-size: .8rem; font-weight: 700; color: var(--pine); background: var(--band); border-radius: 999px; padding: 3px 10px; }
 .vendor-card p { margin: 0; color: var(--muted); }
 .vendor-card a { font-weight: 600; color: var(--berry); overflow-wrap: anywhere; }
@@ -394,6 +402,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <li><a href="photos.html">Santa Photos</a></li>
         <li><a href="treats.html">Treats &amp; Eats</a></li>
         <li><a href="vendors.html">Vendors</a></li>
+        <li><a href="hunt.html">Scavenger Hunt</a></li>
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="sponsors.html">Sponsors</a></li>
         <li><a href="shirts.html">Event Shirts</a></li>
@@ -822,6 +831,26 @@ if (document.getElementById("staff-form")) {
 document.querySelectorAll(".treat-logo").forEach(b => {
   b.onclick = () => zoomLogo(b.dataset.logo, b.querySelector("img").alt.replace(/ logo$/, "")).click();
 });
+
+// --- raffle prizes (hunt.html) ---
+if (document.getElementById("prize-grid")) {
+  document.addEventListener("sp-status", ({ detail: d }) => {
+    const list = d.raffle || [], grid = document.getElementById("prize-grid");
+    document.getElementById("prizes-empty").hidden = list.length > 0;
+    grid.innerHTML = "";
+    list.forEach((v, i) => {
+      const card = document.createElement("article"); card.className = "vendor-card";
+      let box;
+      if (v.image) { box = zoomLogo(API_URL + v.image, v.name); box.classList.add("vlogo"); }
+      else { box = holidayArt(i); box.classList.add("vlogo"); }
+      const h = document.createElement("h3"); h.textContent = v.name;
+      card.append(box, h);
+      if (v.donor) { const p = document.createElement("p"); p.className = "donor"; p.textContent = "Donated by " + v.donor; card.append(p); }
+      if (v.description) { const p = document.createElement("p"); p.textContent = v.description; card.append(p); }
+      grid.append(card);
+    });
+  });
+}
 
 // --- cancel page ---
 if (document.getElementById("cancel-box")) {

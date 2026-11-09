@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scavenger Hunt & Raffle · Santa Paws</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Santa Paws">
+<meta property="og:title" content="Scavenger Hunt & Raffle · Santa Paws">
+<meta property="og:description" content="Visit every vendor, collect stamps and earn raffle tickets for prizes at Santa Paws.">
+<meta property="og:url" content="https://cvahsantapaws.com/hunt.html">
+<meta property="og:image" content="https://cvahsantapaws.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A dog and a cat in Santa hats with a little elf. Santa Paws, Saturday, November 21, 2026.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cg fill=%22%23e7b23c%22%3E%3Cellipse cx=%2232%22 cy=%2242%22 rx=%2214%22 ry=%2212%22/%3E%3Cellipse cx=%2214%22 cy=%2226%22 rx=%226%22 ry=%228%22/%3E%3Cellipse cx=%2226%22 cy=%2216%22 rx=%226%22 ry=%228%22/%3E%3Cellipse cx=%2238%22 cy=%2216%22 rx=%226%22 ry=%228%22/%3E%3Cellipse cx=%2250%22 cy=%2226%22 rx=%226%22 ry=%228%22/%3E%3C/g%3E%3C/svg%3E">
+<meta name="description" content="Santa Paws at Carolina Virginia Animal Hospital: free Santa photos for dogs and cats, local vendors and treats. Saturday, November 21, 2026 in Providence, NC.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: festive single-page site; snowy hero with a Santa-hat pup, then stacked sections on alternating evergreen / snow bands */
+:root {
+  --snow: #fbf8f3;
+  --paper: #ffffff;
+  --ink: #1d2a24;
+  --muted: #5b6b63;
+  --pine: #1f5b43;
+  --pine-deep: #123d2c;
+  --berry: #c8283a;
+  --berry-ink: #ffffff;
+  --gold: #e7b23c;
+  --line: #e4ddd2;
+  --band: #eef3ef;
+  --on-pine: #f6f2ea;
+  --display: "Bagel Fat One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --snow: #0f1a15; --paper: #16241d; --ink: #eef1ec; --muted: #a8b6ae;
+    --pine: #2f8a63; --pine-deep: #0b1510; --berry: #e5485a; --berry-ink: #ffffff;
+    --gold: #f0c25a; --line: #2a3b32; --band: #13211a; --on-pine: #f6f2ea;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --snow: #0f1a15; --paper: #16241d; --ink: #eef1ec; --muted: #a8b6ae;
+  --pine: #2f8a63; --pine-deep: #0b1510; --berry: #e5485a; --berry-ink: #ffffff;
+  --gold: #f0c25a; --line: #2a3b32; --band: #13211a; --on-pine: #f6f2ea;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--snow); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.1; text-wrap: balance; margin: 0; }
+h2 { font-size: clamp(2rem, 5vw, 2.8rem); }
+h3 { font-size: 1.35rem; }
+p { margin: 0; }
+a { color: inherit; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; }
+.eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--berry); }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* nav */
+header.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--pine-deep); color: var(--on-pine); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; flex-wrap: wrap; }
+.brand { font-family: var(--display); font-size: 1.5rem; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 26px; height: 26px; }
+.nav ul { list-style: none; display: flex; gap: 4px 18px; margin: 0; padding: 0; flex-wrap: wrap; font-weight: 600; font-size: .95rem; }
+.nav ul a { text-decoration: none; opacity: .9; }
+.nav ul a:hover { opacity: 1; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 4px; }
+
+/* hero */
+.hero { position: relative; overflow: hidden; background: var(--pine); color: var(--on-pine); }
+#snow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.hero .wrap { position: relative; display: grid; grid-template-columns: 1.2fr .8fr; gap: 32px; align-items: center; padding-block: 56px 72px; }
+.hero h1 { font-size: clamp(3.2rem, 10vw, 6.4rem); color: #fff; letter-spacing: .01em; }
+.hero h1 span { color: var(--gold); }
+.hero-host { color: var(--gold); margin-bottom: 6px; }
+.hero-host strong { display: block; font-size: clamp(1.15rem, 2.6vw, 1.6rem); letter-spacing: .06em; line-height: 1.25; margin-bottom: 2px; }
+.hero .lede { font-size: 1.2rem; max-width: 34ch; margin-top: 16px; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.fact { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: .95rem; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.btn { display: inline-block; border: 0; cursor: pointer; font: 700 1rem var(--body); padding: 13px 22px; border-radius: 12px; text-decoration: none; }
+.btn.berry { background: var(--berry); color: var(--berry-ink); box-shadow: 0 4px 0 #7d1522; }
+.btn.berry:active { transform: translateY(2px); box-shadow: 0 2px 0 #7d1522; }
+.btn.ghost { background: transparent; color: var(--on-pine); border: 2px solid var(--on-pine); }
+.photog { display: flex; align-items: center; gap: 20px; margin-bottom: 22px; padding: 22px 26px; border-radius: 18px; border: 2px solid var(--gold); background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 12%, var(--paper)), var(--paper) 60%); }
+.photog .photog-logo { width: 120px; height: 120px; }
+.photog > div { flex: 1; display: grid; gap: 6px; }
+.photog h3 { font-size: 1.45rem; }
+.photog p { color: var(--muted); margin: 0; }
+.photog .btn { flex: none; }
+@media (max-width: 680px) { .photog { flex-wrap: wrap; } .photog > div { flex-basis: 100%; } }
+.pup { width: 100%; max-width: 400px; justify-self: center; }
+.hero-hills { position: absolute; bottom: -1px; left: 0; width: 100%; height: 48px; display: block; }
+.hero-hills path { fill: var(--snow); }
+
+/* sections */
+section.block { padding-block: 72px; }
+section.alt { background: var(--band); }
+.head { display: grid; gap: 10px; margin-bottom: 32px; max-width: 62ch; }
+.head p { color: var(--muted); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+.two > * { min-width: 0; }
+
+/* forms */
+form.card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 24px; display: grid; gap: 16px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row > * { min-width: 0; }
+.find-results { display: grid; gap: 10px; }
+.find-results:empty { display: none; }
+.booking { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: var(--snow); }
+.booking p { margin: 0; }
+label { display: grid; gap: 6px; font-weight: 600; font-size: .92rem; }
+label .hint { font-weight: 400; color: var(--muted); font-size: .85rem; }
+input, select, textarea { font: inherit; font-size: 1rem; color: var(--ink); background: var(--snow); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
+input:focus, select:focus, textarea:focus { border-color: var(--pine); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pine) 25%, transparent); }
+textarea { min-height: 90px; resize: vertical; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.checks label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.checks input { width: auto; }
+.done { background: var(--band); border: 1.5px dashed var(--pine); border-radius: 12px; padding: 14px 16px; font-weight: 600; }
+
+/* photo slots */
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.slot { font: 600 .95rem var(--body); font-variant-numeric: tabular-nums; padding: 10px 6px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--snow); color: var(--ink); cursor: pointer; }
+.slot:hover:not(:disabled) { border-color: var(--pine); }
+.slot[aria-pressed="true"] { background: var(--pine); border-color: var(--pine); color: #fff; }
+.slot:disabled { opacity: .45; cursor: not-allowed; text-decoration: line-through; }
+.slot-group { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 6px; }
+.slot-need { font-size: .88rem; color: var(--muted); }
+.pet-rows { display: grid; gap: 10px; }
+.pet-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.pet-row > * { min-width: 0; }
+.seg { display: flex; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg label { display: flex; align-items: center; gap: 6px; padding: 9px 14px; font-weight: 600; cursor: pointer; background: var(--snow); }
+.seg label + label { border-left: 1.5px solid var(--line); }
+.seg input { width: auto; accent-color: var(--pine); }
+.slot-legend { display: flex; gap: 16px; font-size: .85rem; color: var(--muted); }
+.info { display: grid; gap: 18px; }
+.info-item { display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; }
+.info-item svg { width: 40px; height: 40px; }
+.info-item p { color: var(--muted); }
+.price-tag { display: inline-block; background: var(--gold); color: #3a2a05; font-weight: 700; border-radius: 8px; padding: 2px 10px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+/* gallery */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.chip { font: 600 .9rem var(--body); padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--berry); border-color: var(--berry); color: var(--berry-ink); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.shot { margin: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.shot .ph { aspect-ratio: 4 / 3; max-width: 100%; display: grid; place-items: center; }
+.shot .ph svg { width: 44%; height: auto; opacity: .9; }
+button.ph { width: 100%; border: 0; padding: 0; cursor: zoom-in; background: var(--band); display: block; }
+.shot .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.viewer { border: 0; padding: 0; background: transparent; max-width: min(96vw, 1100px); max-height: 94vh; overflow: visible; }
+.viewer::backdrop { background: rgba(10, 20, 15, .85); }
+.viewer img { display: block; max-width: 100%; max-height: 84vh; border-radius: 12px; margin: 0 auto; }
+.viewer p { color: #fff; text-align: center; margin: 10px 0 0; font-weight: 600; }
+.viewer-close { position: absolute; top: -14px; right: -6px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #fff; color: #1d2a24; font-size: 1.6rem; line-height: 1; cursor: pointer; }
+.shot figcaption { padding: 10px 14px; font-size: .9rem; display: flex; justify-content: space-between; gap: 8px; }
+.shot figcaption b { font-variant-numeric: tabular-nums; color: var(--berry); }
+
+/* sponsors */
+.tier { margin-bottom: 28px; }
+.tier-label { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-weight: 700; }
+.tier-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.logos { display: grid; gap: 14px; }
+.logos.gold { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.logos.silver { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.logos.friend { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.logo { background: var(--paper); border: 1.5px dashed var(--line); border-radius: 14px; padding: 18px; display: grid; place-items: center; text-align: center; gap: 4px; color: var(--muted); }
+.logos.gold .logo { min-height: 130px; border-style: solid; border-color: var(--gold); }
+.logos.silver .logo { min-height: 100px; }
+.logo strong { color: var(--ink); font-size: 1.05rem; }
+.sponsor-cta { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; background: var(--pine); color: var(--on-pine); border-radius: 18px; padding: 24px; }
+.sponsor-cta h3 { color: #fff; }
+
+
+/* treats */
+.treats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.treat { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 26px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.treat-top { display: flex; align-items: center; gap: 14px; }
+.treat-top > div { display: grid; gap: 8px; }
+.treat-top svg { width: 56px; height: 56px; flex: none; }
+.treat-logo { flex: none; width: 112px; height: 112px; padding: 0; border: 0; border-radius: 16px; overflow: hidden; cursor: zoom-in; background: none; box-shadow: 0 4px 14px rgb(0 0 0 / .12); }
+.treat-logo.wide { width: 220px; height: 90px; background: #000; }
+.treat-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.treat-logo.wide img { object-fit: contain; }
+@media (max-width: 520px) { .treat-top { flex-wrap: wrap; } }
+.treat h3 { font-size: 1.6rem; }
+.when { display: inline-block; font-weight: 700; font-size: .85rem; border-radius: 999px; padding: 4px 12px; background: var(--band); color: var(--pine); border: 1.5px solid var(--pine); width: fit-content; }
+.treat p { color: var(--muted); }
+.menu { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.menu li { font-weight: 600; font-size: .9rem; padding: 6px 12px; border-radius: 999px; background: var(--snow); border: 1.5px solid var(--line); }
+.treat-sparkle { grid-column: 1 / -1; border: 2px solid var(--gold); background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 10%, var(--paper)), var(--paper) 55%, color-mix(in srgb, #9b6bd6 10%, var(--paper))); }
+.menu li.star { background: var(--berry); color: var(--berry-ink); border-color: var(--berry); }
+.biz-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.social-btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: .92rem; text-decoration: none; color: #fff; background: #1877f2; padding: 8px 14px; border-radius: 999px; }
+.social-btn svg { width: 18px; height: 18px; }
+.menu-link { font-weight: 700; color: var(--berry); text-underline-offset: 3px; }
+.food-menu { margin-top: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 18px 24px; }
+.food-menu summary { display: inline-flex; align-items: center; gap: 10px; font: 700 1.05rem var(--body); letter-spacing: .01em; cursor: pointer; background: var(--berry); color: var(--berry-ink); padding: 11px 20px; border-radius: 12px; list-style: none; }
+.food-menu summary::-webkit-details-marker { display: none; }
+.food-menu summary::after { content: "+"; font-size: 1.3rem; line-height: 1; }
+.food-menu[open] summary::after { content: "\2212"; }
+.menu-cols { columns: 3 260px; column-gap: 32px; margin-top: 18px; }
+.menu-group { break-inside: avoid; margin-bottom: 22px; }
+.menu-group h4 { font-family: var(--display); font-weight: 400; font-size: 1.15rem; color: var(--pine); margin: 0 0 2px; }
+.menu-sub, .menu-note { font-size: .82rem; color: var(--muted); }
+.menu-note { margin-top: 6px; }
+.menu-group ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.mi { display: flex; align-items: baseline; gap: 6px; font-weight: 600; }
+.mi .dots { flex: 1; border-bottom: 1.5px dotted var(--line); transform: translateY(-4px); }
+.mi .price { font-variant-numeric: tabular-nums; color: var(--berry); }
+.menu-group small { display: block; color: var(--muted); font-size: .84rem; line-height: 1.4; }
+.menu-foot { font-weight: 700; color: var(--pine); margin-top: 4px; }
+@media (max-width: 820px) { .treats { grid-template-columns: 1fr; } }
+
+/* sponsor levels */
+.vendor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.vendor-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 10px; align-content: start; }
+.vendor-card .vlogo { width: 100%; height: 240px; display: grid; place-items: center; border-radius: 12px; overflow: hidden; }
+.vendor-card .vlogo.art svg, .logo .art svg { display: block; width: 100%; height: auto; border-radius: 10px; }
+.logo .art { width: 100%; max-width: 240px; }
+.logos.friend .logo .art { max-width: 160px; }
+.vendor-card .vlogo img { max-width: 100%; max-height: 240px; object-fit: contain; border-radius: 10px; }
+button.zoom { border: 0; padding: 0; margin: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
+button.zoom:hover img { transform: scale(1.03); }
+button.zoom img { transition: transform .2s; }
+.viewer.logo-view img { background: #fff; padding: 18px; max-height: 80vh; }
+.vendor-card h3 { font-size: 1.3rem; }
+.hunt-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 18px; }
+.hunt-step { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 8px; align-content: start; }
+.hunt-step .num { font-size: 2rem; line-height: 1; color: var(--berry); font-weight: 800; }
+.hunt-step h3 { font-size: 1.2rem; }
+.hunt-step p { margin: 0; color: var(--muted); }
+.hunt-rules { background: var(--band); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; font-weight: 600; margin: 0 0 36px; }
+.prizes-empty { color: var(--muted); font-weight: 600; }
+.vendor-card .donor { font-weight: 700; color: var(--pine); }
+.vendor-card .cat { justify-self: start; font-size: .8rem; font-weight: 700; color: var(--pine); background: var(--band); border-radius: 999px; padding: 3px 10px; }
+.vendor-card p { margin: 0; color: var(--muted); }
+.vendor-card a { font-weight: 600; color: var(--berry); overflow-wrap: anywhere; }
+.logo img { max-width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; }
+.logos.gold .logo img { max-height: 170px; }
+.logo button.zoom { display: grid; place-items: center; }
+.sponsor-apply { margin-top: 28px; max-width: 780px; }
+.sponsor-apply h3 { font-size: 1.5rem; }
+.levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
+.maker { display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: center; margin-bottom: 24px; }
+.maker img { width: 100%; height: auto; border-radius: 18px; background: var(--pine); padding: 14px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.maker h3 { font-size: 1.7rem; margin-bottom: 8px; }
+.maker p + p { margin-top: 10px; }
+.maker-tag { font-family: var(--display); color: var(--berry); font-size: 1.25rem; }
+.maker-links { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.maker-links a { display: inline-block; background: var(--band); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 600; color: var(--pine); text-decoration: none; overflow-wrap: anywhere; }
+.maker-links a:hover { border-color: var(--pine); }
+@media (max-width: 640px) { .maker-links { justify-content: center; } }
+.designs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 14px; }
+.design-pick { margin: 0; padding: 16px; display: grid; gap: 12px; align-content: start; }
+.design-zoom { padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 12px; overflow: hidden; }
+.design-zoom img { width: 100%; height: auto; display: block; }
+.design-pick h3 { font-size: 1.4rem; margin: 2px 0 4px; }
+.design-pick figcaption p:last-child { color: var(--muted); }
+.shirt-fabric { color: var(--muted); font-weight: 600; margin: 0 0 22px; }
+.size-help-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--berry); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.staff-form { display: grid; gap: 16px; }
+.staff-pick { border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin: 0; display: grid; grid-template-columns: 170px 1fr; gap: 16px; align-items: center; background: var(--snow); }
+.staff-pick img { width: 100%; border-radius: 10px; display: block; }
+.staff-pick h3 { font-size: 1.25rem; margin-bottom: 8px; }
+.staff-want { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 10px; cursor: pointer; }
+.staff-want input { width: 20px; height: 20px; margin: 0; accent-color: var(--berry); }
+.staff-pick.skip img, .staff-pick.skip .row { opacity: .4; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 560px) { .staff-pick { grid-template-columns: 1fr; } .staff-pick img { max-width: 260px; } }
+.line-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.size-help { width: min(680px, 94vw); max-height: 90vh; overflow: auto; border: 0; border-top: 6px solid var(--berry); border-radius: 18px; padding: 26px; background: var(--paper); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.size-help::backdrop { background: rgba(0, 0, 0, .55); }
+.size-help h3 { font-size: 1.6rem; margin: 2px 0 10px; }
+.size-help h4 { font-family: var(--display); font-weight: 400; color: var(--pine); font-size: 1.2rem; margin: 18px 0 6px; }
+.size-close { position: absolute; top: 12px; right: 14px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--band); color: var(--ink); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.size-tip { background: var(--band); border-left: 4px solid var(--gold); border-radius: 10px; padding: 10px 14px; margin: 0 0 10px; }
+.size-how { color: var(--muted); font-size: .95rem; margin: 0 0 6px; }
+.size-scroll { overflow-x: auto; margin-bottom: 8px; }
+.measure { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: center; background: var(--band); border-radius: 14px; padding: 14px 16px; margin: 4px 0 6px; }
+.measure svg { width: 100%; height: auto; }
+.measure-text { display: grid; gap: 8px; font-size: .95rem; }
+.measure-text p { margin: 0; }
+.mk { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--berry); color: #fff; font-weight: 700; font-size: .85rem; margin-right: 4px; }
+@media (max-width: 560px) { .measure { grid-template-columns: 1fr; } .measure svg { max-width: 300px; margin: 0 auto; } }
+.size-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; text-align: center; }
+.size-table th, .size-table td { border: 1px solid var(--line); padding: 7px 8px; white-space: nowrap; }
+.size-table thead th { background: var(--pine); color: #fff; font-weight: 700; }
+.size-table tbody th { background: var(--band); color: var(--berry); text-align: left; }
+.size-table thead th:first-child { background: var(--pine-deep, var(--pine)); }
+.design-soon { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center; }
+.design-soon svg { width: 100%; color: var(--pine); }
+.design-soon h3 { font-size: 1.5rem; margin-bottom: 6px; }
+.design-soon p { color: var(--muted); }
+.design-ready { margin: 0; text-align: center; }
+.design-ready img { max-width: 100%; max-height: 560px; border-radius: 14px; cursor: zoom-in; }
+.design-ready figcaption { color: var(--muted); font-weight: 600; margin-top: 10px; }
+.shirt-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.shirt-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: grid; gap: 8px; align-content: start; }
+.shirt-card svg { width: 64px; height: 64px; }
+.shirt-card h3 { font-size: 1.25rem; }
+.shirt-card p:last-child { color: var(--muted); font-size: .95rem; }
+.shirt-order { max-width: 780px; }
+.shirt-order h3 { font-size: 1.5rem; }
+.order-lines { border: 0; padding: 0; margin: 0; display: grid; gap: 10px; }
+.order-lines legend { font-weight: 600; margin-bottom: 6px; }
+#order-lines { display: grid; gap: 10px; }
+.order-line { display: grid; grid-template-columns: 1.2fr 1.6fr 1fr 70px 40px; gap: 8px; align-items: center; }
+.order-line > * { min-width: 0; }
+.line-x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--band); color: var(--ink); font-size: 1.3rem; cursor: pointer; }
+.small-btn { justify-self: start; padding: 8px 16px; font-size: .95rem; background: var(--band); color: var(--pine); border: 1.5px solid var(--pine); }
+.order-total { font-size: 1.2rem; margin: 4px 0 0; }
+.shirt-deadline { margin-top: 10px; background: var(--band); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; color: var(--ink); }
+.pay-box { background: var(--band); border-radius: 12px; padding: 12px 16px; display: grid; gap: 8px; }
+.pay-box p { margin: 0; }
+.pay-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.pay-links a { display: inline-block; background: var(--paper); border: 1.5px solid var(--pine); border-radius: 999px; padding: 6px 16px; font-weight: 700; color: var(--pine); text-decoration: none; }
+.order-total strong { font-family: var(--display); font-weight: 400; color: var(--berry); font-size: 1.6rem; }
+@media (max-width: 960px) { .shirt-cards { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) {
+  .maker, .design-soon { grid-template-columns: 1fr; text-align: center; }
+  .maker img { max-width: 220px; margin: 0 auto; }
+  .design-soon svg { max-width: 200px; margin: 0 auto; }
+  .order-line { grid-template-columns: 1fr 1fr; }
+  .order-line select[data-k="style"], .order-line select[data-k="design"] { grid-column: 1 / -1; }
+  .designs { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) { .shirt-cards { grid-template-columns: 1fr; } }
+.level { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.level-north-pole { border: 2px solid var(--gold); }
+.level svg { width: 40px; height: 40px; }
+.level h3 { font-size: 1.5rem; }
+.level-price { font-family: var(--display); font-size: 2.4rem; line-height: 1; color: var(--berry); font-variant-numeric: tabular-nums; }
+.level-spots { font-weight: 700; font-size: .9rem; color: var(--pine); }
+.level ul { margin: 4px 0 8px; padding-left: 1.1em; color: var(--muted); display: grid; gap: 6px; flex: 1; }
+.level .btn { text-align: center; }
+.level .btn.sold { background: var(--line); color: var(--muted); box-shadow: none; cursor: default; }
+@media (max-width: 860px) { .levels { grid-template-columns: 1fr; } }
+
+/* faq + footer */
+details { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+details + details { margin-top: 10px; }
+summary { font-weight: 700; cursor: pointer; }
+details p { color: var(--muted); margin-top: 8px; }
+footer { background: var(--pine-deep); color: var(--on-pine); padding-block: 40px; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; }
+footer p { opacity: .85; font-size: .95rem; }
+
+@media (max-width: 820px) {
+  .hero .wrap, .two { grid-template-columns: 1fr; }
+  .pup { max-width: 300px; order: -1; }
+  .row { grid-template-columns: 1fr; }
+  section.block { padding-block: 56px; }
+}
+@media (prefers-reduced-motion: reduce) { #snow { display: none; } }
+
+/* multi-page */
+.nav ul a.nav-cancel { border: 1.5px solid var(--gold); border-radius: 999px; padding: 2px 12px; opacity: 1; }
+.nav ul a.nav-cancel:hover, .nav ul a.nav-cancel[aria-current="page"] { background: var(--gold); color: var(--pine-deep); text-decoration: none; }
+.cancel-note { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; background: var(--band); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin: -8px 0 24px; font-weight: 600; }
+.cancel-note .btn { padding: 8px 18px; font-size: .95rem; }
+.event-strip { background: var(--band); border-bottom: 1px solid var(--line); }
+.event-strip .wrap { display: flex; flex-wrap: wrap; gap: 4px 18px; padding-block: 10px; font-weight: 600; font-size: .92rem; color: var(--pine); }
+.nav ul a[aria-current="page"] { opacity: 1; text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 3px; text-underline-offset: 6px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.tile { display: grid; gap: 10px; align-content: start; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 22px; text-decoration: none; color: var(--ink); transition: transform .15s, border-color .15s; }
+.tile:hover { transform: translateY(-3px); border-color: var(--pine); }
+.tile svg { width: 40px; height: 40px; }
+.tile h3 { font-size: 1.35rem; }
+.tile p { color: var(--muted); font-size: .95rem; }
+.tile .go { font-weight: 700; color: var(--berry); margin-top: auto; }
+@media (max-width: 760px) { .tiles { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .tiles { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
+</style>
+</head>
+<body>
+
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="paw" viewBox="0 0 64 64"><g fill="currentColor"><ellipse cx="32" cy="42" rx="14" ry="12"/><ellipse cx="14" cy="26" rx="6" ry="8"/><ellipse cx="26" cy="16" rx="6" ry="8"/><ellipse cx="38" cy="16" rx="6" ry="8"/><ellipse cx="50" cy="26" rx="6" ry="8"/></g></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><svg style="color:var(--gold)"><use href="#paw"/></svg>Santa Paws</a>
+    <nav aria-label="Pages">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="photos.html">Santa Photos</a></li>
+        <li><a href="treats.html">Treats &amp; Eats</a></li>
+        <li><a href="vendors.html">Vendors</a></li>
+        <li><a href="hunt.html" aria-current="page">Scavenger Hunt</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="sponsors.html">Sponsors</a></li>
+        <li><a href="shirts.html">Event Shirts</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a class="nav-cancel" href="cancel.html">Cancel a booking</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="event-strip"><div class="wrap"><span>Saturday, November 21, 2026</span><span>10 AM to 3 PM</span><span>46 Shady Grove Road, Providence, NC</span></div></div>
+<main id="top">
+  <section class="block" id="hunt">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">Scavenger hunt &amp; raffle</p>
+        <h2>Collect stamps, win prizes</h2>
+        <p>Pick up a scavenger hunt card at the CVAH table, visit the stops, and turn your card in for raffle tickets. Prizes are raffled off at the end of the event.</p>
+      </div>
+      <div class="hunt-steps">
+        <div class="hunt-step"><span class="num">1</span><h3>Visit every vendor</h3><p>Stop by each vendor, say hi and learn what they sell to get a stamp. No purchase needed, but shopping local is always appreciated!</p></div>
+        <div class="hunt-step"><span class="num">2</span><h3>Fill the vendor stamps</h3><p>Collect every vendor stamp to earn 10 raffle tickets. A partly filled card doesn't earn vendor tickets.</p></div>
+        <div class="hunt-step"><span class="num">3</span><h3>Grab bonus stamps</h3><p>Earn 1 extra ticket each at River Rye Shoppe and Tiffany's Curbside Cravings (with a purchase), and at Tails &amp; Tinsel with fairy hair by Ash &amp; Co.</p></div>
+        <div class="hunt-step"><span class="num">4</span><h3>Turn it in</h3><p>Bring your card to the CVAH table to get your raffle tickets. Winners are drawn at the end of the event.</p></div>
+      </div>
+      <p class="hunt-rules">One card per family, and each family can win once. Our goal is to spread as much cheer as possible!</p>
+      <div class="head" style="margin-bottom:16px"><h2 style="font-size:1.8rem">Raffle prizes</h2></div>
+      <p class="prizes-empty" id="prizes-empty">Prizes are being added. Check back soon!</p>
+      <div class="vendor-grid" id="prize-grid"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><p class="brand" style="font-size:1.3rem">Santa Paws</p><p>Hosted by Carolina Virginia Animal Hospital · 46 Shady Grove Road, Providence, NC 27315</p></div>
+    <div><p><a href="cancel.html">Cancel a booking</a> · <a href="contact.html">Send us a message</a></p><p style="margin-top:6px">Social media magic by <a href="contact.html#social-genius">HB Social Solutions</a></p></div>
+  </div>
+</footer>
+
+<script>
+// Form delivery: Web3Forms emails every submission to the address tied to this key,
+// so the address itself never appears on the site. Get a free key at web3forms.com.
+// Leave FORM_KEY empty to keep the forms in preview mode.
+const FORM_ENDPOINT = "https://api.web3forms.com/submit";
+const FORM_KEY = "564b0e79-ea1f-4f77-9f8f-c629473bbf90";
+// Sign-up service on Cloudflare (see worker/ in the repo). When set, sign-ups are stored there,
+// spots count down on their own and booked photo times are crossed out automatically.
+// Web3Forms still emails each sign-up to the clinic.
+const API_URL = "https://api.cvahsantapaws.com";
+// Shirt orders (and sponsors' free shirts) close at the end of Friday, November 6 (Eastern).
+const SHIRT_DEADLINE = Date.parse("2026-11-07T05:00:00Z");
+const shirtsOpen = () => Date.now() < SHIRT_DEADLINE;
+// Payment links for shirt orders (they go to Josh for the hospital): [name, handle, link].
+const PAY = [
+  ["Venmo", "@Joshua-Foster-79", "https://venmo.com/u/Joshua-Foster-79"],
+  ["Cash App", "$joshman2474", "https://cash.app/$joshman2474"],
+  ["PayPal", "@jfoster0470", "https://www.paypal.com/paypalme/jfoster0470"],
+];
+
+// Shrinks an uploaded logo (to fit 600px, then smaller if needed) and returns it as a data: URL.
+async function logoData(file) {
+  if (!file) return "";
+  if (!/^image\//.test(file.type)) throw new Error("not_image");
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const w = img.naturalWidth || 600, h = img.naturalHeight || 600, c = document.createElement("canvas");
+    for (let size = 600; size >= 150; size = Math.round(size * 0.75)) {
+      const k = Math.min(1, size / Math.max(w, h));
+      c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+      const ctx = c.getContext("2d"); ctx.clearRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+      let out = c.toDataURL("image/webp", 0.85);
+      if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
+      if (out.length < 380000) return out;
+    }
+    throw new Error("too_big");
+  } catch (err) { throw new Error(err.message === "too_big" ? "too_big" : "not_image"); }
+  finally { URL.revokeObjectURL(url); }
+}
+
+async function send(form, extra) {
+  const x = extra(form);
+  const fileInput = form.querySelector("input[type=file][name=logo_file]");
+  if (fileInput && fileInput.files[0]) x.logo = await logoData(fileInput.files[0]);
+  if (API_URL) {
+    const fd = new FormData(form), params = new URLSearchParams();
+    const merged = {};
+    for (const [k, v] of fd.entries()) if (typeof v === "string") merged[k] = k in merged ? merged[k] + ", " + v : v;
+    Object.entries({ ...merged, ...x }).forEach(([k, v]) => params.append(k, v));
+    const r = await fetch(API_URL, { method: "POST", body: params });
+    const d = await r.json();
+    if (d.status) document.dispatchEvent(new CustomEvent("sp-status", { detail: d.status }));
+    if (d.ok && FORM_KEY) notify(form, x).catch(() => {});
+    return d.ok ? { state: "sent", data: d } : { state: d.reason || "error", data: d };
+  }
+  if (!FORM_KEY) return { state: "preview" };
+  const data = new FormData(form);
+  data.delete("logo_file"); delete x.logo;
+  data.append("access_key", FORM_KEY);
+  data.append("from_name", "Santa Paws website");
+  Object.entries(x).forEach(([k, v]) => data.append(k, v));
+  const r = await fetch(FORM_ENDPOINT, { method: "POST", body: data, headers: { Accept: "application/json" } });
+  return { state: r.ok ? "sent" : "error" };
+}
+// Emails the clinic a copy of a sign-up that was just saved.
+function notify(form, x) {
+  const data = new FormData(form);
+  data.delete("logo_file");
+  data.append("access_key", FORM_KEY);
+  data.append("from_name", "Santa Paws website");
+  Object.entries(x).forEach(([k, v]) => data.append(k, k === "logo" ? "Yes (see the admin page)" : v));
+  return fetch(FORM_ENDPOINT, { method: "POST", body: data, headers: { Accept: "application/json" } });
+}
+function wire(id, doneId, check, msg, extra, problems = {}) {
+  const form = document.getElementById(id), done = document.getElementById(doneId);
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const problem = check(form);
+    done.hidden = false;
+    if (problem) { done.textContent = problem; return; }
+    const btn = form.querySelector("button[type=submit]");
+    btn.disabled = true; done.textContent = "Sending...";
+    let res;
+    try { res = await send(form, extra); }
+    catch (err) { res = { state: err.message === "not_image" ? "bad_logo" : err.message === "too_big" ? "big_logo" : "error" }; }
+    btn.disabled = res.state === "sent";
+    done.textContent = res.state === "sent" ? msg(form, res.data)
+      : res.state === "preview" ? msg(form) + " (Preview only: this form is not connected yet, so nothing was sent.)"
+      : problems[res.state] ? problems[res.state](res.data)
+      : res.state === "bad_logo" ? "That logo file isn't an image we can read. Try a PNG or JPG."
+      : res.state === "big_logo" ? "That logo is too large. Try a smaller PNG or JPG."
+      : "That didn't go through. Check your connection and try again.";
+    if (res.state === "sent" && res.data && res.data.emailed) done.append(" We emailed you a confirmation.");
+    if (res.state === "sent" && res.data && res.data.code) {
+      const a = document.createElement("a");
+      a.href = "cancel.html"; a.textContent = "Cancel a booking";
+      done.append(" Plans change? Use ", a, " at the bottom of any page with your email and phone number.");
+    }
+  });
+}
+// Live counts from the sign-up sheet, refreshed every 30 seconds while the page is open
+function refreshStatus() {
+  if (!API_URL || document.hidden) return;
+  fetch(API_URL).then(r => r.json()).then(d => document.dispatchEvent(new CustomEvent("sp-status", { detail: d }))).catch(() => {});
+}
+refreshStatus();
+if (API_URL) { setInterval(refreshStatus, 30000); document.addEventListener("visibilitychange", refreshStatus); }
+document.addEventListener("sp-status", ({ detail: d }) => {
+  const vs = document.getElementById("vendor-spots");
+  if (vs && d.vendors) {
+    const left = Math.max(0, d.vendors.max - d.vendors.taken);
+    vs.textContent = left ? `${left} of ${d.vendors.max} spots left` : "All vendor spots are taken";
+    const vb = document.querySelector("#vendor-form button[type=submit]");
+    if (vb && !left) { vb.disabled = true; vb.textContent = "Vendor spots are full"; }
+  }
+  document.querySelectorAll(".level[data-level]").forEach(card => {
+    const L = d.sponsors && d.sponsors[card.dataset.level]; if (!L) return;
+    const left = Math.max(0, L.max - L.taken);
+    card.querySelector(".level-spots").textContent = left ? `${left} of ${L.max} spots left` : "Sold out";
+    if (!left) { const b = card.querySelector(".btn"); b.removeAttribute("href"); b.textContent = "Sold out"; b.classList.add("sold"); }
+  });
+  const list = document.getElementById("sponsor-list");
+  if (list && d.sponsors) {
+    const groups = Object.entries(d.sponsors).filter(([, L]) => L.names.length);
+    list.hidden = !groups.length;
+    list.innerHTML = groups.map(([level, L]) => `<div class="tier"><div class="tier-label">${level === "Elf Friends" ? level : level + " Sponsors"}</div>
+      <div class="logos ${level === "North Pole" ? "gold" : level === "Reindeer" ? "silver" : "friend"}">${L.names.map(n => `<div class="logo"><strong></strong></div>`).join("")}</div></div>`).join("");
+    const items = groups.flatMap(([, L]) => L.list || L.names.map(name => ({ name })));
+    list.querySelectorAll(".logo").forEach((el, i) => {
+      const it = items[i];
+      el.querySelector("strong").textContent = it.name;
+      el.prepend(it.logo ? zoomLogo(API_URL + it.logo, it.name) : holidayArt(i));
+    });
+  }
+});
+const need = (f, names) => names.find(n => !f.elements[n].value.trim());
+if (document.getElementById("photo-form")) {
+// --- photo slots: every 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM ---
+// Add times here as they fill up (e.g. "10:05", "1:30") to cross them out.
+const booked = new Set([]);
+const PETS_PER_SPOT = 2;
+const blocks = { am: [10 * 60, 12 * 60], pm: [13 * 60, 15 * 60] };
+const label = m => { const h = Math.floor(m / 60); return `${h > 12 ? h - 12 : h}:${String(m % 60).padStart(2, "0")}`; };
+const ampm = m => (m < 12 * 60 ? "AM" : "PM");
+let picked = [];
+const petCount = document.getElementById("p-count");
+const spotsNeeded = () => Math.ceil(Number(petCount.value) / PETS_PER_SPOT);
+const pickedEl = document.getElementById("slot-picked");
+
+function showPicked() {
+  document.querySelectorAll(".slot").forEach(b => b.setAttribute("aria-pressed", String(picked.includes(Number(b.dataset.m)))));
+  pickedEl.textContent = picked.length ? `Picked: ${picked.map(label).join(", ")} ${ampm(picked[0])}` : "No time picked yet";
+}
+function pick(m, block) {
+  const run = [];
+  for (let i = 0; i < spotsNeeded(); i++) run.push(m + i * 5);
+  if (run.some(x => x >= blocks[block][1] || booked.has(label(x)))) {
+    picked = []; showPicked();
+    pickedEl.textContent = `That time doesn't have ${run.length} open spots in a row. Try an earlier time.`;
+    return;
+  }
+  picked = run; showPicked();
+}
+Object.entries(blocks).forEach(([block, [from, to]]) => {
+  const el = document.getElementById("slots-" + block);
+  for (let m = from; m < to; m += 5) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "slot"; b.textContent = label(m); b.dataset.m = m;
+    b.setAttribute("aria-pressed", "false");
+    if (booked.has(label(m))) { b.disabled = true; b.title = "Booked"; }
+    b.addEventListener("click", () => pick(m, block));
+    el.appendChild(b);
+  }
+});
+
+// one name + dog/cat row per pet
+const petRows = document.getElementById("pet-rows");
+function renderPets() {
+  const n = Number(petCount.value), old = [...petRows.querySelectorAll(".pet-row")].map(r => ({
+    name: r.querySelector("input[type=text]").value, type: (r.querySelector("input[type=radio]:checked") || {}).value }));
+  petRows.innerHTML = "";
+  for (let i = 1; i <= n; i++) {
+    const prev = old[i - 1] || {};
+    petRows.insertAdjacentHTML("beforeend", `<div class="pet-row">
+      <label for="pet${i}-name">Pet ${i} name<input type="text" id="pet${i}-name" name="pet${i}_name" required placeholder="${i % 2 ? "Biscuit" : "Mochi"}"></label>
+      <div class="seg" role="radiogroup" aria-label="Pet ${i} is a">
+        <label for="pet${i}-dog"><input type="radio" id="pet${i}-dog" name="pet${i}_type" value="Dog">Dog</label>
+        <label for="pet${i}-cat"><input type="radio" id="pet${i}-cat" name="pet${i}_type" value="Cat">Cat</label>
+      </div></div>`);
+    petRows.querySelector(`#pet${i}-name`).value = prev.name || "";
+    if (prev.type) petRows.querySelector(`#pet${i}-${prev.type.toLowerCase()}`).checked = true;
+  }
+  const need = spotsNeeded();
+  document.getElementById("slot-need").textContent = need === 1 ? "1 spot needed (up to 2 pets)" : `${need} back-to-back spots needed for ${n} pets. Pick your start time.`;
+  if (picked.length) { const first = picked[0]; pick(first, first < 12 * 60 ? "am" : "pm"); }
+}
+petCount.addEventListener("change", renderPets);
+renderPets();
+
+function photoProblem(f) {
+  if (need(f, ["first_name", "last_name", "phone", "email"])) return "Add your first and last name, phone and email.";
+  const n = Number(petCount.value);
+  for (let i = 1; i <= n; i++) {
+    if (!f.elements[`pet${i}_name`].value.trim()) return `Add a name for pet ${i}.`;
+    if (!f.querySelector(`input[name=pet${i}_type]:checked`)) return `Choose dog or cat for pet ${i}.`;
+  }
+  if (!picked.length) return "Pick a time above.";
+  return null;
+}
+wire("photo-form", "photo-done", photoProblem,
+  f => {
+    const text = `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}!`;
+    picked.forEach(m => booked.add(label(m)));
+    document.querySelectorAll(".slot").forEach(b => { if (booked.has(b.textContent)) { b.disabled = true; b.title = "Booked"; } });
+    picked = []; showPicked();
+    return text;
+  },
+  f => ({ form: "photo", subject: `Santa photo booking: ${f.elements.first_name.value} ${f.elements.last_name.value}`, times: picked.map(m => label(m) + " " + ampm(m)).join(", "), replyto: f.elements.email.value }),
+  { taken: d => { picked = []; showPicked(); return `Sorry, ${d.taken.join(", ")} was just booked by someone else. Please pick another time.`; } });
+document.addEventListener("sp-status", ({ detail: d }) => {
+  (d.booked || []).forEach(t => booked.add(t.replace(/\s*[AP]M$/i, "")));
+  document.querySelectorAll(".slot").forEach(b => { if (booked.has(b.textContent)) { b.disabled = true; b.title = "Booked"; } });
+});
+}
+if (document.getElementById("vendor-form")) {
+wire("vendor-form", "vendor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone."
+  : need(f, ["description"]) ? "Tell us what you'll sell or offer. Shoppers will see it on our website." : null,
+  f => `Thanks, ${f.elements.business.value}! We'll review your application and reply by email. The $20 fee can be paid by cash or check (payable to Carolina Virginia Animal Hospital).`,
+  f => ({ form: "vendor", subject: `Vendor application: ${f.elements.business.value}`, replyto: f.elements.email.value }),
+  { full: () => "Sorry, all 15 vendor spots are taken." });
+
+}
+// --- sponsor sign-up ---
+if (document.getElementById("sponsor-apply")) {
+  const sel = document.getElementById("s-level");
+  document.querySelectorAll("[data-pick]").forEach(a => a.addEventListener("click", () => { sel.value = a.dataset.pick; }));
+  if (!shirtsOpen()) { const w = document.getElementById("s-shirt-wrap"); w.hidden = true; w.querySelector("select").required = false; }
+  wire("sponsor-apply", "sponsor-done", f => need(f, ["business", "contact", "email", "phone"]) ? "Add your business name, contact name, email and phone."
+    : shirtsOpen() && need(f, ["shirt_size"]) ? "Pick a shirt size for your free event shirt." : null,
+    f => `Thank you, ${f.elements.business.value}! Your ${f.elements.level.value} spot is held. You can pay by cash or check (payable to Carolina Virginia Animal Hospital), and we'll follow up with the details.`,
+    f => ({ form: "sponsor", subject: `Sponsor sign-up: ${f.elements.business.value} (${f.elements.level.value})`, replyto: f.elements.email.value }),
+    { full: () => `Sorry, the ${sel.value} level just sold out. Please pick another level.` });
+}
+
+// A festive picture for anyone without a logo, taking turns down the list so neighbors differ.
+const HOLIDAY_ART = [
+  // gift
+  `<rect width="300" height="200" fill="#1f5b43"/><rect x="105" y="98" width="90" height="68" rx="4" fill="#c8283a"/><rect x="98" y="82" width="104" height="22" rx="4" fill="#e5485a"/><rect x="143" y="82" width="14" height="84" fill="#f0c25a"/><ellipse cx="135" cy="74" rx="16" ry="9" transform="rotate(-25 135 74)" fill="#f0c25a"/><ellipse cx="165" cy="74" rx="16" ry="9" transform="rotate(25 165 74)" fill="#f0c25a"/><circle cx="150" cy="79" r="7" fill="#e7b23c"/>`,
+  // ornament
+  `<rect width="300" height="200" fill="#c8283a"/><path d="M150 0v58" stroke="#f6f2ea" stroke-width="3"/><rect x="139" y="54" width="22" height="15" rx="3" fill="#e7b23c"/><circle cx="150" cy="116" r="48" fill="#1f5b43"/><polyline points="106,106 120,96 135,106 150,96 165,106 180,96 194,106" fill="none" stroke="#f0c25a" stroke-width="6" stroke-linejoin="round"/><g fill="#fff"><circle cx="122" cy="136" r="4.5"/><circle cx="141" cy="136" r="4.5"/><circle cx="159" cy="136" r="4.5"/><circle cx="178" cy="136" r="4.5"/></g><ellipse cx="132" cy="94" rx="10" ry="6" fill="#fff" opacity=".25"/>`,
+  // tree
+  `<rect width="300" height="200" fill="#24476b"/><ellipse cx="150" cy="200" rx="190" ry="26" fill="#f6f2ea"/><rect x="140" y="160" width="20" height="20" fill="#8a5a36"/><g fill="#2f8a63"><polygon points="150,44 112,98 188,98"/><polygon points="150,70 102,132 198,132"/><polygon points="150,100 92,166 208,166"/></g><polygon points="150,26 155,38 168,38 158,46 162,58 150,51 138,58 142,46 132,38 145,38" fill="#f0c25a"/><g><circle cx="138" cy="88" r="5" fill="#e5485a"/><circle cx="162" cy="118" r="5" fill="#f0c25a"/><circle cx="128" cy="124" r="5" fill="#f0c25a"/><circle cx="170" cy="152" r="5" fill="#e5485a"/><circle cx="132" cy="156" r="5" fill="#fff"/></g>`,
+  // stocking
+  `<rect width="300" height="200" fill="#e7b23c"/><path d="M128 66h52v70c0 26-16 40-40 40h-24c-20 0-30-12-30-24s10-22 28-22h14z" fill="#c8283a"/><rect x="122" y="46" width="64" height="26" rx="10" fill="#fff"/><g fill="#fff" transform="translate(137 98) scale(.55)"><ellipse cx="32" cy="42" rx="14" ry="12"/><ellipse cx="14" cy="26" rx="6" ry="8"/><ellipse cx="26" cy="16" rx="6" ry="8"/><ellipse cx="38" cy="16" rx="6" ry="8"/><ellipse cx="50" cy="26" rx="6" ry="8"/></g>`,
+];
+const SNOW = `<g fill="#fff" opacity=".7"><circle cx="30" cy="30" r="3"/><circle cx="62" cy="80" r="2"/><circle cx="40" cy="140" r="3"/><circle cx="85" cy="40" r="2"/><circle cx="250" cy="34" r="3"/><circle cx="270" cy="96" r="2"/><circle cx="232" cy="150" r="3"/><circle cx="214" cy="62" r="2"/></g>`;
+function holidayArt(i) {
+  const box = document.createElement("div"); box.className = "art";
+  box.innerHTML = `<svg viewBox="0 0 300 200" role="img" aria-label="Holiday decoration">${HOLIDAY_ART[i % HOLIDAY_ART.length]}${SNOW}</svg>`;
+  return box;
+}
+
+// A logo that opens full size when tapped.
+function zoomLogo(src, name) {
+  const btn = document.createElement("button"), img = document.createElement("img");
+  btn.type = "button"; btn.className = "zoom"; btn.setAttribute("aria-label", `View ${name} logo larger`);
+  img.src = src; img.alt = name + " logo"; img.loading = "lazy";
+  btn.append(img);
+  btn.onclick = () => {
+    let dlg = document.getElementById("logo-viewer");
+    if (!dlg) {
+      dlg = document.createElement("dialog"); dlg.id = "logo-viewer"; dlg.className = "viewer logo-view";
+      dlg.innerHTML = '<button type="button" class="viewer-close" aria-label="Close">×</button><img alt=""><p></p>';
+      document.body.append(dlg);
+      dlg.querySelector(".viewer-close").onclick = () => dlg.close();
+      dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+    }
+    const big = dlg.querySelector("img"); big.src = src; big.alt = img.alt;
+    dlg.querySelector("p").textContent = name;
+    dlg.showModal();
+  };
+  return btn;
+}
+
+// --- vendors who are coming ---
+if (document.getElementById("vendor-grid")) {
+  document.addEventListener("sp-status", ({ detail: d }) => {
+    const list = (d.vendors && d.vendors.list) || [], grid = document.getElementById("vendor-grid");
+    document.getElementById("vendor-list").hidden = !list.length;
+    grid.innerHTML = "";
+    list.forEach((v, i) => {
+      const card = document.createElement("article"); card.className = "vendor-card";
+      let box;
+      if (v.logo) { box = zoomLogo(API_URL + v.logo, v.name); box.classList.add("vlogo"); }
+      else { box = holidayArt(i); box.classList.add("vlogo"); }
+      const h = document.createElement("h3"); h.textContent = v.name;
+      card.append(box, h);
+      if (v.category) { const c = document.createElement("span"); c.className = "cat"; c.textContent = v.category; card.append(c); }
+      if (v.description) { const p = document.createElement("p"); p.textContent = v.description; card.append(p); }
+      if (v.website) {
+        const w = v.website.trim(), url = /^https?:\/\//i.test(w) ? w : /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(w) ? "https://" + w : "";
+        const el = document.createElement(url ? "a" : "p"); el.textContent = w;
+        if (url) { el.href = url; el.target = "_blank"; el.rel = "noopener"; }
+        card.append(el);
+      }
+      grid.append(card);
+    });
+  });
+}
+
+// --- event shirt orders ---
+if (document.getElementById("shirt-order") && !shirtsOpen()) {
+  document.getElementById("shirt-order").hidden = true;
+  document.getElementById("orders-closed").hidden = false;
+}
+if (document.getElementById("shirt-order")) {
+  const payLinks = document.getElementById("pay-links");
+  PAY.filter(([, , url]) => url).forEach(([name, handle, url]) => {
+    const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = `${name} ${handle}`;
+    payLinks.append(a); payLinks.hidden = false;
+  });
+  const PRICES = { "Short sleeve": 30, "Long sleeve": 35, Crewneck: 40, Hoodie: 45 };
+  const box = document.getElementById("order-lines"), tpl = document.getElementById("line-tpl");
+  const lines = () => [...box.querySelectorAll(".order-line")].map(l => ({
+    design: l.querySelector('[data-k="design"]').value, style: l.querySelector('[data-k="style"]').value, size: l.querySelector('[data-k="size"]').value,
+    qty: Math.max(1, Math.min(20, parseInt(l.querySelector('[data-k="qty"]').value, 10) || 1)),
+  }));
+  const total = () => lines().reduce((n, l) => n + PRICES[l.style] * l.qty, 0);
+  const update = () => {
+    document.getElementById("order-total").textContent = "$" + total();
+    box.querySelectorAll(".line-x").forEach(x => (x.hidden = box.children.length < 2));
+  };
+  const addLine = () => {
+    const l = tpl.content.firstElementChild.cloneNode(true);
+    l.querySelector(".line-x").onclick = () => { l.remove(); update(); };
+    l.addEventListener("input", update); l.addEventListener("change", update);
+    box.append(l); update();
+  };
+  addLine();
+  document.getElementById("add-line").onclick = addLine;
+  wire("shirt-order", "shirt-done", f => need(f, ["first_name", "last_name", "email", "phone"]) ? "Add your name, email and phone."
+    : lines().some(l => !l.size) ? "Pick a size for each shirt."
+    : lines().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie" && l.style !== "Crewneck") ? "Adult 5XL and 6XL only come in hoodies and crewnecks. Pick one of those or a smaller size." : null,
+    () => `Thank you! Your order for ${lines().reduce((n, l) => n + l.qty, 0)} shirt${lines().reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"} ($${total()}) is in. Pay with cash, Venmo, Cash App or PayPal, and pick up your shirts at Santa Paws on November 21.`,
+    f => ({ form: "shirt_order", items: JSON.stringify(lines()), subject: `Shirt order: ${f.elements.first_name.value} ${f.elements.last_name.value} ($${total()})`, replyto: f.elements.email.value }),
+    { closed: () => "Sorry, shirt orders closed on November 6." });
+  document.querySelectorAll(".design-zoom").forEach(b => {
+    b.onclick = () => zoomLogo(b.dataset.logo, b.getAttribute("aria-label").replace(/^View the | larger$/g, "")).click();
+  });
+
+}
+
+const sizeHelp = document.getElementById("size-help");
+if (sizeHelp) {
+  document.querySelectorAll("[data-size-help]").forEach(b => (b.onclick = () => sizeHelp.showModal()));
+  sizeHelp.querySelector(".size-close").onclick = () => sizeHelp.close();
+  sizeHelp.addEventListener("click", e => { if (e.target === sizeHelp) sizeHelp.close(); });
+}
+
+// --- staff shirt picks (staff.html) ---
+if (document.getElementById("staff-form")) {
+  if (!shirtsOpen()) { document.getElementById("staff-form").hidden = true; document.getElementById("staff-closed").hidden = false; }
+  // Uncheck "I want this shirt" to skip a design; its style and size are then ignored.
+  document.querySelectorAll(".staff-pick").forEach(f => {
+    const want = f.querySelector('[data-k="want"]');
+    want.onchange = () => { f.classList.toggle("skip", !want.checked); f.querySelectorAll("select").forEach(x => x.disabled = !want.checked); };
+  });
+  const picks = () => [...document.querySelectorAll(".staff-pick")].filter(f => f.querySelector('[data-k="want"]').checked).map(f => ({
+    design: f.dataset.design, style: f.querySelector('[data-k="style"]').value, size: f.querySelector('[data-k="size"]').value,
+  }));
+  wire("staff-form", "staff-done", f => need(f, ["name"]) ? "Add your name."
+    : !picks().length ? "Check at least one shirt you'd like."
+    : picks().some(l => !l.style || !l.size) ? `Pick a style and size for ${picks().length > 1 ? "both shirts" : "your shirt"}.`
+    : picks().some(l => /^[56]XL$/.test(l.size) && l.style !== "Hoodie" && l.style !== "Crewneck") ? "Adult 5XL and 6XL only come in hoodies and crewnecks." : null,
+    f => `Thanks, ${f.elements.name.value.trim().split(/\s+/)[0]}! Your picks are in: ${picks().map(l => `${l.design === "Holiday" ? "Holiday" : "Santa Paws"} ${l.style.toLowerCase()} in ${/^(S|M|L|XL|[2-6]XL)$/.test(l.size) ? "adult " + l.size : l.size}`).join(" and ")}.`,
+    f => ({ form: "staff_shirts", shirts: JSON.stringify(picks()), subject: `Staff shirts: ${f.elements.name.value}` }),
+    { closed: () => "Sorry, shirt picks closed on November 6.", bad_items: () => "Something's off with your picks. Check the style and size for each shirt." });
+}
+
+document.querySelectorAll(".treat-logo").forEach(b => {
+  b.onclick = () => zoomLogo(b.dataset.logo, b.querySelector("img").alt.replace(/ logo$/, "")).click();
+});
+
+// --- raffle prizes (hunt.html) ---
+if (document.getElementById("prize-grid")) {
+  document.addEventListener("sp-status", ({ detail: d }) => {
+    const list = d.raffle || [], grid = document.getElementById("prize-grid");
+    document.getElementById("prizes-empty").hidden = list.length > 0;
+    grid.innerHTML = "";
+    list.forEach((v, i) => {
+      const card = document.createElement("article"); card.className = "vendor-card";
+      let box;
+      if (v.image) { box = zoomLogo(API_URL + v.image, v.name); box.classList.add("vlogo"); }
+      else { box = holidayArt(i); box.classList.add("vlogo"); }
+      const h = document.createElement("h3"); h.textContent = v.name;
+      card.append(box, h);
+      if (v.donor) { const p = document.createElement("p"); p.className = "donor"; p.textContent = "Donated by " + v.donor; card.append(p); }
+      if (v.description) { const p = document.createElement("p"); p.textContent = v.description; card.append(p); }
+      grid.append(card);
+    });
+  });
+}
+
+// --- cancel page ---
+if (document.getElementById("cancel-box")) {
+  const code = new URLSearchParams(location.search).get("code");
+  // Without a link code, people look up their bookings by email + phone.
+  const findForm = document.getElementById("find-form");
+  if (!code) document.getElementById("cancel-box").hidden = true, findForm.hidden = false;
+  else document.getElementById("cancel-box").hidden = false;
+  const fDone = document.getElementById("find-done"), results = document.getElementById("find-results");
+  const describe = b => b.kind === "photo" ? `Santa photo at ${b.times} for ${b.name}` : `Vendor application for ${b.name}`;
+  findForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = findForm.elements.email.value.trim(), phone = findForm.elements.phone.value.trim();
+    results.innerHTML = ""; fDone.hidden = false;
+    if (!email || phone.replace(/\D/g, "").length < 7) { fDone.textContent = "Enter your email and phone number."; return; }
+    if (!API_URL) { fDone.textContent = "Booking lookup isn't connected yet."; return; }
+    const btn = findForm.querySelector("button[type=submit]");
+    btn.disabled = true; fDone.textContent = "Looking...";
+    try {
+      const d = await (await fetch(API_URL, { method: "POST", body: new URLSearchParams({ form: "find", email, phone }) })).json();
+      if (!d.ok || !d.bookings.length) {
+        fDone.innerHTML = 'We couldn\'t find a booking with that email and phone. Check for typos, or <a href="contact.html">send us a message</a>.';
+        return;
+      }
+      fDone.textContent = d.bookings.length === 1 ? "We found your booking:" : "We found these bookings:";
+      d.bookings.forEach(b => {
+        const row = document.createElement("div"), p = document.createElement("p"), x = document.createElement("button");
+        row.className = "booking"; p.textContent = describe(b);
+        x.type = "button"; x.className = "btn berry"; x.textContent = b.kind === "photo" ? "Cancel this time" : "Withdraw";
+        x.onclick = async () => {
+          if (!confirm(`Cancel the ${describe(b).replace(/^./, c => c.toLowerCase())}?`)) return;
+          x.disabled = true;
+          try {
+            const r = await (await fetch(API_URL, { method: "POST", body: new URLSearchParams({ form: "cancel", code: b.code }) })).json();
+            p.textContent = r.ok ? (b.kind === "photo" ? `Cancelled: ${b.times} is open for someone else. Thank you!` : `Withdrawn: ${b.name}. Thank you!`) : "This one was already cancelled.";
+            x.remove();
+          } catch { x.disabled = false; p.textContent = describe(b) + " (that didn't go through, try again)"; }
+        };
+        row.append(p, x); results.append(row);
+      });
+    } catch { fDone.textContent = "That didn't go through. Check your connection and try again."; }
+    finally { btn.disabled = false; }
+  });
+  const text = document.getElementById("cancel-text"), btn = document.getElementById("cancel-btn");
+  const nope = 'We couldn\'t find that booking. It may already be cancelled. Need help? <a href="contact.html">Send us a message</a>.';
+  if (!code || !API_URL) { text.innerHTML = 'Use the cancel link you got when you booked, or <a href="contact.html">send us a message</a>.'; }
+  else fetch(API_URL + "?lookup=" + encodeURIComponent(code)).then(r => r.json()).then(d => {
+    if (!d.ok) { text.innerHTML = nope; return; }
+    text.textContent = d.kind === "photo" ? `Cancel the Santa photo at ${d.times} for ${d.name}?` : `Withdraw the vendor application for ${d.name}?`;
+    btn.textContent = d.kind === "photo" ? "Yes, cancel my photo time" : "Yes, withdraw my application";
+    btn.hidden = false;
+    btn.onclick = async () => {
+      btn.disabled = true; text.textContent = "Cancelling...";
+      try {
+        const r = await fetch(API_URL, { method: "POST", body: new URLSearchParams({ form: "cancel", code }) });
+        const x = await r.json();
+        btn.hidden = true;
+        text.textContent = x.ok ? (x.kind === "photo" ? `Done. Your ${x.times} photo time is cancelled and open for someone else.` : `Done. Your application for ${x.name} is withdrawn.`) : "We couldn't find that booking. It may already be cancelled.";
+      } catch { btn.disabled = false; text.textContent = "That didn't go through. Check your connection and try again."; }
+    };
+  }).catch(() => { text.textContent = "We couldn't load your booking right now. Please try again in a minute."; });
+}
+
+// --- contact form ---
+if (document.getElementById("contact-form")) {
+  const h = location.hash.slice(1);
+  const topic = h.startsWith("sponsor") ? "Sponsorship" : { vendor: "Vendors", photos: "Santa photos" }[h];
+  if (topic) document.getElementById("c-topic").value = topic;
+  const level = { "sponsor-north-pole": "North Pole Sponsor ($150)", "sponsor-reindeer": "Reindeer Sponsor ($75)", "sponsor-elf": "Elf Friends ($50)" }[h];
+  if (level) document.getElementById("c-message").value = `I'm interested in the ${level} level.\n\nBusiness name: `;
+  wire("contact-form", "contact-done", f => need(f, ["name", "email", "message"]) ? "Add your name, email and a message." : null,
+    f => `Thanks, ${f.elements.name.value}! Your message is on its way. We'll reply to ${f.elements.email.value}.`,
+    f => ({ form: "contact", subject: `Santa Paws message: ${f.elements.topic.value}`, replyto: f.elements.email.value }));
+}
+
+const menuLink = document.querySelector(".menu-link");
+if (menuLink) menuLink.addEventListener("click", () => { document.getElementById("tiffanys-menu").open = true; });
+
+if (document.getElementById("gallery-grid")) {
+// --- gallery placeholders ---
+// Paw placeholders show until real photos are uploaded on the admin page.
+const tints = ["#c8283a", "#1f5b43", "#e7b23c", "#2b6f8f", "#8a5a36"];
+let shots = [
+  ["2025", "Biscuit meets Santa"], ["2025", "The reindeer-antler crew"], ["2025", "Mochi in a stocking"],
+  ["2024", "Holiday sweater parade"], ["2024", "First-time visitor"], ["2024", "Vendor row"]
+];
+let year = "All", galleryKey = "";
+const grid = document.getElementById("gallery-grid"), filters = document.getElementById("filters");
+const viewer = document.createElement("dialog");
+viewer.className = "viewer";
+viewer.innerHTML = '<button type="button" class="viewer-close" aria-label="Close">×</button><img alt=""><p></p>';
+document.body.append(viewer);
+viewer.querySelector(".viewer-close").onclick = () => viewer.close();
+viewer.addEventListener("click", e => { if (e.target === viewer) viewer.close(); });
+function renderFilters() {
+  filters.innerHTML = "";
+  ["All", ...new Set(shots.map(s => s[0]))].forEach(y => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = y; b.setAttribute("aria-pressed", String(y === year));
+    b.addEventListener("click", () => { year = y; filters.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderGallery(); });
+    filters.appendChild(b);
+  });
+}
+function renderGallery() {
+  grid.innerHTML = "";
+  shots.filter(s => year === "All" || s[0] === year).forEach(([y, cap, id], i) => {
+    const fig = document.createElement("figure"); fig.className = "shot";
+    if (id) {
+      const btn = document.createElement("button"), img = document.createElement("img");
+      btn.type = "button"; btn.className = "ph"; btn.setAttribute("aria-label", "View larger: " + (cap || "Santa Paws " + y));
+      img.src = `${API_URL}/photo/${id}/thumb`; img.alt = cap || `Santa Paws ${y}`; img.loading = "lazy";
+      btn.append(img);
+      btn.onclick = () => {
+        const big = viewer.querySelector("img"); big.src = `${API_URL}/photo/${id}`; big.alt = img.alt;
+        viewer.querySelector("p").textContent = [cap, y].filter(Boolean).join(" · ");
+        viewer.showModal();
+      };
+      fig.append(btn);
+    } else {
+      const c = tints[i % tints.length];
+      fig.insertAdjacentHTML("beforeend", `<div class="ph" style="background:color-mix(in srgb, ${c} 22%, var(--paper))"><svg style="color:${c}"><use href="#paw"/></svg></div>`);
+    }
+    const fc = document.createElement("figcaption"), span = document.createElement("span"), b = document.createElement("b");
+    span.textContent = cap; b.textContent = y; fc.append(span, b); fig.append(fc);
+    grid.append(fig);
+  });
+}
+document.addEventListener("sp-status", ({ detail: d }) => {
+  const real = (d.gallery || []).map(g => [g.year, g.caption, g.id]);
+  const key = JSON.stringify(real);
+  if (!real.length || key === galleryKey) return;
+  galleryKey = key; shots = real;
+  if (year !== "All" && !shots.some(s => s[0] === year)) year = "All";
+  renderFilters(); renderGallery();
+});
+renderFilters();
+renderGallery();
+
+}
+
+// --- snowfall ---
+(function () {
+  const cv = document.getElementById("snow"); if (!cv) return; const ctx = cv.getContext("2d");
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let flakes = [], w, h;
+  function size() { w = cv.width = cv.offsetWidth; h = cv.height = cv.offsetHeight;
+    flakes = Array.from({ length: Math.round(w / 12) }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 2.4 + .8, s: Math.random() * .6 + .3, d: Math.random() * 6.28 })); }
+  function tick() {
+    ctx.clearRect(0, 0, w, h); ctx.fillStyle = "rgba(255,255,255,.8)";
+    flakes.forEach(f => { f.y += f.s; f.d += .01; f.x += Math.sin(f.d) * .3; if (f.y > h) { f.y = -4; f.x = Math.random() * w; }
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.28); ctx.fill(); });
+    requestAnimationFrame(tick);
+  }
+  addEventListener("resize", size); size(); tick();
+})();
+</script>
+</body>
+</html>

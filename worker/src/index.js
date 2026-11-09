@@ -5,6 +5,7 @@
  *   GET  /                 -> { booked, vendors: {max, taken, list}, sponsors: {level: {max, taken, names, list}} }
  *   GET  /logo/vendor/ID, /logo/sponsor/ID -> the logo image (only once shown on the website)
  *   GET  /photo/ID, /photo/ID/thumb -> a gallery photo
+ *   GET  /raffle/ID        -> a raffle prize photo
  *   GET  /?lookup=CODE     -> what a cancel code refers to
  *   POST / form=photo|vendor|sponsor|contact|cancel -> { ok, reason?, taken?, code?, status? }
  *   POST / form=find (email, phone)   -> { ok, bookings: [{kind, times|name, code}] }
@@ -25,6 +26,7 @@
  *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
+ *   POST /admin/raffle     { name, donor, description, image }  (new prize; with id and image only, changes the photo; empty image removes it)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
  *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
  *
@@ -86,13 +88,14 @@ function logoField(p) {
 const newCode = () => crypto.randomUUID().replace(/-/g, "");
 
 async function status(db) {
-  const [slots, vendors, shown, sponsors, gallery, design] = await db.batch([
+  const [slots, vendors, shown, sponsors, gallery, design, raffle] = await db.batch([
     db.prepare("SELECT time FROM photo_slots"),
     db.prepare("SELECT COUNT(*) AS n FROM vendors"),
     db.prepare("SELECT id, business, category, description, website, logo != '' AS has_logo FROM vendors WHERE show = 1 ORDER BY business COLLATE NOCASE"),
     db.prepare("SELECT id, business, level, show, website, logo != '' AS has_logo FROM sponsors ORDER BY id"),
     db.prepare("SELECT id, year, caption FROM gallery ORDER BY year DESC, id"),
     db.prepare("SELECT updated FROM site_images WHERE key = 'shirt-design'"),
+    db.prepare("SELECT id, name, donor, description, image != '' AS has_image, updated FROM raffle ORDER BY id"),
   ]);
   const levels = {};
   for (const [level, max] of Object.entries(SPONSOR_LEVELS)) {
@@ -111,6 +114,8 @@ async function status(db) {
     sponsors: levels,
     gallery: gallery.results,
     shirtDesign: design.results.length ? design.results[0].updated : "",
+    // Winners stay on the admin page only.
+    raffle: raffle.results.map(r => ({ name: r.name, donor: r.donor, description: r.description, image: r.has_image ? `/raffle/${r.id}?v=${encodeURIComponent(r.updated)}` : "" })),
   };
 }
 
@@ -252,6 +257,14 @@ async function confirmShirtOrder(env, p, items, total) {
     `How to pay: pay Carolina Virginia Animal Hospital with cash, Venmo, Cash App or PayPal. If you pay online, please put your name in the payment note.\n\n` +
     `Pickup: your shirts will be waiting for you at Santa Paws on Saturday, November 21, 10 AM to 3 PM.\n\nThank you for supporting Santa Paws!`;
   await sendEmails(env, [letter(field(p, "email", 120), "Your Santa Paws shirt order", text, env)]);
+}
+
+async function rafflePhoto(db, id) {
+  const row = await db.prepare("SELECT image FROM raffle WHERE id = ?").bind(id).first();
+  const m = row && String(row.image).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+  if (!m) return new Response("Not found", { status: 404, headers: CORS });
+  const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+  return new Response(bytes, { headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=86400", ...CORS } });
 }
 
 async function siteImage(db, key) {
@@ -484,13 +497,15 @@ const EDITABLE = {
   shirts: { name: 120, team: 40, design: 20, size: 10, style: 20, notes: 500 },
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
   budget: { kind: 10, item: 120, amount: 20, notes: 500 },
+  raffle: { name: 120, donor: 120, description: 1000, winner: 200 },
 };
 
 // Budget tab: costs of putting on the event, plus income that isn't a sign-up (donations, raffle...).
 const BUDGET_KINDS = ["Cost", "Income"];
 const budgetAmount = v => { const t = String(v ?? "").replace(/[$,\s]/g, ""), n = t === "" ? NaN : Number(t); return Number.isFinite(n) && n >= 0 && n < 1e7 ? Math.round(n * 100) / 100 : null; };
 
-const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts", "shirt_orders", "budget"];
+const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts", "shirt_orders", "budget", "raffle"];
+const MAX_PRIZE_PHOTO = 400000;
 
 async function admin(request, env, path) {
   if (!(await authorized(request, env))) return json({ ok: false, reason: "unauthorized" }, 401);
@@ -525,6 +540,20 @@ async function admin(request, env, path) {
   }
   if (path === "/admin/email") return json(await announce(env, p));
   if (path === "/admin/reply") return json(await replyMessage(env, p));
+  if (path === "/admin/raffle") {
+    if (Number.isInteger(p.id)) {
+      const image = String(p.image || "");
+      if (image && !isImage(image, MAX_PRIZE_PHOTO)) return json({ ok: false, reason: "bad_image" }, 400);
+      await db.prepare("UPDATE raffle SET image = ?, updated = datetime('now') WHERE id = ?").bind(image, p.id).run();
+      return json({ ok: true });
+    }
+    const name = field(p, "name", 120);
+    if (!name) return json({ ok: false, reason: "missing" });
+    const image = isImage(p.image, MAX_PRIZE_PHOTO) ? p.image : "";
+    await db.prepare("INSERT INTO raffle (name, donor, description, image) VALUES (?, ?, ?, ?)")
+      .bind(name, field(p, "donor", 120), field(p, "description", 1000), image).run();
+    return json({ ok: true });
+  }
   if (path === "/admin/gallery") {
     const year = field(p, "year", 4), caption = field(p, "caption", 140);
     if (!/^\d{4}$/.test(year)) return json({ ok: false, reason: "bad_request" }, 400);
@@ -647,6 +676,8 @@ export default {
       const lm = path.match(/^\/logo\/(vendor|sponsor)\/(\d+)$/);
       if (lm && request.method === "GET") return await logo(env.DB, lm[1], Number(lm[2]));
       if (path === "/image/shirt-design" && request.method === "GET") return await siteImage(env.DB, "shirt-design");
+      const rm = path.match(/^\/raffle\/(\d+)$/);
+      if (rm && request.method === "GET") return await rafflePhoto(env.DB, Number(rm[1]));
       const pm = path.match(/^\/photo\/(\d+)(\/thumb)?$/);
       if (pm && request.method === "GET") return await photo(env.DB, Number(pm[1]), Boolean(pm[2]));
       if (path !== "/") return json({ ok: false, reason: "not_found" }, 404);

@@ -129,6 +129,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button data-tab="sponsors" aria-pressed="false">Sponsors</button>
       <button data-tab="messages" aria-pressed="false">Messages</button>
       <button data-tab="gallery" aria-pressed="false">Gallery</button>
+      <button data-tab="raffle" aria-pressed="false">Raffle</button>
       <button data-tab="shirts" aria-pressed="false">Shirts</button>
       <button data-tab="shirt_orders" aria-pressed="false">Shirt orders</button>
       <button data-tab="budget" aria-pressed="false">Budget</button>
@@ -189,6 +190,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button class="ghost small" id="copy-emails" hidden>Copy all emails</button>
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="small" id="add-vendor" hidden>Add vendor</button>
+      <button class="small" id="add-prize" hidden>Add prize</button>
       <button class="small" id="add-shirt" hidden>Add person</button>
       <button class="small" id="add-order" hidden>Add order</button>
       <button class="small" id="designer-sheet" hidden>Sheet for shirt designer</button>
@@ -269,6 +271,11 @@ const TABS = {
     cols: [["thumb", "Photo"], ["year", "Year"], ["caption", "Caption", true], ["created", "Added"]],
     note: "Click a photo to see it full size. Delete removes it from the Gallery page.",
     remove: r => `Delete this ${r.year} photo from the gallery?`,
+  },
+  raffle: {
+    cols: [["image", "Photo"], ["name", "Prize"], ["donor", "Donated by"], ["description", "Details", true], ["winner", "Winner", true], ["created", "Added"]],
+    note: "Prizes show on the Scavenger Hunt page right away. Tap Add prize, then Add photo if you have a picture. After the drawing, tap Edit to write down who won (winners only show here, not on the website).",
+    remove: r => `Remove ${r.name} from the raffle prizes?`,
   },
   emails: {
     cols: [["created", "Sent"], ["audience", "To"], ["subject", "Subject"], ["message", "Message", true], ["sent", "Emails sent"]],
@@ -480,6 +487,7 @@ function render() {
   dayOf();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
   document.getElementById("add-shirt").hidden = tab !== "shirts";
+  document.getElementById("add-prize").hidden = tab !== "raffle";
   document.getElementById("add-order").hidden = tab !== "shirt_orders";
   document.getElementById("designer-sheet").hidden = !["shirts", "shirt_orders", "sponsors"].includes(tab);
   document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
@@ -503,6 +511,11 @@ function render() {
         a.href = API_URL + "/photo/" + r.id; a.target = "_blank"; a.rel = "noopener"; a.title = "View full size";
         img.src = r.thumb; img.alt = r.caption || "Gallery photo"; img.className = "thumb photo";
         a.append(img); td.append(a);
+        return;
+      }
+      if (k === "image") {
+        if (r.image) { const img = document.createElement("img"); img.src = r.image; img.alt = r.name; img.className = "thumb photo"; td.append(img); }
+        else td.innerHTML = '<span class="muted">None</span>';
         return;
       }
       if (k === "logo") {
@@ -533,6 +546,24 @@ function render() {
       const rb = document.createElement("button"); rb.className = r.replied ? "ghost small" : "small"; rb.textContent = r.replied ? "Reply again" : "Reply";
       rb.onclick = () => replyTo(r);
       td.append(rb, " ");
+    }
+    if (tab === "raffle") {
+      const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
+      ed.onclick = () => editRow(tab, r);
+      const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/*"; pick.hidden = true;
+      const pb = document.createElement("button"); pb.className = "ghost small"; pb.textContent = r.image ? "Change photo" : "Add photo";
+      pb.onclick = () => pick.click();
+      pick.onchange = () => act(async () => {
+        let image;
+        try { image = await photoData(pick.files[0], 900, 0.8, 390000); } catch { alert("That picture couldn't be read. Try a PNG or JPG."); return; }
+        await api("/admin/raffle", { id: r.id, image });
+      });
+      td.append(pick, ed, " ", pb, " ");
+      if (r.image) {
+        const rb = document.createElement("button"); rb.className = "ghost small"; rb.textContent = "Remove photo";
+        rb.onclick = () => { if (confirm(`Remove the photo of ${r.name}?`)) act(() => api("/admin/raffle", { id: r.id, image: "" })); };
+        td.append(rb, " ");
+      }
     }
     if (tab === "budget") {
       const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
@@ -591,7 +622,7 @@ async function act(fn) {
 function csv() {
   const T = TABS[tab];
   const q = v => `"${String(v).replace(/"/g, '""')}"`;
-  const cols = T.cols.filter(([k]) => k !== "logo" && k !== "thumb");
+  const cols = T.cols.filter(([k]) => !["logo", "thumb", "image"].includes(k));
   const lines = [cols.map(c => q(c[1])).join(","), ...rows().map(r => cols.map(([k]) => q(cell(r, k))).join(","))];
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv" }));
@@ -703,6 +734,7 @@ const EDIT_FIELDS = {
   shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["design", "Design", ["Santa Paws", "Holiday"]], ["style", "Shirt type", ["T-shirt", "Long sleeve", "Crewneck", "Hoodie"]], ["size", "Shirt size", ["", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"]], ["notes", "Notes"]],
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"]], ["shirt_style", "Shirt type", ["T-shirt", "Long sleeve", "Crewneck", "Hoodie"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+  raffle: [["name", "Prize, like Holiday gift basket"], ["donor", "Donated by (optional)"], ["description", "Details (optional, shown on the website)", "area"], ["winner", "Winner (after the drawing; not shown on the website)"]],
   budget: [["kind", "Type", ["Cost", "Income"]], ["item", "What is it?"], ["amount", "Amount ($)", "money"], ["notes", "Notes"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
@@ -777,9 +809,9 @@ function replyTo(r, draft) {
 
 function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business || r.name);
+  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", raffle: "Add a raffle prize", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business || r.name);
   box.innerHTML = "";
-  EDIT_FIELDS[table].forEach(([k, label, kind]) => {
+  EDIT_FIELDS[table].filter(([k]) => !(adding && table === "raffle" && k === "winner")).forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
     let input;
     if (Array.isArray(kind)) { input = document.createElement("select"); kind.forEach(o => input.add(new Option(o ? sizeLabel(o) : "Not picked", o))); }
@@ -797,12 +829,13 @@ function editRow(table, r, adding) {
     const problem = msg => { alert(msg); dlg.returnValue = ""; dlg.showModal(); };
     if ("business" in fields && !fields.business.trim()) return problem("Business name can't be empty.");
     if (table === "shirts" && !fields.name.trim()) return problem("Add their name.");
+    if (table === "raffle" && !fields.name.trim()) return problem("Say what the prize is, like Holiday gift basket.");
     if (table === "budget" && !fields.item.trim()) return problem("Say what it's for, like Santa suit rental.");
     if (table === "budget" && !/^\$?\s*[\d,]*\.?\d+$/.test(fields.amount.trim())) return problem("Enter the amount as a number, like 45 or 12.50.");
     if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
     if (adding && table === "photos" && !fields.email.trim() && !fields.phone.trim()) return problem("Add an email (best, so they get their photo link) or a phone number.");
     act(async () => {
-      try { await (adding ? api({ photos: "/admin/walkup", vendors: "/admin/vendor", shirts: "/admin/shirt", budget: "/admin/budget" }[table], fields) : api("/admin/edit", { table, id: r.id, fields })); }
+      try { await (adding ? api({ photos: "/admin/walkup", vendors: "/admin/vendor", shirts: "/admin/shirt", budget: "/admin/budget", raffle: "/admin/raffle" }[table], fields) : api("/admin/edit", { table, id: r.id, fields })); }
       catch (e) {
         if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
         else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
@@ -944,6 +977,7 @@ document.getElementById("add-vendor").onclick = () => {
   if (v.taken >= v.max && !confirm(`All ${v.max} vendor spots are taken. Add this vendor anyway?`)) return;
   editRow("vendors", {}, true);
 };
+document.getElementById("add-prize").onclick = () => editRow("raffle", {}, true);
 document.getElementById("refresh").onclick = () => act(async () => {});
 document.getElementById("csv").onclick = csv;
 document.querySelectorAll(".tabs button").forEach(b => (b.onclick = () => { tab = b.dataset.tab; render(); }));
