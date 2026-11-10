@@ -43,7 +43,9 @@ const SHIRT_SIZES = ["Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "S
 const HOODIE_ONLY = ["5XL", "6XL"];
 // Shirt orders and sponsors' free shirts close at the end of Friday, November 6 (Eastern).
 const SHIRT_DEADLINE = Date.parse("2026-11-07T05:00:00Z");
-const shirtsOpen = () => Date.now() < SHIRT_DEADLINE;
+// Josh closed shirt orders for good on Nov 9 (staff picks and sponsor shirt sizes too).
+const SHIRTS_CLOSED = true;
+const shirtsOpen = () => !SHIRTS_CLOSED && Date.now() < SHIRT_DEADLINE;
 const shirtField = p => (SHIRT_SIZES.includes(field(p, "shirt_size", 10)) ? field(p, "shirt_size", 10) : "");
 const MAX_PETS = 6;
 

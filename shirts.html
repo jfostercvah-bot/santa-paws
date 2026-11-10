@@ -7,7 +7,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Santa Paws">
 <meta property="og:title" content="Event Shirts · Santa Paws">
-<meta property="og:description" content="Order your Santa Paws 2026 event shirt or our holiday shirt: tees, long sleeves, crewnecks and hoodies. Order by November 6.">
+<meta property="og:description" content="The Santa Paws 2026 event shirt and our holiday shirt. Orders are closed; pick up your shirts at Santa Paws on November 21.">
 <meta property="og:url" content="https://cvahsantapaws.com/shirts.html">
 <meta property="og:image" content="https://cvahsantapaws.com/og.png">
 <meta property="og:image:width" content="1200">
@@ -425,8 +425,8 @@ footer p { opacity: .85; font-size: .95rem; }
       <div class="head">
         <p class="eyebrow">Wear the cheer</p>
         <h2>Santa Paws event shirts</h2>
-        <p>Make it official with a Santa Paws shirt! This year there are two designs to pick from. Choose your favorite style and order one for everyone in the family (pets not included, but we won't tell).</p>
-        <p class="shirt-deadline"><strong>Order by Friday, November 6.</strong> Pick up your shirts at Santa Paws on Saturday, November 21.</p>
+        <p>Make it official with a Santa Paws shirt! This year there are two designs to pick from. Thank you to everyone who ordered one for the whole family (pets not included, but we won't tell).</p>
+        <p class="shirt-deadline"><strong>Shirt orders are closed.</strong> If you ordered, pick up your shirts at Santa Paws on Saturday, November 21.</p>
       </div>
 
       <div class="maker card">
@@ -515,7 +515,7 @@ footer p { opacity: .85; font-size: .95rem; }
           <tbody><tr><th>A chest</th><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td></tr><tr><th>B length</th><td>31</td><td>32</td><td>33</td><td>34</td><td>35</td><td>36</td><td>37</td></tr></tbody></table></div>
         <p class="size-how">Tip: lay a shirt that fits you well flat and measure it the same way, then pick the closest size.</p>
       </dialog>
-      <form class="card shirt-order" id="shirt-order" novalidate>
+      <form class="card shirt-order" id="shirt-order" novalidate hidden>
         <h3>Order your shirts</h3>
         <div class="row">
           <label for="o-first">First name<input id="o-first" name="first_name" required autocomplete="given-name"></label>
@@ -549,7 +549,7 @@ footer p { opacity: .85; font-size: .95rem; }
         <button class="btn berry" type="submit">Place my order</button>
         <p class="done" id="shirt-done" hidden></p>
       </form>
-      <div class="card shirt-order" id="orders-closed" hidden>
+      <div class="card shirt-order" id="orders-closed">
         <h3>Shirt orders are closed</h3>
         <p>Orders closed on November 6 so there's time to print them. Thank you to everyone who ordered! See you at Santa Paws on Saturday, November 21.</p>
       </div>
@@ -576,7 +576,9 @@ const FORM_KEY = "564b0e79-ea1f-4f77-9f8f-c629473bbf90";
 const API_URL = "https://api.cvahsantapaws.com";
 // Shirt orders (and sponsors' free shirts) close at the end of Friday, November 6 (Eastern).
 const SHIRT_DEADLINE = Date.parse("2026-11-07T05:00:00Z");
-const shirtsOpen = () => Date.now() < SHIRT_DEADLINE;
+// Josh closed shirt orders for good on Nov 9, so this stays false whatever the clock says.
+const SHIRTS_CLOSED = true;
+const shirtsOpen = () => !SHIRTS_CLOSED && Date.now() < SHIRT_DEADLINE;
 // Payment links for shirt orders (they go to Josh for the hospital): [name, handle, link].
 const PAY = [
   ["Venmo", "@Joshua-Foster-79", "https://venmo.com/u/Joshua-Foster-79"],
