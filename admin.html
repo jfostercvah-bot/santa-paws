@@ -98,6 +98,15 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
 #order-form .order-line button { padding: 6px 10px; }
 @media (max-width: 560px) { .order-grid { grid-template-columns: 1fr; } .order-line { grid-template-columns: 1fr 1fr 64px 44px; padding-bottom: 8px; border-bottom: 1px solid var(--line, #ddd); }
   .order-line [data-k=design], .order-line [data-k=style], .order-line [data-k=size] { grid-column: span 2; } }
+.draw { display: grid; gap: 12px; }
+.draw-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.draw-find input { flex: 1 1 180px; min-width: 0; font-size: 1.2rem; padding: 10px 12px; }
+.draw-card { border: 2px solid var(--line, #ccc); border-radius: 14px; padding: 14px 16px; display: grid; gap: 8px; }
+.draw-card.won { border-color: #1f7a4d; background: #eaf6ef; }
+.draw-card h3 { margin: 0; font-size: 1.4rem; }
+.draw-alert { background: #fbe6e8; color: #a3192b; border: 2px solid #a3192b; border-radius: 12px; padding: 10px 14px; font-weight: 700; }
+.win-box { display: flex; align-items: center; gap: 12px; font-size: 1.2rem; font-weight: 700; cursor: pointer; }
+.win-box input { width: 34px; height: 34px; margin: 0; accent-color: #1f7a4d; cursor: pointer; }
 .edit-dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .reply-orig { margin: 0 0 12px; padding: 10px 14px; border-left: 4px solid var(--line, #ccc); white-space: pre-wrap; max-height: 180px; overflow: auto; }
 .reply-past { margin: 0 0 12px; font-size: .9rem; white-space: pre-wrap; max-height: 140px; overflow: auto; }
@@ -129,7 +138,8 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button data-tab="sponsors" aria-pressed="false">Sponsors</button>
       <button data-tab="messages" aria-pressed="false">Messages</button>
       <button data-tab="gallery" aria-pressed="false">Gallery</button>
-      <button data-tab="raffle" aria-pressed="false">Raffle</button>
+      <button data-tab="raffle" aria-pressed="false">Raffle prizes</button>
+      <button data-tab="raffle_tickets" aria-pressed="false">Raffle tickets</button>
       <button data-tab="shirts" aria-pressed="false">Shirts</button>
       <button data-tab="shirt_orders" aria-pressed="false">Shirt orders</button>
       <button data-tab="budget" aria-pressed="false">Budget</button>
@@ -176,6 +186,15 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
     </form>
     <div class="card dayof" id="shirt-totals" hidden></div>
     <div class="card budget" id="budget-box" hidden></div>
+    <div class="card draw" id="draw" hidden>
+      <form class="draw-find" id="draw-form">
+        <label for="draw-no"><strong>Ticket drawn</strong></label>
+        <input id="draw-no" inputmode="numeric" autocomplete="off" placeholder="Ticket number, like 1205">
+        <button type="submit">Find ticket</button>
+      </form>
+      <div id="draw-result" aria-live="polite"></div>
+      <div id="draw-winners" class="muted"></div>
+    </div>
     <div class="card dayof" id="dayof" hidden>
       <div class="bar" style="margin:0">
         <strong class="grow" id="dayof-count"></strong>
@@ -191,6 +210,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="small" id="add-vendor" hidden>Add vendor</button>
       <button class="small" id="add-prize" hidden>Add prize</button>
+      <button class="small" id="add-ticket" hidden>Add tickets</button>
       <button class="small" id="add-shirt" hidden>Add person</button>
       <button class="small" id="add-order" hidden>Add order</button>
       <button class="small" id="designer-sheet" hidden>Sheet for shirt designer</button>
@@ -277,6 +297,11 @@ const TABS = {
     note: "Prizes show on the Scavenger Hunt page right away. Tap Add prize, then Add photo if you have a picture. After the drawing, tap Edit to write down who won (winners only show here, not on the website).",
     remove: r => `Remove ${r.name} from the raffle prizes?`,
   },
+  raffle_tickets: {
+    cols: [["ticket", "Ticket #"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["won", "Winner"], ["created", "Added"]],
+    note: "Tap Add tickets to enter who bought them (one ticket, a range like 1201-1210, or a list). At the drawing, type the ticket number in the box above and tap Find ticket, then check the Winner box. Each family can only win once.",
+    remove: r => `Delete ticket #${r.ticket} (${r.first_name} ${r.last_name})?`,
+  },
   emails: {
     cols: [["created", "Sent"], ["audience", "To"], ["subject", "Subject"], ["message", "Message", true], ["sent", "Emails sent"]],
     note: "Emails you've sent from here.",
@@ -315,7 +340,7 @@ async function api(path, body) {
   });
   if (r.status === 401) { logout("That password didn't work."); throw new Error("unauthorized"); }
   const d = await r.json();
-  if (!d.ok) throw new Error(d.reason || "error");
+  if (!d.ok) throw Object.assign(new Error(d.reason || "error"), { taken: d.taken });
   return d;
 }
 
@@ -323,7 +348,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "raffle_tickets" && k === "won" ? (r.won ? "🏆 Won" + (r.prize ? ": " + r.prize : "") : "") : tab === "raffle_tickets" && k === "ticket" ? "#" + r.ticket : tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -453,6 +478,7 @@ function rows() {
   const list = [...(data[tab] || [])];
   // Waiting-list walk-ups (no time yet) go last, first come first served.
   if (tab === "photos") list.sort((a, b) => minutes(a.times) - minutes(b.times) || a.id - b.id);
+  if (tab === "raffle_tickets") list.sort((a, b) => String(a.ticket).localeCompare(String(b.ticket), undefined, { numeric: true }));
   return list;
 }
 
@@ -485,9 +511,11 @@ function render() {
   if (was) sel.value = was;
   document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors", "shirt_orders"].includes(tab);
   dayOf();
+  drawBox();
   document.getElementById("add-vendor").hidden = tab !== "vendors";
   document.getElementById("add-shirt").hidden = tab !== "shirts";
   document.getElementById("add-prize").hidden = tab !== "raffle";
+  document.getElementById("add-ticket").hidden = tab !== "raffle_tickets";
   document.getElementById("add-order").hidden = tab !== "shirt_orders";
   document.getElementById("designer-sheet").hidden = !["shirts", "shirt_orders", "sponsors"].includes(tab);
   document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
@@ -541,6 +569,13 @@ function render() {
       nb.title = r.no_shirt ? "Put their free shirt back on the order" : "They don't want a shirt: take it off the shirt order and budget";
       nb.onclick = () => act(() => api("/admin/no-shirt", { id: r.id, no_shirt: !r.no_shirt }));
       td.append(nb, " ");
+    }
+    if (tab === "raffle_tickets") {
+      const wb = document.createElement("button"); wb.className = r.won ? "ghost small" : "small"; wb.textContent = r.won ? "Undo winner" : "Winner";
+      wb.onclick = () => showTicket(r.ticket, true);
+      const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
+      ed.onclick = () => editRow(tab, r);
+      td.append(wb, " ", ed, " ");
     }
     if (tab === "messages") {
       const rb = document.createElement("button"); rb.className = r.replied ? "ghost small" : "small"; rb.textContent = r.replied ? "Reply again" : "Reply";
@@ -734,6 +769,7 @@ const EDIT_FIELDS = {
   shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["design", "Design", ["Santa Paws", "Holiday"]], ["style", "Shirt type", ["T-shirt", "Long sleeve", "Crewneck", "Hoodie"]], ["size", "Shirt size", ["", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"]], ["notes", "Notes"]],
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"]], ["shirt_style", "Shirt type", ["T-shirt", "Long sleeve", "Crewneck", "Hoodie"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+  raffle_tickets: [["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["ticket", "Ticket number"]],
   raffle: [["name", "Prize, like Holiday gift basket"], ["donor", "Sponsored by (optional)"], ["description", "Details (optional, shown on the website)", "area"], ["winner", "Winner (after the drawing; not shown on the website)"]],
   budget: [["kind", "Type", ["Cost", "Income"]], ["item", "What is it?"], ["amount", "Amount ($)", "money"], ["notes", "Notes"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
@@ -809,7 +845,7 @@ function replyTo(r, draft) {
 
 function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", raffle: "Add a raffle prize", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : r.business || r.name);
+  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", raffle: "Add a raffle prize", raffle_tickets: "Add raffle tickets", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : table === "raffle_tickets" ? `ticket #${r.ticket}` : r.business || r.name);
   box.innerHTML = "";
   EDIT_FIELDS[table].filter(([k]) => !(adding && table === "raffle" && k === "winner")).forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
@@ -819,6 +855,7 @@ function editRow(table, r, adding) {
     else if (kind === "money") { input = document.createElement("input"); input.inputMode = "decimal"; input.placeholder = "0.00"; }
     else input = document.createElement("input");
     input.name = k; input.value = r[k] ?? "";
+    if (table === "raffle_tickets" && k === "ticket" && adding) { l.firstChild.textContent = "Ticket number(s): one, a range like 1201-1210, or a list like 1201, 1205"; input.placeholder = "1201-1210"; }
     l.append(input); box.append(l);
   });
   dlg.onclose = () => {
@@ -829,15 +866,19 @@ function editRow(table, r, adding) {
     const problem = msg => { alert(msg); dlg.returnValue = ""; dlg.showModal(); };
     if ("business" in fields && !fields.business.trim()) return problem("Business name can't be empty.");
     if (table === "shirts" && !fields.name.trim()) return problem("Add their name.");
+    if (table === "raffle_tickets" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
+    if (table === "raffle_tickets" && !fields.ticket.trim()) return problem("Add the ticket number.");
     if (table === "raffle" && !fields.name.trim()) return problem("Say what the prize is, like Holiday gift basket.");
     if (table === "budget" && !fields.item.trim()) return problem("Say what it's for, like Santa suit rental.");
     if (table === "budget" && !/^\$?\s*[\d,]*\.?\d+$/.test(fields.amount.trim())) return problem("Enter the amount as a number, like 45 or 12.50.");
     if (table === "photos" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
     if (adding && table === "photos" && !fields.email.trim() && !fields.phone.trim()) return problem("Add an email (best, so they get their photo link) or a phone number.");
     act(async () => {
-      try { await (adding ? api({ photos: "/admin/walkup", vendors: "/admin/vendor", shirts: "/admin/shirt", budget: "/admin/budget", raffle: "/admin/raffle" }[table], fields) : api("/admin/edit", { table, id: r.id, fields })); }
+      try { await (adding ? api({ photos: "/admin/walkup", vendors: "/admin/vendor", shirts: "/admin/shirt", budget: "/admin/budget", raffle: "/admin/raffle", raffle_tickets: "/admin/ticket" }[table], fields) : api("/admin/edit", { table, id: r.id, fields })); }
       catch (e) {
         if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
+        else if (e.message === "duplicate") problem(e.taken && e.taken.length ? `Already entered: ${e.taken.map(t => `#${t.ticket} (${t.first_name} ${t.last_name})`).join(", ")}.` : "That ticket number is already entered for someone else.");
+        else if (e.message === "bad_ticket") problem("Enter ticket numbers like 1205, a range like 1201-1210 (up to 200), or a list like 1201, 1205.");
         else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
         else throw e;
       }
@@ -977,6 +1018,57 @@ document.getElementById("add-vendor").onclick = () => {
   if (v.taken >= v.max && !confirm(`All ${v.max} vendor spots are taken. Add this vendor anyway?`)) return;
   editRow("vendors", {}, true);
 };
+// --- Raffle drawing (Raffle tickets tab): find the drawn ticket, check the Winner box, one win per family ---
+let drawTicket = "";
+const ticketKey = v => { const t = String(v ?? "").trim().replace(/^#/, "").replace(/\s+/g, "").toUpperCase(); return /^\d+$/.test(t) ? String(Number(t)) : t; };
+const digits = v => String(v || "").replace(/\D/g, "").slice(-10);
+// Same family: same phone, same email, or same first and last name.
+const sameFamily = (a, b) => (digits(a.phone).length >= 7 && digits(a.phone) === digits(b.phone))
+  || (a.email && a.email.trim().toLowerCase() === String(b.email || "").trim().toLowerCase())
+  || (`${a.first_name} ${a.last_name}`.trim().toLowerCase() === `${b.first_name} ${b.last_name}`.trim().toLowerCase());
+const familyWins = t => data.raffle_tickets.filter(o => o.won && o.id !== t.id && sameFamily(o, t));
+const escH = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+function drawBox() {
+  const box = document.getElementById("draw");
+  box.hidden = tab !== "raffle_tickets";
+  if (box.hidden) return;
+  const winners = data.raffle_tickets.filter(r => r.won).sort((a, b) => String(a.won_at).localeCompare(String(b.won_at)));
+  document.getElementById("draw-winners").innerHTML = winners.length
+    ? `<strong>Winners so far (${winners.length}):</strong> ` + winners.map(w => `${escH(w.first_name)} ${escH(w.last_name)}, #${escH(w.ticket)}${w.prize ? ` (${escH(w.prize)})` : ""}`).join(" · ")
+    : `${data.raffle_tickets.length} ticket${data.raffle_tickets.length === 1 ? "" : "s"} entered. No winners yet.`;
+  const res = document.getElementById("draw-result");
+  if (!drawTicket) { res.innerHTML = ""; return; }
+  const t = data.raffle_tickets.find(r => r.ticket === drawTicket);
+  if (!t) { res.innerHTML = `<div class="draw-alert">No one has ticket #${escH(drawTicket)}. Check the number, or add it with Add tickets.</div>`; return; }
+  const prev = familyWins(t);
+  const prizes = data.raffle.filter(p => !p.winner || p.id === t.prize_id);
+  res.innerHTML = `${prev.length ? `<div class="draw-alert">⚠️ This family already won: ${prev.map(w => `${escH(w.first_name)} ${escH(w.last_name)}, ticket #${escH(w.ticket)}${w.prize ? ` (${escH(w.prize)})` : ""}`).join("; ")}. Draw another ticket.</div>` : ""}
+    <div class="draw-card${t.won ? " won" : ""}">
+      <span class="muted">Ticket #${escH(t.ticket)}</span>
+      <h3>${escH(t.first_name)} ${escH(t.last_name)}</h3>
+      <span>${[t.phone, t.email].filter(Boolean).map(escH).join(" · ") || '<span class="muted">No phone or email</span>'}</span>
+      ${!t.won && prizes.length ? `<label>Prize they won (optional)<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}">${escH(p.name)}</option>`).join("")}</select></label>` : ""}
+      <label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>
+    </div>`;
+  document.getElementById("draw-win").onchange = e => {
+    const on = e.target.checked;
+    if (on && prev.length && !confirm(`${t.first_name} ${t.last_name}'s family already won (ticket #${prev[0].ticket}). Each family can only win once. Mark this ticket a winner anyway?`)) { e.target.checked = false; return; }
+    if (!on && !confirm(`Take ticket #${t.ticket} off the winners list?`)) { e.target.checked = true; return; }
+    const ps = document.getElementById("draw-prize");
+    act(() => api("/admin/win", { id: t.id, won: on, prize_id: ps && ps.value ? Number(ps.value) : null }));
+  };
+}
+function showTicket(no, scroll) {
+  drawTicket = ticketKey(no);
+  document.getElementById("draw-no").value = drawTicket;
+  drawBox();
+  const t = data.raffle_tickets.find(r => r.ticket === drawTicket), prev = t ? familyWins(t) : [];
+  if (prev.length && !t.won) alert(`Heads up: ${t.first_name} ${t.last_name}'s family already won with ticket #${prev[0].ticket}. Each family can only win once, so draw another ticket.`);
+  if (scroll) document.getElementById("draw").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+document.getElementById("draw-form").onsubmit = e => { e.preventDefault(); showTicket(document.getElementById("draw-no").value); };
+document.getElementById("add-ticket").onclick = () => editRow("raffle_tickets", {}, true);
 document.getElementById("add-prize").onclick = () => editRow("raffle", {}, true);
 document.getElementById("refresh").onclick = () => act(async () => {});
 document.getElementById("csv").onclick = csv;

@@ -21,6 +21,8 @@
  *   POST /admin/shirt      { name, team, size, style, notes }
  *   POST /admin/image      { key: "shirt-design", image }  (empty image removes it)
  *   POST /admin/no-shirt   { id, no_shirt }  (sponsor doesn't want their free shirt)
+ *   POST /admin/ticket     { first_name, last_name, phone, email, ticket }  (ticket can be a list or range: "1201-1210, 1300")
+ *   POST /admin/win        { id, won, prize_id }  (mark a raffle ticket as a winner, optionally for a prize)
  *   POST /admin/order      { first_name, last_name, email, phone, items (JSON [{design, style, size, qty}]), notes, paid }
  *   POST /admin/paid       { id, paid }  (shirt orders)
  *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
@@ -322,6 +324,13 @@ async function removeRow(db, table, id) {
       db.prepare("DELETE FROM photo_slots WHERE photo_id = ?").bind(id),
       db.prepare("DELETE FROM photos WHERE id = ?").bind(id),
     ]);
+  } else if (table === "raffle_tickets") {
+    // A deleted winning ticket frees up the prize it won.
+    const t = await db.prepare("SELECT prize_id FROM raffle_tickets WHERE id = ?").bind(id).first();
+    await db.batch([
+      ...(t && t.prize_id ? [db.prepare("UPDATE raffle SET winner = '' WHERE id = ?").bind(t.prize_id)] : []),
+      db.prepare("DELETE FROM raffle_tickets WHERE id = ?").bind(id),
+    ]);
   } else {
     await db.prepare(`DELETE FROM ${table} WHERE id = ?`).bind(id).run();
   }
@@ -500,13 +509,27 @@ const EDITABLE = {
   photos: { first_name: 80, last_name: 80, phone: 40, email: 120, pets: 500, notes: 1000 },
   budget: { kind: 10, item: 120, amount: 20, notes: 500 },
   raffle: { name: 120, donor: 120, description: 1000, winner: 200 },
+  raffle_tickets: { ticket: 20, first_name: 80, last_name: 80, phone: 40, email: 120 },
 };
+
+// Raffle ticket numbers: "#000123" and "123" are the same ticket.
+const ticketNo = v => { const t = String(v ?? "").trim().replace(/^#/, "").replace(/\s+/g, "").toUpperCase(); return /^\d+$/.test(t) ? String(Number(t)) : t.slice(0, 20); };
+// "1201-1210, 1300" -> every ticket number in it (at most 200).
+function ticketList(v) {
+  const out = [];
+  for (const part of String(v ?? "").split(/[,;\n]+/).map(x => x.trim()).filter(Boolean)) {
+    const m = part.match(/^#?(\d+)\s*(?:-|–|to)\s*#?(\d+)$/i);
+    if (m) { const a = Number(m[1]), b = Number(m[2]); if (b < a || b - a >= 200) return null; for (let n = a; n <= b; n++) out.push(String(n)); }
+    else if (ticketNo(part)) out.push(ticketNo(part)); else return null;
+  }
+  return out.length && out.length <= 200 && new Set(out).size === out.length ? out : null;
+}
 
 // Budget tab: costs of putting on the event, plus income that isn't a sign-up (donations, raffle...).
 const BUDGET_KINDS = ["Cost", "Income"];
 const budgetAmount = v => { const t = String(v ?? "").replace(/[$,\s]/g, ""), n = t === "" ? NaN : Number(t); return Number.isFinite(n) && n >= 0 && n < 1e7 ? Math.round(n * 100) / 100 : null; };
 
-const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts", "shirt_orders", "budget", "raffle"];
+const ADMIN_TABLES = ["photos", "vendors", "messages", "sponsors", "gallery", "shirts", "shirt_orders", "budget", "raffle", "raffle_tickets"];
 const MAX_PRIZE_PHOTO = 400000;
 
 async function admin(request, env, path) {
@@ -556,6 +579,32 @@ async function admin(request, env, path) {
       .bind(name, field(p, "donor", 120), field(p, "description", 1000), image).run();
     return json({ ok: true });
   }
+  // Add raffle tickets: one person, one or more ticket numbers ("1201-1210, 1300").
+  if (path === "/admin/ticket") {
+    const first = field(p, "first_name", 80), last = field(p, "last_name", 80), list = ticketList(p.ticket);
+    if (!first || !last) return json({ ok: false, reason: "missing" });
+    if (!list) return json({ ok: false, reason: "bad_ticket" });
+    const taken = (await db.prepare(`SELECT ticket, first_name, last_name FROM raffle_tickets WHERE ticket IN (${list.map(() => "?").join(",")})`).bind(...list).all()).results;
+    if (taken.length) return json({ ok: false, reason: "duplicate", taken });
+    await db.batch(list.map(t => db.prepare("INSERT INTO raffle_tickets (ticket, first_name, last_name, phone, email) VALUES (?, ?, ?, ?, ?)")
+      .bind(t, first, last, field(p, "phone", 40), field(p, "email", 120))));
+    return json({ ok: true, added: list.length });
+  }
+  // Mark a drawn ticket as a winner (optionally for a prize), or undo it.
+  if (path === "/admin/win") {
+    if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    const t = await db.prepare("SELECT * FROM raffle_tickets WHERE id = ?").bind(p.id).first();
+    if (!t) return json({ ok: false, reason: "not_found" });
+    const stmts = [];
+    if (t.prize_id) stmts.push(db.prepare("UPDATE raffle SET winner = '' WHERE id = ?").bind(t.prize_id));
+    if (p.won) {
+      const prize = Number.isInteger(p.prize_id) ? await db.prepare("SELECT id, name FROM raffle WHERE id = ?").bind(p.prize_id).first() : null;
+      stmts.push(db.prepare("UPDATE raffle_tickets SET won = 1, won_at = datetime('now'), prize_id = ?, prize = ? WHERE id = ?").bind(prize ? prize.id : null, prize ? prize.name : "", t.id));
+      if (prize) stmts.push(db.prepare("UPDATE raffle SET winner = ? WHERE id = ?").bind(`${t.first_name} ${t.last_name} (ticket #${t.ticket})`, prize.id));
+    } else stmts.push(db.prepare("UPDATE raffle_tickets SET won = 0, won_at = '', prize_id = NULL, prize = '' WHERE id = ?").bind(t.id));
+    await db.batch(stmts);
+    return json({ ok: true });
+  }
   if (path === "/admin/gallery") {
     const year = field(p, "year", 4), caption = field(p, "caption", 140);
     if (!/^\d{4}$/.test(year)) return json({ ok: false, reason: "bad_request" }, 400);
@@ -594,6 +643,12 @@ async function admin(request, env, path) {
     if (keys.includes("size") && fields.size && !SHIRT_SIZES.includes(fields.size)) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("name") && !field(fields, "name")) return json({ ok: false, reason: "bad_request" }, 400);
     if (keys.includes("business") && !field(fields, "business")) return json({ ok: false, reason: "bad_request" }, 400);
+    if (p.table === "raffle_tickets" && keys.includes("ticket")) {
+      fields.ticket = ticketNo(fields.ticket);
+      if (!fields.ticket) return json({ ok: false, reason: "bad_ticket" });
+      const other = await db.prepare("SELECT id FROM raffle_tickets WHERE ticket = ? AND id != ?").bind(fields.ticket, p.id).first();
+      if (other) return json({ ok: false, reason: "duplicate" });
+    }
     if (p.table === "budget") {
       if (keys.includes("item") && !field(fields, "item")) return json({ ok: false, reason: "missing" });
       if (keys.includes("kind") && !BUDGET_KINDS.includes(fields.kind)) return json({ ok: false, reason: "bad_request" }, 400);
