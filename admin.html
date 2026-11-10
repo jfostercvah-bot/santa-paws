@@ -299,7 +299,7 @@ const TABS = {
   },
   raffle_tickets: {
     cols: [["ticket", "Ticket #"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["won", "Winner"], ["created", "Added"]],
-    note: "Tap Add tickets to enter who bought them (one ticket, a range like 1201-1210, or a list). At the drawing, type the ticket number in the box above and tap Find ticket, then check the Winner box. Each family can only win once.",
+    note: "Tap Add tickets to enter who bought them (one ticket, a range like 1201-1210, or a list). At the drawing, type the ticket number in the box above and tap Find ticket, then check the Winner box. Each family can only win once: a ticket from a family that already won can't be marked a winner.",
     remove: r => `Delete ticket #${r.ticket} (${r.first_name} ${r.last_name})?`,
   },
   emails: {
@@ -1048,15 +1048,18 @@ function drawBox() {
       <span class="muted">Ticket #${escH(t.ticket)}</span>
       <h3>${escH(t.first_name)} ${escH(t.last_name)}</h3>
       <span>${[t.phone, t.email].filter(Boolean).map(escH).join(" · ") || '<span class="muted">No phone or email</span>'}</span>
-      ${!t.won && prizes.length ? `<label>Prize they won (optional)<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}">${escH(p.name)}</option>`).join("")}</select></label>` : ""}
-      <label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>
+      ${!t.won && !prev.length && prizes.length ? `<label>Prize they won (optional)<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}">${escH(p.name)}</option>`).join("")}</select></label>` : ""}
+      ${prev.length && !t.won ? `<p class="win-box" style="color:#a3192b;cursor:default">🚫 Can't win: their family already won</p>` : `<label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>`}
     </div>`;
-  document.getElementById("draw-win").onchange = e => {
+  const winBox = document.getElementById("draw-win");
+  if (winBox) winBox.onchange = e => {
     const on = e.target.checked;
-    if (on && prev.length && !confirm(`${t.first_name} ${t.last_name}'s family already won (ticket #${prev[0].ticket}). Each family can only win once. Mark this ticket a winner anyway?`)) { e.target.checked = false; return; }
     if (!on && !confirm(`Take ticket #${t.ticket} off the winners list?`)) { e.target.checked = true; return; }
     const ps = document.getElementById("draw-prize");
-    act(() => api("/admin/win", { id: t.id, won: on, prize_id: ps && ps.value ? Number(ps.value) : null }));
+    act(async () => {
+      try { await api("/admin/win", { id: t.id, won: on, prize_id: ps && ps.value ? Number(ps.value) : null }); }
+      catch (x) { if (x.message === "family_won") alert(`${t.first_name} ${t.last_name}'s family already won with ticket #${x.taken[0].ticket}. Each family can only win once, so draw another ticket.`); else throw x; }
+    });
   };
 }
 function showTicket(no, scroll) {

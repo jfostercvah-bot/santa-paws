@@ -595,6 +595,14 @@ async function admin(request, env, path) {
     if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
     const t = await db.prepare("SELECT * FROM raffle_tickets WHERE id = ?").bind(p.id).first();
     if (!t) return json({ ok: false, reason: "not_found" });
+    if (p.won && !t.won) {
+      // One win per family: same phone, email, or first and last name as a ticket that already won.
+      const digits = v => String(v || "").replace(/\D/g, "").slice(-10), low = v => String(v || "").trim().toLowerCase();
+      const won = (await db.prepare("SELECT * FROM raffle_tickets WHERE won = 1 AND id != ?").bind(t.id).all()).results;
+      const prev = won.find(o => (digits(o.phone).length >= 7 && digits(o.phone) === digits(t.phone)) || (o.email && low(o.email) === low(t.email))
+        || low(`${o.first_name} ${o.last_name}`) === low(`${t.first_name} ${t.last_name}`));
+      if (prev) return json({ ok: false, reason: "family_won", taken: [prev] });
+    }
     const stmts = [];
     if (t.prize_id) stmts.push(db.prepare("UPDATE raffle SET winner = '' WHERE id = ?").bind(t.prize_id));
     if (p.won) {
