@@ -241,6 +241,10 @@ button.zoom img { transition: transform .2s; }
 .hunt-step h3 { font-size: 1.2rem; }
 .hunt-step p { margin: 0; color: var(--muted); }
 .hunt-rules { background: var(--band); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; font-weight: 600; margin: 0 0 36px; }
+.hunt-card-wrap { display: grid; gap: 8px; justify-items: center; margin: 0 0 22px; }
+.treat-logo.hunt-card { width: 100%; max-width: 760px; height: auto; border-radius: 14px; }
+.treat-logo.hunt-card img { height: auto; object-fit: contain; }
+.hunt-card-wrap p { margin: 0; color: var(--muted); font-size: .9rem; }
 .prizes-empty { color: var(--muted); font-weight: 600; }
 .vendor-card .donor { font-weight: 700; color: var(--pine); }
 .vendor-card .cat { justify-self: start; font-size: .8rem; font-weight: 700; color: var(--pine); background: var(--band); border-radius: 999px; padding: 3px 10px; }
@@ -428,6 +432,10 @@ footer p { opacity: .85; font-size: .95rem; }
         <div class="hunt-step"><span class="num">2</span><h3>Fill the vendor stamps</h3><p>Collect every vendor stamp to earn 10 raffle tickets. A partly filled card doesn't earn vendor tickets.</p></div>
         <div class="hunt-step"><span class="num">3</span><h3>Grab bonus stamps</h3><p>Earn 1 extra ticket each at River Rye Shoppe and Tiffany's Curbside Cravings (with a purchase), and at Tails &amp; Tinsel with fairy hair by Ash &amp; Co.</p></div>
         <div class="hunt-step"><span class="num">4</span><h3>Turn it in</h3><p>Bring your card to the CVAH table to get your raffle tickets. Winners are drawn at the end of the event.</p></div>
+      </div>
+      <div class="hunt-card-wrap">
+        <button type="button" class="treat-logo hunt-card" data-logo="hunt-card.jpg" aria-label="View the scavenger hunt card larger"><img src="hunt-card.jpg" alt="The Santa Paws scavenger hunt card" loading="lazy"></button>
+        <p>Here's the card you'll pick up at the CVAH table. Tap to see it bigger.</p>
       </div>
       <p class="hunt-rules">One card per family, and each family can win once. Our goal is to spread as much cheer as possible!</p>
       <div class="head" style="margin-bottom:16px"><h2 style="font-size:1.8rem">Raffle prizes</h2></div>
