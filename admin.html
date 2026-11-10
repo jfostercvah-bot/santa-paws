@@ -1099,8 +1099,6 @@ function showTicket(no, scroll) {
   drawTicket = ticketKey(no);
   document.getElementById("draw-no").value = drawTicket;
   drawBox();
-  const t = data.raffle_tickets.find(r => r.ticket === drawTicket), prev = t ? familyWins(t) : [];
-  if (prev.length && !t.won) alert(`Heads up: ${t.first_name} ${t.last_name}'s family already won with ticket #${prev[0].ticket}. Each family can only win once, so draw another ticket.`);
   if (scroll) document.getElementById("draw").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 document.getElementById("draw-form").onsubmit = e => { e.preventDefault(); showTicket(document.getElementById("draw-no").value); };
