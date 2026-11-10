@@ -1,0 +1,38 @@
+# Adds one raffle prize to the live site (same as Add prize on the admin page), run by hand from the Actions tab.
+# Skips it if a prize with the same name is already listed.
+name: Add raffle prize
+
+on:
+  workflow_dispatch:
+    inputs:
+      name: { description: "Prize name", required: true }
+      donor: { description: "Sponsored by (optional)", required: false, default: "" }
+      description: { description: "Details shown on the website", required: false, default: "" }
+      image: { description: "Picture file in the repo (optional), like faded-fence-photography.jpg", required: false, default: "" }
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Add the prize
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          NAME: ${{ inputs.name }}
+          DONOR: ${{ inputs.donor }}
+          DESCRIPTION: ${{ inputs.description }}
+          IMAGE: ${{ inputs.image }}
+        run: |
+          set -eo pipefail
+          if curl -sf https://api.cvahsantapaws.com/ | jq -e --arg n "$NAME" '.raffle | map(.name) | index($n)' >/dev/null; then
+            echo "Already listed: $NAME"; exit 0
+          fi
+          img=""
+          if [ -n "$IMAGE" ]; then
+            case "$IMAGE" in *.png) type=png ;; *) type=jpeg ;; esac
+            img="data:image/$type;base64,$(base64 -w0 "$IMAGE")"
+          fi
+          jq -n --arg name "$NAME" --arg donor "$DONOR" --arg description "$DESCRIPTION" --arg image "$img" '{name:$name, donor:$donor, description:$description, image:$image}' > body.json
+          curl -sf -X POST -H "Authorization: Bearer $ADMIN_PASSWORD" -H "Content-Type: application/json" --data @body.json https://api.cvahsantapaws.com/admin/raffle | tee out.json
+          jq -e '.ok' out.json >/dev/null
+          curl -sf https://api.cvahsantapaws.com/ | jq '.raffle | map(.name)'
