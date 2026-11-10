@@ -23,7 +23,7 @@
  *   POST /admin/no-shirt   { id, no_shirt }  (sponsor doesn't want their free shirt)
  *   POST /admin/ticket     { first_name, last_name, phone, email, ticket }  (ticket can be a list or range: "1201-1210, 1300")
  *   POST /admin/tickets    { ids, action: "delete" | "edit", fields: { first_name, last_name, phone, email } }  (many raffle tickets at once)
- *   POST /admin/win        { id, won, prize_id }  (mark a raffle ticket as a winner, optionally for a prize)
+ *   POST /admin/win        { id, won, prize_id, allow_repeat }  (mark a raffle ticket as a winner, optionally for a prize)
  *   POST /admin/order      { first_name, last_name, email, phone, items (JSON [{design, style, size, qty}]), notes, paid }
  *   POST /admin/paid       { id, paid }  (shirt orders)
  *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
@@ -616,7 +616,7 @@ async function admin(request, env, path) {
     if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
     const t = await db.prepare("SELECT * FROM raffle_tickets WHERE id = ?").bind(p.id).first();
     if (!t) return json({ ok: false, reason: "not_found" });
-    if (p.won && !t.won) {
+    if (p.won && !t.won && !p.allow_repeat) {
       // One win per family: same phone, email, or first and last name as a ticket that already won.
       const digits = v => String(v || "").replace(/\D/g, "").slice(-10), low = v => String(v || "").trim().toLowerCase();
       const won = (await db.prepare("SELECT * FROM raffle_tickets WHERE won = 1 AND id != ?").bind(t.id).all()).results;

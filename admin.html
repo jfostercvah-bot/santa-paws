@@ -99,6 +99,8 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
 @media (max-width: 560px) { .order-grid { grid-template-columns: 1fr; } .order-line { grid-template-columns: 1fr 1fr 64px 44px; padding-bottom: 8px; border-bottom: 1px solid var(--line, #ddd); }
   .order-line [data-k=design], .order-line [data-k=style], .order-line [data-k=size] { grid-column: span 2; } }
 .draw { display: grid; gap: 12px; }
+.repeat-ok { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; cursor: pointer; }
+.repeat-ok input { width: 20px; height: 20px; margin: 0; }
 input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
 .draw-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .draw-find input { flex: 1 1 180px; min-width: 0; font-size: 1.2rem; padding: 10px 12px; }
@@ -193,6 +195,7 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
         <input id="draw-no" inputmode="numeric" autocomplete="off" placeholder="Ticket number, like 1205">
         <button type="submit">Find ticket</button>
       </form>
+      <label class="repeat-ok"><input type="checkbox" id="draw-repeat"> Allow repeat winners <span class="muted">(only if you run out of new families and still have prizes)</span></label>
       <div id="draw-result" aria-live="polite"></div>
       <div id="draw-winners" class="muted"></div>
       <div class="bar" id="ticket-bulk" style="margin:0" hidden>
@@ -307,7 +310,7 @@ const TABS = {
   },
   raffle_tickets: {
     cols: [["pick", ""], ["ticket", "Ticket #"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["won", "Winner"], ["created", "Added"]],
-    note: "Tap Add tickets to enter who bought them (one ticket, a range like 1201-1210, or a list). Check the boxes to edit or delete many tickets at once. At the drawing, type the ticket number in the box above and tap Find ticket, then check the Winner box. Each family can only win once: a ticket from a family that already won can't be marked a winner.",
+    note: "Tap Add tickets to enter who bought them (one ticket, a range like 1201-1210, or a list). Check the boxes to edit or delete many tickets at once. At the drawing, type the ticket number in the box above and tap Find ticket, then check the Winner box. Each family can only win once: a ticket from a family that already won can't be marked a winner, unless you check Allow repeat winners (for when every family has won and prizes are left).",
     remove: r => `Delete ticket #${r.ticket} (${r.first_name} ${r.last_name})?`,
   },
   emails: {
@@ -1070,19 +1073,24 @@ function drawBox() {
   document.getElementById("draw-winners").innerHTML = winners.length
     ? `<strong>Winners so far (${winners.length}):</strong> ` + winners.map(w => `${escH(w.first_name)} ${escH(w.last_name)}, #${escH(w.ticket)}${w.prize ? ` (${escH(w.prize)})` : ""}`).join(" · ")
     : `${data.raffle_tickets.length} ticket${data.raffle_tickets.length === 1 ? "" : "s"} entered. No winners yet.`;
+  // Every family (tickets grouped by same phone, email or name) has a win: say so, since only repeat winners are left.
+  const fams = [];
+  data.raffle_tickets.forEach(r => { const f = fams.find(g => g.some(o => sameFamily(o, r))); f ? f.push(r) : fams.push([r]); });
+  if (winners.length && fams.every(g => g.some(r => r.won))) document.getElementById("draw-winners").insertAdjacentHTML("beforeend", ` <strong>Every family has won now.</strong> Check Allow repeat winners to keep drawing for the prizes left.`);
   const res = document.getElementById("draw-result");
   if (!drawTicket) { res.innerHTML = ""; return; }
   const t = data.raffle_tickets.find(r => r.ticket === drawTicket);
   if (!t) { res.innerHTML = `<div class="draw-alert">No one has ticket #${escH(drawTicket)}. Check the number, or add it with Add tickets.</div>`; return; }
+  const repeatOk = document.getElementById("draw-repeat").checked;
   const prev = familyWins(t);
   const prizes = data.raffle.filter(p => !p.winner || p.id === t.prize_id);
-  res.innerHTML = `${prev.length ? `<div class="draw-alert">⚠️ This family already won: ${prev.map(w => `${escH(w.first_name)} ${escH(w.last_name)}, ticket #${escH(w.ticket)}${w.prize ? ` (${escH(w.prize)})` : ""}`).join("; ")}. Draw another ticket.</div>` : ""}
+  res.innerHTML = `${prev.length ? `<div class="draw-alert">⚠️ This family already won: ${prev.map(w => `${escH(w.first_name)} ${escH(w.last_name)}, ticket #${escH(w.ticket)}${w.prize ? ` (${escH(w.prize)})` : ""}`).join("; ")}. ${repeatOk ? "Repeat winners are allowed right now, so you can still mark them." : "Draw another ticket."}</div>` : ""}
     <div class="draw-card${t.won ? " won" : ""}">
       <span class="muted">Ticket #${escH(t.ticket)}</span>
       <h3>${escH(t.first_name)} ${escH(t.last_name)}</h3>
       <span>${[t.phone, t.email].filter(Boolean).map(escH).join(" · ") || '<span class="muted">No phone or email</span>'}</span>
-      ${!t.won && !prev.length && prizes.length ? `<label>Prize they won (optional)<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}">${escH(p.name)}</option>`).join("")}</select></label>` : ""}
-      ${prev.length && !t.won ? `<p class="win-box" style="color:var(--berry);cursor:default;margin:0">🚫 Can't win: their family already won</p>` : `<label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>`}
+      ${!t.won && (!prev.length || repeatOk) && prizes.length ? `<label>Prize they won (optional)<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}">${escH(p.name)}</option>`).join("")}</select></label>` : ""}
+      ${prev.length && !t.won && !repeatOk ? `<p class="win-box" style="color:var(--berry);cursor:default;margin:0">🚫 Can't win: their family already won</p>` : `<label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>`}
     </div>`;
   const winBox = document.getElementById("draw-win");
   if (winBox) winBox.onchange = e => {
@@ -1090,7 +1098,7 @@ function drawBox() {
     if (!on && !confirm(`Take ticket #${t.ticket} off the winners list?`)) { e.target.checked = true; return; }
     const ps = document.getElementById("draw-prize");
     act(async () => {
-      try { await api("/admin/win", { id: t.id, won: on, prize_id: ps && ps.value ? Number(ps.value) : null }); }
+      try { await api("/admin/win", { id: t.id, won: on, prize_id: ps && ps.value ? Number(ps.value) : null, allow_repeat: repeatOk }); }
       catch (x) { if (x.message === "family_won") alert(`${t.first_name} ${t.last_name}'s family already won with ticket #${x.taken[0].ticket}. Each family can only win once, so draw another ticket.`); else throw x; }
     });
   };
@@ -1101,6 +1109,7 @@ function showTicket(no, scroll) {
   drawBox();
   if (scroll) document.getElementById("draw").scrollIntoView({ behavior: "smooth", block: "start" });
 }
+document.getElementById("draw-repeat").onchange = drawBox;
 document.getElementById("draw-form").onsubmit = e => { e.preventDefault(); showTicket(document.getElementById("draw-no").value); };
 // Bulk actions on checked tickets.
 const selTickets = () => data.raffle_tickets.filter(r => picked.has(r.id));
