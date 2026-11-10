@@ -102,12 +102,12 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
 input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
 .draw-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .draw-find input { flex: 1 1 180px; min-width: 0; font-size: 1.2rem; padding: 10px 12px; }
-.draw-card { border: 2px solid var(--line, #ccc); border-radius: 14px; padding: 14px 16px; display: grid; gap: 8px; }
-.draw-card.won { border-color: #1f7a4d; background: #eaf6ef; }
-.draw-card h3 { margin: 0; font-size: 1.4rem; }
-.draw-alert { background: #fbe6e8; color: #a3192b; border: 2px solid #a3192b; border-radius: 12px; padding: 10px 14px; font-weight: 700; }
+.draw-card { border: 2px solid var(--line, #ccc); border-radius: 12px; padding: 10px 14px; display: grid; gap: 4px; }
+.draw-card.won { border-color: #2f9a63; background: rgba(47, 154, 99, .14); }
+.draw-card h3 { margin: 0; font-size: 1.3rem; }
+.draw-alert { background: rgba(214, 40, 64, .14); color: inherit; border: 2px solid #d62840; border-radius: 12px; padding: 10px 14px; font-weight: 700; }
 .win-box { display: flex; align-items: center; gap: 12px; font-size: 1.2rem; font-weight: 700; cursor: pointer; }
-.win-box input { width: 34px; height: 34px; margin: 0; accent-color: #1f7a4d; cursor: pointer; }
+.win-box input { width: 28px; height: 28px; margin: 0; accent-color: #1f7a4d; cursor: pointer; }
 .edit-dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .reply-orig { margin: 0 0 12px; padding: 10px 14px; border-left: 4px solid var(--line, #ccc); white-space: pre-wrap; max-height: 180px; overflow: auto; }
 .reply-past { margin: 0 0 12px; font-size: .9rem; white-space: pre-wrap; max-height: 140px; overflow: auto; }
@@ -1082,7 +1082,7 @@ function drawBox() {
       <h3>${escH(t.first_name)} ${escH(t.last_name)}</h3>
       <span>${[t.phone, t.email].filter(Boolean).map(escH).join(" · ") || '<span class="muted">No phone or email</span>'}</span>
       ${!t.won && !prev.length && prizes.length ? `<label>Prize they won (optional)<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}">${escH(p.name)}</option>`).join("")}</select></label>` : ""}
-      ${prev.length && !t.won ? `<p class="win-box" style="color:#a3192b;cursor:default">🚫 Can't win: their family already won</p>` : `<label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>`}
+      ${prev.length && !t.won ? `<p class="win-box" style="color:var(--berry);cursor:default;margin:0">🚫 Can't win: their family already won</p>` : `<label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>`}
     </div>`;
   const winBox = document.getElementById("draw-win");
   if (winBox) winBox.onchange = e => {
