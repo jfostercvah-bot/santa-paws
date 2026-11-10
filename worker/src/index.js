@@ -22,6 +22,7 @@
  *   POST /admin/image      { key: "shirt-design", image }  (empty image removes it)
  *   POST /admin/no-shirt   { id, no_shirt }  (sponsor doesn't want their free shirt)
  *   POST /admin/ticket     { first_name, last_name, phone, email, ticket }  (ticket can be a list or range: "1201-1210, 1300")
+ *   POST /admin/tickets    { ids, action: "delete" | "edit", fields: { first_name, last_name, phone, email } }  (many raffle tickets at once)
  *   POST /admin/win        { id, won, prize_id }  (mark a raffle ticket as a winner, optionally for a prize)
  *   POST /admin/order      { first_name, last_name, email, phone, items (JSON [{design, style, size, qty}]), notes, paid }
  *   POST /admin/paid       { id, paid }  (shirt orders)
@@ -589,6 +590,26 @@ async function admin(request, env, path) {
     await db.batch(list.map(t => db.prepare("INSERT INTO raffle_tickets (ticket, first_name, last_name, phone, email) VALUES (?, ?, ?, ?, ?)")
       .bind(t, first, last, field(p, "phone", 40), field(p, "email", 120))));
     return json({ ok: true, added: list.length });
+  }
+  // Many raffle tickets at once: delete them, or change the name, phone and email on all of them.
+  if (path === "/admin/tickets") {
+    const ids = Array.isArray(p.ids) ? [...new Set(p.ids.filter(Number.isInteger))].slice(0, 1000) : [];
+    if (!ids.length) return json({ ok: false, reason: "bad_request" }, 400);
+    if (p.action === "delete") {
+      for (const id of ids) await removeRow(db, "raffle_tickets", id);
+      return json({ ok: true, deleted: ids.length });
+    }
+    if (p.action === "edit") {
+      const f = p.fields || {}, first = field(f, "first_name", 80), last = field(f, "last_name", 80);
+      if (!first || !last) return json({ ok: false, reason: "missing" });
+      await db.batch(ids.map(id => db.prepare("UPDATE raffle_tickets SET first_name = ?, last_name = ?, phone = ?, email = ? WHERE id = ?")
+        .bind(first, last, field(f, "phone", 40), field(f, "email", 120), id)));
+      // Prizes they won show the new name too.
+      await db.prepare(`UPDATE raffle SET winner = (SELECT first_name || ' ' || last_name || ' (ticket #' || ticket || ')' FROM raffle_tickets t WHERE t.prize_id = raffle.id)
+        WHERE id IN (SELECT prize_id FROM raffle_tickets WHERE prize_id IS NOT NULL AND id IN (${ids.map(() => "?").join(",")}))`).bind(...ids).run();
+      return json({ ok: true, edited: ids.length });
+    }
+    return json({ ok: false, reason: "bad_request" }, 400);
   }
   // Mark a drawn ticket as a winner (optionally for a prize), or undo it.
   if (path === "/admin/win") {

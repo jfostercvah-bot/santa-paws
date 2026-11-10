@@ -99,6 +99,7 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
 @media (max-width: 560px) { .order-grid { grid-template-columns: 1fr; } .order-line { grid-template-columns: 1fr 1fr 64px 44px; padding-bottom: 8px; border-bottom: 1px solid var(--line, #ddd); }
   .order-line [data-k=design], .order-line [data-k=style], .order-line [data-k=size] { grid-column: span 2; } }
 .draw { display: grid; gap: 12px; }
+input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
 .draw-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .draw-find input { flex: 1 1 180px; min-width: 0; font-size: 1.2rem; padding: 10px 12px; }
 .draw-card { border: 2px solid var(--line, #ccc); border-radius: 14px; padding: 14px 16px; display: grid; gap: 8px; }
@@ -194,6 +195,13 @@ img.thumb { width: 56px; height: 56px; object-fit: contain; background: #fff; bo
       </form>
       <div id="draw-result" aria-live="polite"></div>
       <div id="draw-winners" class="muted"></div>
+      <div class="bar" id="ticket-bulk" style="margin:0" hidden>
+        <strong class="grow" id="bulk-count"></strong>
+        <button type="button" class="ghost small" id="bulk-person">Select all of their tickets</button>
+        <button type="button" class="small" id="bulk-edit">Edit selected</button>
+        <button type="button" class="small" id="bulk-delete" style="background:#a3192b">Delete selected</button>
+        <button type="button" class="ghost small" id="bulk-clear">Clear</button>
+      </div>
     </div>
     <div class="card dayof" id="dayof" hidden>
       <div class="bar" style="margin:0">
@@ -298,8 +306,8 @@ const TABS = {
     remove: r => `Remove ${r.name} from the raffle prizes?`,
   },
   raffle_tickets: {
-    cols: [["ticket", "Ticket #"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["won", "Winner"], ["created", "Added"]],
-    note: "Tap Add tickets to enter who bought them (one ticket, a range like 1201-1210, or a list). At the drawing, type the ticket number in the box above and tap Find ticket, then check the Winner box. Each family can only win once: a ticket from a family that already won can't be marked a winner.",
+    cols: [["pick", ""], ["ticket", "Ticket #"], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["won", "Winner"], ["created", "Added"]],
+    note: "Tap Add tickets to enter who bought them (one ticket, a range like 1201-1210, or a list). Check the boxes to edit or delete many tickets at once. At the drawing, type the ticket number in the box above and tap Find ticket, then check the Winner box. Each family can only win once: a ticket from a family that already won can't be marked a winner.",
     remove: r => `Delete ticket #${r.ticket} (${r.first_name} ${r.last_name})?`,
   },
   emails: {
@@ -526,7 +534,15 @@ function render() {
   const table = document.getElementById("table");
   table.innerHTML = "";
   const head = table.createTHead().insertRow();
-  [...T.cols.map(c => c[1]), ""].forEach(h => { const th = document.createElement("th"); th.textContent = h; head.append(th); });
+  [...T.cols.map(c => c[1]), ""].forEach((h, i) => {
+    const th = document.createElement("th"); th.textContent = h; head.append(th);
+    if (T.cols[i] && T.cols[i][0] === "pick") {
+      const all = document.createElement("input"); all.type = "checkbox"; all.className = "pick"; all.title = "Select all"; all.setAttribute("aria-label", "Select all tickets");
+      all.checked = list.length > 0 && list.every(r => picked.has(r.id));
+      all.onchange = () => { list.forEach(r => all.checked ? picked.add(r.id) : picked.delete(r.id)); render(); };
+      th.append(all);
+    }
+  });
   const body = table.createTBody();
   if (!list.length) { const td = body.insertRow().insertCell(); td.colSpan = T.cols.length + 1; td.className = "muted"; td.textContent = "Nothing here yet."; }
   list.forEach(r => {
@@ -534,6 +550,12 @@ function render() {
     if (tab === "photos" && r.checked_in) tr.className = "here";
     T.cols.forEach(([k, , long]) => {
       const td = tr.insertCell();
+      if (k === "pick") {
+        const c = document.createElement("input"); c.type = "checkbox"; c.className = "pick"; c.checked = picked.has(r.id); c.setAttribute("aria-label", `Select ticket #${r.ticket}`);
+        c.onchange = () => { c.checked ? picked.add(r.id) : picked.delete(r.id); render(); };
+        td.append(c);
+        return;
+      }
       if (k === "thumb") {
         const a = document.createElement("a"), img = document.createElement("img");
         a.href = API_URL + "/photo/" + r.id; a.target = "_blank"; a.rel = "noopener"; a.title = "View full size";
@@ -657,7 +679,7 @@ async function act(fn) {
 function csv() {
   const T = TABS[tab];
   const q = v => `"${String(v).replace(/"/g, '""')}"`;
-  const cols = T.cols.filter(([k]) => !["logo", "thumb", "image"].includes(k));
+  const cols = T.cols.filter(([k]) => !["logo", "thumb", "image", "pick"].includes(k));
   const lines = [cols.map(c => q(c[1])).join(","), ...rows().map(r => cols.map(([k]) => q(cell(r, k))).join(","))];
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv" }));
@@ -769,6 +791,7 @@ const EDIT_FIELDS = {
   shirts: [["name", "Name"], ["team", "Group", ["Staff", "Event help", "Volunteer", "Santa & elves", "Other"]], ["design", "Design", ["Santa Paws", "Holiday"]], ["style", "Shirt type", ["T-shirt", "Long sleeve", "Crewneck", "Hoodie"]], ["size", "Shirt size", ["", "Youth XS", "Youth S", "Youth M", "Youth L", "Youth XL", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"]], ["notes", "Notes"]],
   vendors: [["business", "Business name"], ["category", "Category"], ["description", "What they sell (shown on the website)", "area"], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"], ["needs", "Booth needs"]],
   sponsors: [["business", "Business name"], ["level", "Level", ["North Pole", "Reindeer", "Elf Friends"]], ["shirt_size", "Shirt size", ["", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"]], ["shirt_style", "Shirt type", ["T-shirt", "Long sleeve", "Crewneck", "Hoodie"]], ["website", "Website or social"], ["contact", "Contact name"], ["email", "Email"], ["phone", "Phone"]],
+  raffle_bulk: [["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"]],
   raffle_tickets: [["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["ticket", "Ticket number"]],
   raffle: [["name", "Prize, like Holiday gift basket"], ["donor", "Sponsored by (optional)"], ["description", "Details (optional, shown on the website)", "area"], ["winner", "Winner (after the drawing; not shown on the website)"]],
   budget: [["kind", "Type", ["Cost", "Income"]], ["item", "What is it?"], ["amount", "Amount ($)", "money"], ["notes", "Notes"]],
@@ -845,7 +868,7 @@ function replyTo(r, draft) {
 
 function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
-  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", raffle: "Add a raffle prize", raffle_tickets: "Add raffle tickets", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : table === "raffle_tickets" ? `ticket #${r.ticket}` : r.business || r.name);
+  document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", raffle: "Add a raffle prize", raffle_tickets: "Add raffle tickets", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : table === "raffle_bulk" ? `Edit ${r.ids.length} ticket${r.ids.length === 1 ? "" : "s"}` : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : table === "raffle_tickets" ? `ticket #${r.ticket}` : r.business || r.name);
   box.innerHTML = "";
   EDIT_FIELDS[table].filter(([k]) => !(adding && table === "raffle" && k === "winner")).forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
@@ -866,6 +889,10 @@ function editRow(table, r, adding) {
     const problem = msg => { alert(msg); dlg.returnValue = ""; dlg.showModal(); };
     if ("business" in fields && !fields.business.trim()) return problem("Business name can't be empty.");
     if (table === "shirts" && !fields.name.trim()) return problem("Add their name.");
+    if (table === "raffle_bulk") {
+      if (!fields.first_name.trim() || !fields.last_name.trim()) return problem("Add their first and last name.");
+      return act(() => api("/admin/tickets", { action: "edit", ids: r.ids, fields }));
+    }
     if (table === "raffle_tickets" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
     if (table === "raffle_tickets" && !fields.ticket.trim()) return problem("Add the ticket number.");
     if (table === "raffle" && !fields.name.trim()) return problem("Say what the prize is, like Holiday gift basket.");
@@ -1029,10 +1056,16 @@ const sameFamily = (a, b) => (digits(a.phone).length >= 7 && digits(a.phone) ===
 const familyWins = t => data.raffle_tickets.filter(o => o.won && o.id !== t.id && sameFamily(o, t));
 const escH = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
+// Tickets checked in the list, for Edit selected / Delete selected.
+const picked = new Set();
 function drawBox() {
   const box = document.getElementById("draw");
   box.hidden = tab !== "raffle_tickets";
   if (box.hidden) return;
+  [...picked].forEach(id => { if (!data.raffle_tickets.some(r => r.id === id)) picked.delete(id); });
+  const sel = data.raffle_tickets.filter(r => picked.has(r.id));
+  document.getElementById("ticket-bulk").hidden = !sel.length;
+  document.getElementById("bulk-count").textContent = `${sel.length} ticket${sel.length === 1 ? "" : "s"} selected` + (sel.length ? ` (${[...new Set(sel.map(r => `${r.first_name} ${r.last_name}`))].slice(0, 3).join(", ")}${new Set(sel.map(r => `${r.first_name} ${r.last_name}`)).size > 3 ? "..." : ""})` : "");
   const winners = data.raffle_tickets.filter(r => r.won).sort((a, b) => String(a.won_at).localeCompare(String(b.won_at)));
   document.getElementById("draw-winners").innerHTML = winners.length
     ? `<strong>Winners so far (${winners.length}):</strong> ` + winners.map(w => `${escH(w.first_name)} ${escH(w.last_name)}, #${escH(w.ticket)}${w.prize ? ` (${escH(w.prize)})` : ""}`).join(" · ")
@@ -1071,6 +1104,25 @@ function showTicket(no, scroll) {
   if (scroll) document.getElementById("draw").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 document.getElementById("draw-form").onsubmit = e => { e.preventDefault(); showTicket(document.getElementById("draw-no").value); };
+// Bulk actions on checked tickets.
+const selTickets = () => data.raffle_tickets.filter(r => picked.has(r.id));
+document.getElementById("bulk-clear").onclick = () => { picked.clear(); render(); };
+document.getElementById("bulk-person").onclick = () => {
+  // Add every ticket held by the same people as the ones checked (same first and last name).
+  const names = new Set(selTickets().map(r => `${r.first_name} ${r.last_name}`.trim().toLowerCase()));
+  data.raffle_tickets.forEach(r => { if (names.has(`${r.first_name} ${r.last_name}`.trim().toLowerCase())) picked.add(r.id); });
+  render();
+};
+document.getElementById("bulk-delete").onclick = () => {
+  const sel = selTickets(), won = sel.filter(r => r.won).length;
+  if (!sel.length || !confirm(`Delete ${sel.length} ticket${sel.length === 1 ? "" : "s"}${won ? ` (${won} of them won; their prize will be open again)` : ""}? This can't be undone.`)) return;
+  act(async () => { await api("/admin/tickets", { action: "delete", ids: sel.map(r => r.id) }); picked.clear(); });
+};
+document.getElementById("bulk-edit").onclick = () => {
+  const sel = selTickets(); if (!sel.length) return;
+  const same = k => sel.every(r => r[k] === sel[0][k]) ? sel[0][k] : "";
+  editRow("raffle_bulk", { first_name: same("first_name"), last_name: same("last_name"), phone: same("phone"), email: same("email"), ids: sel.map(r => r.id) });
+};
 document.getElementById("add-ticket").onclick = () => editRow("raffle_tickets", {}, true);
 document.getElementById("add-prize").onclick = () => editRow("raffle", {}, true);
 document.getElementById("refresh").onclick = () => act(async () => {});
