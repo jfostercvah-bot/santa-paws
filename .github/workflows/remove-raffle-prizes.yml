@@ -1,0 +1,28 @@
+# Removes raffle prizes from the live site (same as Delete on the admin page), run by hand from the Actions tab.
+# Deletes every prize whose name contains the text you enter. Prizes that already have a winner are kept.
+name: Remove raffle prizes
+
+on:
+  workflow_dispatch:
+    inputs:
+      match: { description: "Remove prizes whose name contains this text", required: true }
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove matching prizes
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          MATCH: ${{ inputs.match }}
+        run: |
+          set -eo pipefail
+          [ ${#MATCH} -ge 5 ] || { echo "::error::Enter at least 5 characters to match"; exit 1; }
+          curl -sf -H "Authorization: Bearer $ADMIN_PASSWORD" https://api.cvahsantapaws.com/admin > all.json
+          jq -r --arg m "$MATCH" '.raffle[] | select((.name | contains($m)) and (.winner == "")) | "\(.id)\t\(.name)"' all.json > hits.txt
+          cat hits.txt
+          cut -f1 hits.txt | while read -r id; do
+            jq -n --argjson id "$id" '{table:"raffle", id:$id}' | curl -sf -X POST -H "Authorization: Bearer $ADMIN_PASSWORD" -H "Content-Type: application/json" --data @- https://api.cvahsantapaws.com/admin/delete
+            echo
+          done
+          curl -sf https://api.cvahsantapaws.com/ | jq '.raffle | map(.name)'
