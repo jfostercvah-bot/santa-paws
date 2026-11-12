@@ -27,12 +27,13 @@ jobs:
           if curl -sf https://api.cvahsantapaws.com/ | jq -e --arg n "$NAME" '.raffle | map(.name) | index($n)' >/dev/null; then
             echo "Already listed: $NAME"; exit 0
           fi
-          img=""
+          # The picture goes through a file: as a command-line argument a big photo is too long.
+          : > img.txt
           if [ -n "$IMAGE" ]; then
             case "$IMAGE" in *.png) type=png ;; *) type=jpeg ;; esac
-            img="data:image/$type;base64,$(base64 -w0 "$IMAGE")"
+            { printf 'data:image/%s;base64,' "$type"; base64 -w0 "$IMAGE"; } > img.txt
           fi
-          jq -n --arg name "$NAME" --arg donor "$DONOR" --arg description "$DESCRIPTION" --arg image "$img" '{name:$name, donor:$donor, description:$description, image:$image}' > body.json
+          jq -n --arg name "$NAME" --arg donor "$DONOR" --arg description "$DESCRIPTION" --rawfile image img.txt '{name:$name, donor:$donor, description:$description, image:$image}' > body.json
           curl -sf -X POST -H "Authorization: Bearer $ADMIN_PASSWORD" -H "Content-Type: application/json" --data @body.json https://api.cvahsantapaws.com/admin/raffle | tee out.json
           jq -e '.ok' out.json >/dev/null
           curl -sf https://api.cvahsantapaws.com/ | jq '.raffle | map(.name)'
