@@ -52,9 +52,9 @@ const shirtsOpen = () => !SHIRTS_CLOSED && Date.now() < SHIRT_DEADLINE;
 const shirtField = p => (SHIRT_SIZES.includes(field(p, "shirt_size", 10)) ? field(p, "shirt_size", 10) : "");
 const MAX_PETS = 6;
 
-// Every bookable photo time: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM.
+// Every bookable photo time: each 5 minutes, 10:00 AM to 2:55 PM (the noon hour opened Nov 16).
 const SLOTS = new Set();
-for (const [from, to] of [[600, 720], [780, 900]]) {
+for (const [from, to] of [[600, 900]]) {
   for (let m = from; m < to; m += 5) {
     const h = Math.floor(m / 60);
     SLOTS.add(`${h > 12 ? h - 12 : h}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`);

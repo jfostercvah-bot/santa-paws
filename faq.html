@@ -582,13 +582,16 @@ document.addEventListener("sp-status", ({ detail: d }) => {
 });
 const need = (f, names) => names.find(n => !f.elements[n].value.trim());
 if (document.getElementById("photo-form")) {
-// --- photo slots: every 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM ---
+// --- photo slots: every 5 minutes, 10:00 AM to 2:55 PM (the noon hour opened Nov 16) ---
 // Add times here as they fill up (e.g. "10:05", "1:30") to cross them out.
 const booked = new Set([]);
 const PETS_PER_SPOT = 2;
-const blocks = { am: [10 * 60, 12 * 60], pm: [13 * 60, 15 * 60] };
+const blocks = { am: [10 * 60, 12 * 60], pm: [12 * 60, 15 * 60] };
+const LAST = 15 * 60;
 const label = m => { const h = Math.floor(m / 60); return `${h > 12 ? h - 12 : h}:${String(m % 60).padStart(2, "0")}`; };
 const ampm = m => (m < 12 * 60 ? "AM" : "PM");
+// "11:55 AM, 12:00 PM" when a run crosses noon, else "10:05, 10:10 AM".
+const timesText = list => list.some(m => ampm(m) !== ampm(list[0])) ? list.map(m => `${label(m)} ${ampm(m)}`).join(", ") : `${list.map(label).join(", ")} ${ampm(list[0])}`;
 let picked = [];
 const petCount = document.getElementById("p-count");
 const spotsNeeded = () => Math.ceil(Number(petCount.value) / PETS_PER_SPOT);
@@ -596,12 +599,12 @@ const pickedEl = document.getElementById("slot-picked");
 
 function showPicked() {
   document.querySelectorAll(".slot").forEach(b => b.setAttribute("aria-pressed", String(picked.includes(Number(b.dataset.m)))));
-  pickedEl.textContent = picked.length ? `Picked: ${picked.map(label).join(", ")} ${ampm(picked[0])}` : "No time picked yet";
+  pickedEl.textContent = picked.length ? `Picked: ${timesText(picked)}` : "No time picked yet";
 }
 function pick(m, block) {
   const run = [];
   for (let i = 0; i < spotsNeeded(); i++) run.push(m + i * 5);
-  if (run.some(x => x >= blocks[block][1] || booked.has(label(x)))) {
+  if (run.some(x => x >= LAST || booked.has(label(x)))) {
     picked = []; showPicked();
     pickedEl.textContent = `That time doesn't have ${run.length} open spots in a row. Try an earlier time.`;
     return;
@@ -656,7 +659,7 @@ function photoProblem(f) {
 }
 wire("photo-form", "photo-done", photoProblem,
   f => {
-    const text = `You're booked for ${picked.map(label).join(", ")} ${ampm(picked[0])}!`;
+    const text = `You're booked for ${timesText(picked)}!`;
     picked.forEach(m => booked.add(label(m)));
     document.querySelectorAll(".slot").forEach(b => { if (booked.has(b.textContent)) { b.disabled = true; b.title = "Booked"; } });
     picked = []; showPicked();

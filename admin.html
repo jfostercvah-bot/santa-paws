@@ -497,7 +497,7 @@ function render() {
   const s = data.status, sp = s.sponsors;
   const photoSlots = s.booked.length;
   document.getElementById("stats").innerHTML = "";
-  [["Photo times booked", `${photoSlots} of 48`], ["Vendor spots taken", `${s.vendors.taken} of ${s.vendors.max}`],
+  [["Photo times booked", `${photoSlots} of ${SLOTS.length}`], ["Vendor spots taken", `${s.vendors.taken} of ${s.vendors.max}`],
    ["Sponsors", Object.entries(sp).map(([l, v]) => `${l} ${v.taken}/${v.max}`).join(" · ")], ["Messages", String(data.messages.length)]]
     .forEach(([label, value]) => {
       const d = document.createElement("div"); d.className = "card stat";
@@ -800,9 +800,9 @@ const EDIT_FIELDS = {
   budget: [["kind", "Type", ["Cost", "Income"]], ["item", "What is it?"], ["amount", "Amount ($)", "money"], ["notes", "Notes"]],
   photos: [["times", "Time slot(s), like 10:05 AM (up to 3, with commas). Leave blank for the waiting list."], ["first_name", "First name"], ["last_name", "Last name"], ["phone", "Phone"], ["email", "Email"], ["pets", "Pets, like Biscuit (dog), Mittens (cat)", "area"], ["notes", "Notes", "area"]],
 };
-// Every photo time, in order: each 5 minutes, 10:00-11:55 AM and 1:00-2:55 PM (same as the server).
+// Every photo time, in order: each 5 minutes, 10:00 AM to 2:55 PM (same as the server).
 const SLOTS = [];
-for (const [from, to] of [[600, 720], [780, 900]]) for (let m = from; m < to; m += 5) {
+for (const [from, to] of [[600, 900]]) for (let m = from; m < to; m += 5) {
   const h = Math.floor(m / 60);
   SLOTS.push(`${h > 12 ? h - 12 : h}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`);
 }
@@ -909,7 +909,7 @@ function editRow(table, r, adding) {
         if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
         else if (e.message === "duplicate") problem(e.taken && e.taken.length ? `Already entered: ${e.taken.map(t => `#${t.ticket} (${t.first_name} ${t.last_name})`).join(", ")}.` : "That ticket number is already entered for someone else.");
         else if (e.message === "bad_ticket") problem("Enter ticket numbers like 1205, a range like 1201-1210 (up to 200), or a list like 1201, 1205.");
-        else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 to 12 and 1 to 3), up to 3.");
+        else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 AM to 3 PM), up to 3.");
         else throw e;
       }
     });
