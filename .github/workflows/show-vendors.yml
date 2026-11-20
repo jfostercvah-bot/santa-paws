@@ -1,0 +1,11 @@
+# Read-only: prints the vendors currently shown on the live site (for updating printed handouts).
+name: Show live vendors
+
+on:
+  workflow_dispatch:
+
+jobs:
+  show:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sf https://api.cvahsantapaws.com/ | jq -c '.vendors.list[] | {business, category, description}'
