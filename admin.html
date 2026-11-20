@@ -180,6 +180,7 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
       <input id="e-subject" name="subject" maxlength="150" required placeholder="Parking and arrival info for Santa Paws">
       <label for="e-message"><strong>Message</strong></label>
       <textarea id="e-message" name="message" rows="9" required placeholder="Hi everyone,&#10;&#10;..."></textarea>
+      <p class="muted" id="e-times-note" style="margin:0" hidden>Each email starts with "Hi (first name)", their own photo time and their pets, then this message. Families on the waiting list (no time) are skipped. "Send me a test" shows you one family's version.</p>
       <p class="muted" style="margin:0">Each person gets their own copy, so nobody sees anyone else's address. Replies come to your email. The event date, address and website are added at the bottom.</p>
       <div class="bar" style="margin:0">
         <button type="button" class="ghost small" id="e-test">Send me a test</button>
@@ -517,9 +518,11 @@ function render() {
   const fam = count(data.photos), ven = count(data.vendors), all = new Set([...fam, ...ven]);
   const sel = document.getElementById("e-to"), was = sel.value;
   sel.innerHTML = "";
-  [["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
+  const timed = count(data.photos.filter(r => String(r.times || "").trim()));
+  [["photo_times", `Photo time reminder: each family gets their own time (${timed.size})`], ["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
     .forEach(([v, t]) => sel.add(new Option(t, v)));
   if (was) sel.value = was;
+  reminderHint();
   document.getElementById("copy-emails").hidden = document.getElementById("copy-phones").hidden = !["photos", "vendors", "shirt_orders"].includes(tab);
   dayOf();
   drawBox();
@@ -710,7 +713,7 @@ async function sendEmail(test) {
   const f = document.getElementById("email-form"), m = document.getElementById("e-msg");
   const subject = f.subject.value.trim(), message = f.message.value.trim();
   if (!subject || !message) { m.textContent = "Add a subject and message."; return; }
-  const audience = test ? "test" : f.audience.value;
+  const audience = test ? (f.audience.value === "photo_times" ? "photo_times_test" : "test") : f.audience.value;
   if (!test && !confirm(`Send "${subject}" to ${f.audience.selectedOptions[0].text.replace(/ \((\d+)\)/, ": $1 people")}?`)) return;
   m.textContent = "Sending...";
   document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = true;
@@ -729,6 +732,20 @@ async function sendEmail(test) {
   finally { document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = !data.emailReady; }
 }
 document.getElementById("e-test").onclick = () => sendEmail(true);
+// Picking the photo time reminder fills in a ready message (only if the boxes are empty).
+const REMINDER = {
+  subject: "Reminder: your Santa Paws photo time is tomorrow!",
+  message: "We can't wait to see you and your pets at Santa Paws tomorrow, Saturday, November 21!\n\n" +
+    "Santa photos are at River Rye Shoppe, the building beside Carolina Virginia Animal Hospital. Please come a few minutes before your time. Photos are free, and we'll email you a link to download them when they're ready.\n\n" +
+    "While you're there, grab a scavenger hunt card, visit our vendors and earn raffle tickets for some great prizes. Tiffany's Curbside Cravings food truck opens at 11 AM.\n\n" +
+    "Can't make it? Please free your time for another family at https://cvahsantapaws.com/cancel.html (enter your email and phone number).\n\nSee you there!",
+};
+function reminderHint() {
+  const f = document.getElementById("email-form"), on = f.audience.value === "photo_times";
+  document.getElementById("e-times-note").hidden = !on;
+  if (on && !f.subject.value.trim() && !f.message.value.trim()) { f.subject.value = REMINDER.subject; f.message.value = REMINDER.message; }
+}
+document.getElementById("e-to").addEventListener("change", reminderHint);
 document.getElementById("email-form").addEventListener("submit", e => { e.preventDefault(); sendEmail(false); });
 
 // Shrinks an uploaded logo (to fit 600px, then smaller if needed) and returns it as a data: URL.

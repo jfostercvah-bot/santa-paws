@@ -31,7 +31,8 @@
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/raffle     { name, donor, description, image }  (new prize; with id and image only, changes the photo; empty image removes it)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
- *   POST /admin/email      { audience: photos|vendors|everyone|test, subject, message }
+ *   POST /admin/email      { audience: photos|photo_times|vendors|everyone|test|photo_times_test, subject, message }
+ *                          (photo_times starts each letter with that family's own time and pets)
  *
  * Email goes out through Resend when the RESEND_API_KEY and REPLY_TO_EMAIL secrets are set:
  * a confirmation to each person who books or applies, and announcements from the admin page.
@@ -399,13 +400,40 @@ async function confirmSponsor(env, p) {
   await sendEmails(env, [letter(field(p, "email", 120), "Thank you for sponsoring Santa Paws!", text, env)]);
 }
 
-const AUDIENCES = { photos: "Photo families", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself" };
+const AUDIENCES = { photos: "Photo families", photo_times: "Photo families, each with their own time", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself", photo_times_test: "Test to yourself" };
+
+// Photo families with a time slot, one letter per email address, each starting with their own time(s) and pets.
+async function photoTimeLetters(db) {
+  const { results } = await db.prepare("SELECT first_name, email, times, pets FROM photos WHERE times != '' ORDER BY id").all();
+  const byEmail = new Map();
+  for (const r of results) {
+    const e = String(r.email).trim(), k = e.toLowerCase();
+    if (!looksLikeEmail(e)) continue;
+    const x = byEmail.get(k) || { email: e, first: String(r.first_name).trim(), times: [], pets: [] };
+    x.times.push(...String(r.times).split(",").map(t => t.trim()).filter(Boolean));
+    if (String(r.pets).trim()) x.pets.push(String(r.pets).trim());
+    byEmail.set(k, x);
+  }
+  return [...byEmail.values()].map(x => ({ email: x.email, intro:
+    `Hi ${x.first},\n\nYour Santa photo time${x.times.length > 1 ? "s" : ""}: ${x.times.join(", ")}\n` + (x.pets.length ? `Pets: ${x.pets.join(", ")}\n` : "") + "\n" }));
+}
 
 async function announce(env, p) {
   const db = env.DB, audience = String(p.audience || "");
   const subject = field(p, "subject", 150), message = field(p, "message", 10000);
   if (!emailReady(env)) return { ok: false, reason: "email_not_set_up" };
   if (!(audience in AUDIENCES) || !subject || !message) return { ok: false, reason: "bad_request" };
+  if (audience === "photo_times" || audience === "photo_times_test") {
+    const people = await photoTimeLetters(db);
+    if (!people.length) return { ok: false, reason: "no_recipients" };
+    const list = audience === "photo_times_test" ? [{ ...people[0], email: env.REPLY_TO_EMAIL }] : people;
+    const result = await sendEmails(env, list.map(x => letter(x.email, subject, x.intro + message, env)));
+    if (audience === "photo_times") {
+      await db.prepare("INSERT INTO emails (audience, subject, message, sent, failed) VALUES (?, ?, ?, ?, ?)")
+        .bind(AUDIENCES[audience], subject, message, result.sent, result.failed).run();
+    }
+    return { ok: result.sent > 0, reason: result.sent ? undefined : "send_failed", ...result };
+  }
   let to = [];
   if (audience === "test") to = [env.REPLY_TO_EMAIL];
   else {
