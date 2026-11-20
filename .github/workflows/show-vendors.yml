@@ -8,4 +8,4 @@ jobs:
   show:
     runs-on: ubuntu-latest
     steps:
-      - run: curl -sf https://api.cvahsantapaws.com/ | jq -c '.vendors.list[] | {business, category, description}'
+      - run: curl -sf https://api.cvahsantapaws.com/ | jq -c '.vendors.list[] | del(.logo)'
