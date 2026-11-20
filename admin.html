@@ -218,6 +218,7 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
     </div>
     <div class="bar">
       <span class="grow muted" id="note"></span>
+      <input type="search" id="find-order" placeholder="Find by name, email or phone" aria-label="Find a shirt order" hidden style="max-width:260px">
       <button class="ghost small" id="copy-emails" hidden>Copy all emails</button>
       <button class="ghost small" id="copy-phones" hidden>Copy all phone numbers</button>
       <button class="small" id="add-vendor" hidden>Add vendor</button>
@@ -272,10 +273,10 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
     <p class="muted" id="reply-to" style="margin:0 0 8px"></p>
     <blockquote id="reply-orig" class="reply-orig"></blockquote>
     <div id="reply-past"></div>
-    <label>Your reply<textarea id="reply-text" rows="8"></textarea></label>
-    <p class="muted" style="margin:6px 0 0;font-size:.85rem">Sent from hello@cvahsantapaws.com with their message quoted below yours. If they answer, it comes to your email.</p>
+    <label><span id="reply-label">Your reply</span><textarea id="reply-text" rows="8"></textarea></label>
+    <p class="muted" id="reply-hint" style="margin:6px 0 0;font-size:.85rem">Sent from hello@cvahsantapaws.com with their message quoted below yours. If they answer, it comes to your email.</p>
     <div class="bar" style="margin:12px 0 0">
-      <button type="submit" value="send">Send reply</button>
+      <button type="submit" value="send" id="reply-send">Send reply</button>
       <button type="submit" value="cancel" class="ghost small" formnovalidate>Cancel</button>
     </div>
   </form>
@@ -325,8 +326,8 @@ const TABS = {
     remove: r => `Remove ${r.item} from the budget?`,
   },
   shirt_orders: {
-    cols: [["first_name", "First name"], ["last_name", "Last name"], ["email", "Email"], ["phone", "Phone"], ["items", "Shirts", true], ["total", "Total"], ["paid", "Paid"], ["notes", "Notes", true], ["created", "Ordered"]],
-    note: "Orders from the Event Shirts page. Use Add order for orders taken by phone or in person. Tap Paid when someone pays.",
+    cols: [["first_name", "First name"], ["last_name", "Last name"], ["email", "Email"], ["phone", "Phone"], ["items", "Shirts", true], ["total", "Total"], ["paid", "Paid"], ["notes", "Notes", true], ["created", "Ordered"], ["ready_emailed", "Ready email"]],
+    note: "Orders from the Event Shirts page. Use Add order for orders taken by phone or in person. Tap Paid when someone pays. Tap Shirt ready to email them that it's ready for pickup.",
     remove: r => `Delete the shirt order from ${r.first_name} ${r.last_name}?`,
   },
   shirts: {
@@ -360,7 +361,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "raffle_tickets" && k === "won" ? (r.won ? "🏆 Won" + (r.prize ? ": " + r.prize : "") : "") : tab === "raffle_tickets" && k === "ticket" ? "#" + r.ticket : tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "raffle_tickets" && k === "won" ? (r.won ? "🏆 Won" + (r.prize ? ": " + r.prize : "") : "") : tab === "raffle_tickets" && k === "ticket" ? "#" + r.ticket : tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "ready_emailed" ? (r.ready_emailed ? "✓ " + when(r.ready_emailed) : "Not yet") : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -535,7 +536,9 @@ function render() {
   document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
   shirtTotals();
   budgetBox();
-  const T = TABS[tab], list = rows();
+  const fo = document.getElementById("find-order"); fo.hidden = tab !== "shirt_orders";
+  const q = tab === "shirt_orders" ? fo.value.trim().toLowerCase() : "", qd = q.replace(/\D/g, "");
+  const T = TABS[tab], list = rows().filter(r => !q || `${r.first_name} ${r.last_name} ${r.email}`.toLowerCase().includes(q) || (qd.length >= 3 && String(r.phone).replace(/\D/g, "").includes(qd)));
   document.getElementById("note").textContent = T.note + (tab === "sponsors" ? shirtTally() : "");
   const table = document.getElementById("table");
   table.innerHTML = "";
@@ -591,6 +594,12 @@ function render() {
       const pb = document.createElement("button"); pb.className = r.paid ? "ghost small" : "small"; pb.textContent = r.paid ? "Mark unpaid" : "Paid";
       pb.onclick = () => act(() => api("/admin/paid", { table: tab, id: r.id, paid: !r.paid }));
       td.append(pb, " ");
+    }
+    if (tab === "shirt_orders") {
+      const sb = document.createElement("button"); sb.className = r.ready_emailed ? "ghost small" : "small"; sb.textContent = r.ready_emailed ? "Email again" : "Shirt ready";
+      sb.title = "Email them that their shirt is ready for pickup";
+      sb.onclick = () => shirtReadyMail(r);
+      td.append(sb, " ");
     }
     if (tab === "sponsors") {
       const nb = document.createElement("button"); nb.className = "ghost small"; nb.textContent = r.no_shirt ? "Wants a shirt" : "No shirt";
@@ -706,6 +715,7 @@ async function copyAll(key, btn) {
   catch { prompt("Copy these:", text); }
   setTimeout(() => (btn.textContent = label), 2000);
 }
+document.getElementById("find-order").addEventListener("input", () => render());
 document.getElementById("copy-emails").onclick = e => copyAll("email", e.target);
 document.getElementById("copy-phones").onclick = e => copyAll("phone", e.target);
 
@@ -859,8 +869,46 @@ function walkup(time) {
   editRow("photos", { times: time }, true);
 }
 
+// The reply dialog is shared with the shirt-ready email, so set its words each time.
+function dialogWords(label, send, hint) {
+  document.getElementById("reply-label").textContent = label;
+  document.getElementById("reply-send").textContent = send;
+  document.getElementById("reply-hint").textContent = hint;
+}
+
+function shirtReadyMail(r, draft) {
+  const dlg = document.getElementById("reply"), ta = document.getElementById("reply-text");
+  if (!data.emailReady) { alert("Email sending isn't set up yet."); return; }
+  dialogWords("Your email", "Send email", "Sent from hello@cvahsantapaws.com. If they answer, it comes to your email. The event date, address and website are added at the bottom.");
+  document.getElementById("reply-title").textContent = `Email ${r.first_name} ${r.last_name}: shirt ready`;
+  document.getElementById("reply-to").textContent = `To ${r.email} · Subject: Your Santa Paws shirt is ready for pickup!`;
+  document.getElementById("reply-orig").textContent = "Their order: " + itemText(r) + ` · $${r.total}` + (r.paid ? " · paid" : " · not paid yet");
+  const past = document.getElementById("reply-past");
+  past.className = r.ready_emailed ? "reply-past" : ""; past.textContent = r.ready_emailed ? "Already emailed " + when(r.ready_emailed) : "";
+  const s = orderItems(r).reduce((n, l) => n + l.qty, 0) === 1 ? "shirt is" : "shirts are";
+  ta.value = draft ?? `Hi ${String(r.first_name).trim()},\n\nGood news: your Santa Paws ${s} in! You can pick up your order at Carolina Virginia Animal Hospital during office hours, or at the Santa Paws event tomorrow, Saturday, November 21, from 10 AM to 3 PM.` +
+    (r.paid ? "" : `\n\nYour total is $${r.total}. You can pay by cash, Venmo, CashApp or PayPal when you pick up.`) + `\n\nThank you for supporting Santa Paws!\nThe Santa Paws team at Carolina Virginia Animal Hospital`;
+  dlg.onclose = () => {
+    if (dlg.returnValue !== "send") return;
+    const text = ta.value;
+    if (!text.trim()) { alert("Type your message first."); return shirtReadyMail(r, text); }
+    act(async () => {
+      try { await api("/admin/shirt-ready", { id: r.id, message: text }); }
+      catch (e) {
+        if (e.message === "unauthorized") throw e;
+        alert(e.message === "bad_email" ? "That email address doesn't look right, so it can't be sent." : "The email didn't go out. Your text is still there, so try again.");
+        if (e.message !== "bad_email") shirtReadyMail(r, text);
+      }
+    });
+  };
+  dlg.returnValue = "";
+  dlg.showModal();
+  ta.focus(); ta.setSelectionRange(0, 0); ta.scrollTop = 0;
+}
+
 function replyTo(r, draft) {
   const dlg = document.getElementById("reply"), ta = document.getElementById("reply-text");
+  dialogWords("Your reply", "Send reply", "Sent from hello@cvahsantapaws.com with their message quoted below yours. If they answer, it comes to your email.");
   if (!data.emailReady) { alert("Email sending isn't set up yet, so replies can't go out. Reply from your own email for now."); return; }
   document.getElementById("reply-title").textContent = "Reply to " + r.name;
   document.getElementById("reply-to").textContent = `To ${r.email}${r.topic ? " · " + r.topic : ""} · sent ${when(r.created)}`;
