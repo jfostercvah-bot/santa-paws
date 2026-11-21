@@ -544,7 +544,8 @@ function render() {
   const sel = document.getElementById("e-to"), was = sel.value;
   sel.innerHTML = "";
   const timed = count(data.photos.filter(r => String(r.times || "").trim()));
-  [["photo_times", `Photo time reminder: each family gets their own time (${timed.size})`], ["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
+  const unpicked = count(data.raffle_tickets.filter(r => r.won && !r.picked_up));
+  [["winners", `Raffle winners who haven't picked up: each gets their own prize (${unpicked.size})`], ["photo_times", `Photo time reminder: each family gets their own time (${timed.size})`], ["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
     .forEach(([v, t]) => sel.add(new Option(t, v)));
   if (was) sel.value = was;
   reminderHint();
@@ -763,7 +764,7 @@ async function sendEmail(test) {
   const f = document.getElementById("email-form"), m = document.getElementById("e-msg");
   const subject = f.subject.value.trim(), message = f.message.value.trim();
   if (!subject || !message) { m.textContent = "Add a subject and message."; return; }
-  const audience = test ? (f.audience.value === "photo_times" ? "photo_times_test" : "test") : f.audience.value;
+  const audience = test ? (["photo_times", "winners"].includes(f.audience.value) ? f.audience.value + "_test" : "test") : f.audience.value;
   if (!test && !confirm(`Send "${subject}" to ${f.audience.selectedOptions[0].text.replace(/ \((\d+)\)/, ": $1 people")}?`)) return;
   m.textContent = "Sending...";
   document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = true;
@@ -790,10 +791,22 @@ const REMINDER = {
     "While you're there, grab a scavenger hunt card, visit our vendors and earn raffle tickets for some great prizes. Tiffany's Curbside Cravings food truck opens at 11 AM.\n\n" +
     "Can't make it? Please free your time for another family at https://cvahsantapaws.com/cancel.html (enter your email and phone number).\n\nSee you there!",
 };
+const WINNERS = {
+  subject: "Congratulations, you won the Santa Paws raffle! 🎁",
+  message: "Thank you for coming out to Santa Paws! Your prize is waiting for you. You can pick it up at Carolina Virginia Animal Hospital, 46 Shady Grove Road, Providence, during office hours. Just give us your name when you stop by.\n\n" +
+    "If you have any questions, simply reply to this email.\n\nThank you for supporting Santa Paws and our local vendors!\nThe Santa Paws team at Carolina Virginia Animal Hospital",
+};
+const TEMPLATES = { photo_times: REMINDER, winners: WINNERS };
+const NOTES = {
+  photo_times: 'Each email starts with "Hi (first name)", their own photo time and their pets, then this message. Families on the waiting list (no time) are skipped. "Send me a test" shows you one family\'s version.',
+  winners: 'Each email starts with "Hi (first name), Congratulations! You won..." and their prize, who donated it and their ticket number, then this message. Only winners not marked Picked up (and with an email) get it. "Send me a test" shows you one winner\'s version.',
+};
 function reminderHint() {
-  const f = document.getElementById("email-form"), on = f.audience.value === "photo_times";
-  document.getElementById("e-times-note").hidden = !on;
-  if (on && !f.subject.value.trim() && !f.message.value.trim()) { f.subject.value = REMINDER.subject; f.message.value = REMINDER.message; }
+  const f = document.getElementById("email-form"), a = f.audience.value, note = document.getElementById("e-times-note");
+  note.hidden = !NOTES[a]; note.textContent = NOTES[a] || "";
+  // Fill in the ready message when the boxes are empty or still hold another ready message.
+  const isTemplate = Object.values(TEMPLATES).some(t => f.subject.value === t.subject && f.message.value === t.message);
+  if (TEMPLATES[a] && (isTemplate || (!f.subject.value.trim() && !f.message.value.trim()))) { f.subject.value = TEMPLATES[a].subject; f.message.value = TEMPLATES[a].message; }
 }
 document.getElementById("e-to").addEventListener("change", reminderHint);
 document.getElementById("email-form").addEventListener("submit", e => { e.preventDefault(); sendEmail(false); });

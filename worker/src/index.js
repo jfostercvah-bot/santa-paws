@@ -36,7 +36,8 @@
  *   POST /admin/prize-order { ids }  (raffle prize ids in the order they're given out)
  *   POST /admin/shirt-ready { table?: shirt_orders|sponsors, id, message, subject? }  (emails that their shirt is ready for pickup)
  *   POST /admin/email      { audience: photos|photo_times|vendors|everyone|test|photo_times_test, subject, message }
- *                          (photo_times starts each letter with that family's own time and pets)
+ *                          (photo_times starts each letter with that family's own time and pets;
+ *                           winners goes to raffle winners not yet picked up, starting with what they won)
  *
  * Email goes out through Resend when the RESEND_API_KEY and REPLY_TO_EMAIL secrets are set:
  * a confirmation to each person who books or applies, and announcements from the admin page.
@@ -404,7 +405,22 @@ async function confirmSponsor(env, p) {
   await sendEmails(env, [letter(field(p, "email", 120), "Thank you for sponsoring Santa Paws!", text, env)]);
 }
 
-const AUDIENCES = { photos: "Photo families", photo_times: "Photo families, each with their own time", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself", photo_times_test: "Test to yourself" };
+const AUDIENCES = { photos: "Photo families", photo_times: "Photo families, each with their own time", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself", photo_times_test: "Test to yourself", winners: "Raffle winners who haven't picked up", winners_test: "Test to yourself" };
+
+// Raffle winners who haven't picked up their prize, one letter per email, each starting with what they won.
+async function winnerLetters(db) {
+  const { results } = await db.prepare("SELECT t.first_name, t.email, t.ticket, t.prize, r.donor FROM raffle_tickets t LEFT JOIN raffle r ON r.id = t.prize_id WHERE t.won = 1 AND t.picked_up = '' ORDER BY t.won_at").all();
+  const byEmail = new Map();
+  for (const r of results) {
+    const e = String(r.email).trim(), k = e.toLowerCase();
+    if (!looksLikeEmail(e)) continue;
+    const x = byEmail.get(k) || { email: e, first: String(r.first_name).trim(), wins: [] };
+    x.wins.push(`${r.prize || "A Santa Paws raffle prize"}${r.donor ? ` (donated by ${r.donor})` : ""}, ticket #${r.ticket}`);
+    byEmail.set(k, x);
+  }
+  return [...byEmail.values()].map(x => ({ email: x.email, intro:
+    `Hi ${x.first},\n\nCongratulations! You won the Santa Paws raffle:\n${x.wins.map(w => "🎁 " + w).join("\n")}\n\n` }));
+}
 
 // Photo families with a time slot, one letter per email address, each starting with their own time(s) and pets.
 async function photoTimeLetters(db) {
@@ -427,12 +443,13 @@ async function announce(env, p) {
   const subject = field(p, "subject", 150), message = field(p, "message", 10000);
   if (!emailReady(env)) return { ok: false, reason: "email_not_set_up" };
   if (!(audience in AUDIENCES) || !subject || !message) return { ok: false, reason: "bad_request" };
-  if (audience === "photo_times" || audience === "photo_times_test") {
-    const people = await photoTimeLetters(db);
+  if (["photo_times", "photo_times_test", "winners", "winners_test"].includes(audience)) {
+    const people = audience.startsWith("winners") ? await winnerLetters(db) : await photoTimeLetters(db);
     if (!people.length) return { ok: false, reason: "no_recipients" };
-    const list = audience === "photo_times_test" ? [{ ...people[0], email: env.REPLY_TO_EMAIL }] : people;
+    const test = audience.endsWith("_test");
+    const list = test ? [{ ...people[0], email: env.REPLY_TO_EMAIL }] : people;
     const result = await sendEmails(env, list.map(x => letter(x.email, subject, x.intro + message, env)));
-    if (audience === "photo_times") {
+    if (!test) {
       await db.prepare("INSERT INTO emails (audience, subject, message, sent, failed) VALUES (?, ?, ?, ?, ?)")
         .bind(AUDIENCES[audience], subject, message, result.sent, result.failed).run();
     }
