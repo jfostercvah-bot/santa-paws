@@ -551,9 +551,13 @@ function render() {
   document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
   shirtTotals();
   budgetBox();
-  const fo = document.getElementById("find-order"); fo.hidden = tab !== "shirt_orders";
-  const q = tab === "shirt_orders" ? fo.value.trim().toLowerCase() : "", qd = q.replace(/\D/g, "");
-  const T = TABS[tab], list = rows().filter(r => !q || `${r.first_name} ${r.last_name} ${r.email}`.toLowerCase().includes(q) || (qd.length >= 3 && String(r.phone).replace(/\D/g, "").includes(qd)));
+  const fo = document.getElementById("find-order"), finds = ["shirt_orders", "photos"].includes(tab);
+  if (fo.dataset.tab !== tab) { fo.value = ""; fo.dataset.tab = tab; }
+  fo.hidden = !finds;
+  fo.placeholder = tab === "photos" ? "Find by name, pet, phone or email" : "Find by name, email or phone";
+  fo.setAttribute("aria-label", tab === "photos" ? "Find a photo booking" : "Find a shirt order");
+  const q = finds ? fo.value.trim().toLowerCase() : "", qd = q.replace(/\D/g, "");
+  const T = TABS[tab], list = rows().filter(r => !q || `${r.first_name} ${r.last_name} ${r.email} ${tab === "photos" ? r.pets : ""}`.toLowerCase().includes(q) || (qd.length >= 3 && String(r.phone).replace(/\D/g, "").includes(qd)));
   document.getElementById("note").textContent = T.note + (tab === "sponsors" ? shirtTally() : "");
   const table = document.getElementById("table");
   table.innerHTML = "";
@@ -568,7 +572,7 @@ function render() {
     }
   });
   const body = table.createTBody();
-  if (!list.length) { const td = body.insertRow().insertCell(); td.colSpan = T.cols.length + 1; td.className = "muted"; td.textContent = "Nothing here yet."; }
+  if (!list.length) { const td = body.insertRow().insertCell(); td.colSpan = T.cols.length + 1; td.className = "muted"; td.textContent = q ? `No one matches "${fo.value.trim()}".` : "Nothing here yet."; }
   list.forEach(r => {
     const tr = body.insertRow();
     if (tab === "photos" && r.checked_in) tr.className = "here";
