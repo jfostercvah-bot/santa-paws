@@ -31,6 +31,7 @@
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/raffle     { name, donor, description, image }  (new prize; with id and image only, changes the photo; empty image removes it)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
+ *   POST /admin/prize-order { ids }  (raffle prize ids in the order they're given out)
  *   POST /admin/shirt-ready { table?: shirt_orders|sponsors, id, message, subject? }  (emails that their shirt is ready for pickup)
  *   POST /admin/email      { audience: photos|photo_times|vendors|everyone|test|photo_times_test, subject, message }
  *                          (photo_times starts each letter with that family's own time and pets)
@@ -659,6 +660,12 @@ async function admin(request, env, path) {
     return json({ ok: false, reason: "bad_request" }, 400);
   }
   // Mark a drawn ticket as a winner (optionally for a prize), or undo it.
+  if (path === "/admin/prize-order") {
+    // ids in drawing order, first prize first.
+    if (!Array.isArray(p.ids) || !p.ids.length || !p.ids.every(Number.isInteger)) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.batch(p.ids.map((id, i) => db.prepare("UPDATE raffle SET draw_order = ? WHERE id = ?").bind(i + 1, id)));
+    return json({ ok: true });
+  }
   if (path === "/admin/win") {
     if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
     const t = await db.prepare("SELECT * FROM raffle_tickets WHERE id = ?").bind(p.id).first();

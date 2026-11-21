@@ -197,6 +197,7 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
         <button type="submit">Find ticket</button>
       </form>
       <label class="repeat-ok"><input type="checkbox" id="draw-repeat"> Allow repeat winners <span class="muted">(only if you run out of new families and still have prizes)</span></label>
+      <div id="draw-next" style="font-weight:600"></div>
       <div id="draw-result" aria-live="polite"></div>
       <div id="draw-winners" class="muted"></div>
       <div class="bar" id="ticket-bulk" style="margin:0" hidden>
@@ -306,8 +307,8 @@ const TABS = {
     remove: r => `Delete this ${r.year} photo from the gallery?`,
   },
   raffle: {
-    cols: [["image", "Photo"], ["name", "Prize"], ["donor", "Sponsored by"], ["description", "Details", true], ["winner", "Winner", true], ["created", "Added"]],
-    note: "Prizes show on the Scavenger Hunt page right away. Tap Add prize, then Add photo if you have a picture. After the drawing, tap Edit to write down who won (winners only show here, not on the website).",
+    cols: [["draw_order", "Order"], ["image", "Photo"], ["name", "Prize"], ["donor", "Sponsored by"], ["description", "Details", true], ["winner", "Winner", true], ["created", "Added"]],
+    note: "Prizes show on the Scavenger Hunt page right away. Use the ↑ ↓ buttons to set the drawing order: in the Raffle tickets drawing box, each winner gets the next prize on this list. Winners only show here, not on the website.",
     remove: r => `Remove ${r.name} from the raffle prizes?`,
   },
   raffle_tickets: {
@@ -361,7 +362,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "raffle_tickets" && k === "won" ? (r.won ? "🏆 Won" + (r.prize ? ": " + r.prize : "") : "") : tab === "raffle_tickets" && k === "ticket" ? "#" + r.ticket : tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "ready_emailed" ? (r.ready_emailed ? "✓ " + when(r.ready_emailed) : r.no_shirt ? "" : "Not yet") : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "raffle_tickets" && k === "won" ? (r.won ? "🏆 Won" + (r.prize ? ": " + r.prize : "") : "") : tab === "raffle_tickets" && k === "ticket" ? "#" + r.ticket : tab === "raffle" && k === "draw_order" ? String(prizeOrder().indexOf(r) + 1) : tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "ready_emailed" ? (r.ready_emailed ? "✓ " + when(r.ready_emailed) : r.no_shirt ? "" : "Not yet") : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -486,8 +487,15 @@ function shirtTotals() {
     (missing && !orders ? `<span class="err">${missing} ${missing === 1 ? "person hasn't" : "people haven't"} picked a size yet.</span>` : "");
 }
 
+// Prizes in drawing order: ones with an order number first, then the rest oldest first.
+function prizeOrder() {
+  return [...data.raffle].sort((a, b) => (a.draw_order || 1e9) - (b.draw_order || 1e9) || a.id - b.id);
+}
+const nextPrize = (skipId) => prizeOrder().find(p => !p.winner && p.id !== skipId);
+
 function rows() {
   if (tab === "shirts") return shirtRows();
+  if (tab === "raffle") return prizeOrder();
   const list = [...(data[tab] || [])];
   // Waiting-list walk-ups (no time yet) go last, first come first served.
   if (tab === "photos") list.sort((a, b) => minutes(a.times) - minutes(b.times) || a.id - b.id);
@@ -626,6 +634,11 @@ function render() {
       td.append(rb, " ");
     }
     if (tab === "raffle") {
+      const order = prizeOrder(), at = order.indexOf(r);
+      const move = d => { const ids = order.map(x => x.id); [ids[at], ids[at + d]] = [ids[at + d], ids[at]]; act(() => api("/admin/prize-order", { ids })); };
+      const up = document.createElement("button"); up.className = "ghost small"; up.textContent = "↑"; up.title = "Draw this prize earlier"; up.disabled = at === 0; up.onclick = () => move(-1);
+      const dn = document.createElement("button"); dn.className = "ghost small"; dn.textContent = "↓"; dn.title = "Draw this prize later"; dn.disabled = at === order.length - 1; dn.onclick = () => move(1);
+      td.append(up, " ", dn, " ");
       const ed = document.createElement("button"); ed.className = "ghost small"; ed.textContent = "Edit";
       ed.onclick = () => editRow(tab, r);
       const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/*"; pick.hidden = true;
@@ -1151,19 +1164,23 @@ function drawBox() {
   const fams = [];
   data.raffle_tickets.forEach(r => { const f = fams.find(g => g.some(o => sameFamily(o, r))); f ? f.push(r) : fams.push([r]); });
   if (winners.length && fams.every(g => g.some(r => r.won))) document.getElementById("draw-winners").insertAdjacentHTML("beforeend", ` <strong>Every family has won now.</strong> Check Allow repeat winners to keep drawing for the prizes left.`);
+  const up = nextPrize(), left = data.raffle.filter(p => !p.winner).length;
+  document.getElementById("draw-next").innerHTML = !data.raffle.length ? "" : up
+    ? `🎁 Now drawing for: #${prizeOrder().indexOf(up) + 1} ${escH(up.name)} <span class="muted">(${left} prize${left === 1 ? "" : "s"} left · change the order on the Raffle prizes tab)</span>`
+    : "🎉 Every prize has a winner.";
   const res = document.getElementById("draw-result");
   if (!drawTicket) { res.innerHTML = ""; return; }
   const t = data.raffle_tickets.find(r => r.ticket === drawTicket);
   if (!t) { res.innerHTML = `<div class="draw-alert">No one has ticket #${escH(drawTicket)}. Check the number, or add it with Add tickets.</div>`; return; }
   const repeatOk = document.getElementById("draw-repeat").checked;
   const prev = familyWins(t);
-  const prizes = data.raffle.filter(p => !p.winner || p.id === t.prize_id);
+  const prizes = prizeOrder().filter(p => !p.winner || p.id === t.prize_id), auto = nextPrize();
   res.innerHTML = `${prev.length ? `<div class="draw-alert">⚠️ This family already won: ${prev.map(w => `${escH(w.first_name)} ${escH(w.last_name)}, ticket #${escH(w.ticket)}${w.prize ? ` (${escH(w.prize)})` : ""}`).join("; ")}. ${repeatOk ? "Repeat winners are allowed right now, so you can still mark them." : "Draw another ticket."}</div>` : ""}
     <div class="draw-card${t.won ? " won" : ""}">
       <span class="muted">Ticket #${escH(t.ticket)}</span>
       <h3>${escH(t.first_name)} ${escH(t.last_name)}</h3>
       <span>${[t.phone, t.email].filter(Boolean).map(escH).join(" · ") || '<span class="muted">No phone or email</span>'}</span>
-      ${!t.won && (!prev.length || repeatOk) && prizes.length ? `<label>Prize they won (optional)<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}">${escH(p.name)}</option>`).join("")}</select></label>` : ""}
+      ${!t.won && (!prev.length || repeatOk) && prizes.length ? `<label>Prize they win<select id="draw-prize"><option value="">Pick later</option>${prizes.map(p => `<option value="${p.id}"${auto && p.id === auto.id ? " selected" : ""}>#${prizeOrder().indexOf(p) + 1} ${escH(p.name)}</option>`).join("")}</select></label>` : ""}
       ${prev.length && !t.won && !repeatOk ? `<p class="win-box" style="color:var(--berry);cursor:default;margin:0">🚫 Can't win: their family already won</p>` : `<label class="win-box"><input type="checkbox" id="draw-win"${t.won ? " checked" : ""}> ${t.won ? `Winner${t.prize ? `: ${escH(t.prize)}` : ""}` : "Winner"}</label>`}
     </div>`;
   const winBox = document.getElementById("draw-win");
