@@ -972,8 +972,8 @@ function replyTo(r, draft) {
 // Add tickets: search photo sign-ups and tap one to fill in their name, phone and email.
 function photoPicker(box) {
   const wrap = document.createElement("div"); wrap.className = "pick-photo";
-  const l = document.createElement("label"); l.textContent = "Fill in from a Santa photo sign-up (optional)";
-  const find = document.createElement("input"); find.type = "search"; find.placeholder = "Type a name, pet, phone or email"; find.autocomplete = "off";
+  const l = document.createElement("label"); l.textContent = "Fill in from a Santa photo sign-up or vendor (optional)";
+  const find = document.createElement("input"); find.type = "search"; find.placeholder = "Type a name, pet, business, phone or email"; find.autocomplete = "off";
   const out = document.createElement("div"); out.className = "pick-results";
   l.append(find); wrap.append(l, out);
   // Enter picks the first match instead of saving the form.
@@ -982,14 +982,17 @@ function photoPicker(box) {
     const q = find.value.trim().toLowerCase(), qd = q.replace(/\D/g, "");
     out.innerHTML = "";
     if (q.length < 2) return;
-    const hits = data.photos.filter(r => `${r.first_name} ${r.last_name} ${r.email} ${r.pets}`.toLowerCase().includes(q) || (qd.length >= 3 && String(r.phone).replace(/\D/g, "").includes(qd))).slice(0, 6);
-    if (!hits.length) { out.innerHTML = '<span class="muted">No photo sign-up matches.</span>'; return; }
+    // Vendors' contact name is one field, so split it into first and last.
+    const people = [...data.photos.map(r => ({ ...r, label: `${r.first_name} ${r.last_name}` + (r.pets ? ` · ${r.pets}` : "") + (r.times ? ` · ${r.times}` : ""), text: `${r.first_name} ${r.last_name} ${r.email} ${r.pets}` })),
+      ...data.vendors.map(v => { const n = String(v.contact || "").trim().split(/\s+/); return { first_name: n[0] || "", last_name: n.slice(1).join(" "), phone: v.phone, email: v.email, label: `Vendor: ${v.business}${v.contact ? ` (${v.contact})` : ""}`, text: `${v.business} ${v.contact} ${v.email}` }; })];
+    const hits = people.filter(r => r.text.toLowerCase().includes(q) || (qd.length >= 3 && String(r.phone).replace(/\D/g, "").includes(qd))).slice(0, 8);
+    if (!hits.length) { out.innerHTML = '<span class="muted">No photo sign-up or vendor matches.</span>'; return; }
     hits.forEach(r => {
       const b = document.createElement("button"); b.type = "button"; b.className = "ghost small";
-      b.textContent = `${r.first_name} ${r.last_name}` + (r.pets ? ` · ${r.pets}` : "") + (r.times ? ` · ${r.times}` : "");
+      b.textContent = r.label;
       b.onclick = () => {
         ["first_name", "last_name", "phone", "email"].forEach(k => { const i = box.querySelector(`[name="${k}"]`); if (i) i.value = r[k] || ""; });
-        out.innerHTML = `<span class="muted">✓ Filled in ${escH(r.first_name)} ${escH(r.last_name)}. Now add the ticket numbers.</span>`;
+        out.innerHTML = `<span class="muted">✓ Filled in ${escH(r.first_name)} ${escH(r.last_name)}. Check the name, then add the ticket numbers.</span>`;
         find.value = "";
         const t = box.querySelector('[name="ticket"]'); if (t) t.focus();
       };
