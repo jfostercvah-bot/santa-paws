@@ -233,6 +233,7 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
       <button class="small" id="add-shirt" hidden>Add person</button>
       <button class="small" id="add-order" hidden>Add order</button>
       <button class="small" id="designer-sheet" hidden>Sheet for shirt designer</button>
+      <button class="small" id="vendor-pay-sheet" hidden>Print paid list</button>
       <button class="small" id="add-cost" hidden>Add a cost</button>
       <button class="ghost small" id="add-income" hidden>Add other income</button>
       <button class="ghost small" id="refresh">Refresh</button>
@@ -298,7 +299,7 @@ const TABS = {
   },
   vendors: {
     cols: [["logo", "Logo"], ["business", "Business"], ["paid", "Paid"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["category", "Category"], ["website", "Website"], ["needs", "Booth needs", true], ["description", "About", true], ["created", "Applied"]],
-    note: "Tap Paid when a vendor pays their $20. Click Show to list a vendor on the Vendors page. Vendors you add yourself show right away. Click a logo to download it. Delete an application to open the spot again.",
+    note: "Tap Paid when a vendor pays their $20. Tap Print paid list for a printout of who has and hasn't paid. Click Show to list a vendor on the Vendors page. Vendors you add yourself show right away. Click a logo to download it. Delete an application to open the spot again.",
     remove: r => `Delete the vendor application from ${r.business}? The spot opens up for someone else.`,
   },
   sponsors: {
@@ -546,6 +547,7 @@ function render() {
   document.getElementById("add-ticket").hidden = tab !== "raffle_tickets";
   document.getElementById("add-order").hidden = tab !== "shirt_orders";
   document.getElementById("designer-sheet").hidden = !["shirts", "shirt_orders", "sponsors"].includes(tab);
+  document.getElementById("vendor-pay-sheet").hidden = tab !== "vendors";
   document.getElementById("add-cost").hidden = document.getElementById("add-income").hidden = tab !== "budget";
   shirtTotals();
   budgetBox();
@@ -1090,6 +1092,40 @@ ${sponsors || "<p>No sponsors yet.</p>"}
   if (!w) alert("Your browser blocked the new tab. Allow pop-ups for this page and try again.");
 }
 document.getElementById("designer-sheet").onclick = designerSheet;
+
+// Printable list of vendors, not paid first, with the $20 fee and totals.
+function vendorPaySheet() {
+  const FEE = 20;
+  const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const byName = (a, b) => String(a.business).localeCompare(String(b.business));
+  const unpaid = data.vendors.filter(r => !r.paid).sort(byName), paid = data.vendors.filter(r => r.paid).sort(byName);
+  const today = new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const table = (list, isPaid) => !list.length ? `<p class="muted">${isPaid ? "No one has paid yet." : "Everyone has paid. 🎉"}</p>` :
+    `<table><thead><tr><th>#</th><th>Vendor</th><th>Contact</th><th>Phone</th><th>Fee</th><th>${isPaid ? "Paid" : "Collected"}</th><th>Notes</th></tr></thead><tbody>` +
+    list.map((r, i) => `<tr><td>${i + 1}</td><th>${esc(r.business)}</th><td>${esc(r.contact)}</td><td>${esc(r.phone)}</td><td>$${FEE}</td><td class="mark">${isPaid ? "✓ Paid" : "☐"}</td><td class="notes"></td></tr>`).join("") +
+    `</tbody></table>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Santa Paws vendor payments</title>
+<style>
+body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1d2b24; background: #fff; margin: 0 auto; padding: 24px 16px 48px; max-width: 900px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; color: #123d2c; } h2 { font-size: 1.2rem; margin: 24px 0 8px; color: #123d2c; } h2 span { font-weight: 400; color: #5b6b63; font-size: .95rem; margin-left: 6px; }
+.muted { color: #5b6b63; } .unpaid h2 { color: #a3242f; }
+.sum { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; } .sum div { border: 1px solid #cfd8d2; border-radius: 10px; padding: 8px 14px; } .sum b { display: block; font-size: 1.3rem; }
+table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #cfd8d2; padding: 7px 8px; text-align: left; }
+thead th { background: #123d2c; color: #fff; font-weight: 600; } tbody th { font-weight: 600; } .mark { text-align: center; white-space: nowrap; font-size: 1.1rem; } .notes { width: 22%; }
+.print { background: #a3242f; color: #fff; border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-weight: 600; cursor: pointer; margin-top: 16px; }
+@media print { .print { display: none; } body { padding: 0; } thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } tr { break-inside: avoid; } }
+</style></head><body>
+<h1>Santa Paws vendor payments</h1>
+<p class="muted">Vendor fee $${FEE} · as of ${esc(today)}</p>
+<div class="sum"><div><b>${data.vendors.length}</b>vendors</div><div><b>${paid.length} · $${paid.length * FEE}</b>paid</div><div><b>${unpaid.length} · $${unpaid.length * FEE}</b>still owed</div></div>
+<section class="unpaid"><h2>Not paid yet <span>${unpaid.length}</span></h2>${table(unpaid, false)}</section>
+<h2>Paid <span>${paid.length}</span></h2>${table(paid, true)}
+<button class="print" onclick="print()">Print or save as PDF</button>
+</body></html>`;
+  const w = window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
+  if (!w) alert("Your browser blocked the new tab. Allow pop-ups for this page and try again.");
+}
+document.getElementById("vendor-pay-sheet").onclick = vendorPaySheet;
 // Add order (Shirt orders tab): for orders taken by phone or in person. Prices match the Event Shirts page.
 const ORDER_PRICES = { "Short sleeve": 30, "Long sleeve": 35, Crewneck: 40, Hoodie: 45 };
 const ORDER_SIZES = SIZES.filter(z => !/^\dT$/.test(z));
