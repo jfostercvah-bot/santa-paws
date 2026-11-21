@@ -107,6 +107,8 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
 .draw-card { border: 2px solid var(--line, #ccc); border-radius: 12px; padding: 10px 14px; display: grid; gap: 4px; }
 .draw-card.won { border-color: #2f9a63; background: rgba(47, 154, 99, .14); }
 .draw-card h3 { margin: 0; font-size: 1.3rem; }
+.pick-photo { border: 1px dashed var(--line, #ccc); border-radius: 10px; padding: 8px 10px; margin-bottom: 4px; }
+.pick-results { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; } .pick-results button { text-align: left; white-space: normal; }
 .prize-now { display: flex; gap: 14px; align-items: flex-start; margin-top: 8px; padding: 10px 14px; border: 2px solid var(--line, #ccc); border-radius: 12px; font-weight: 400; }
 .prize-now img { width: 150px; max-height: 150px; object-fit: contain; border-radius: 8px; flex: none; background: #fff; }
 .prize-now h3 { margin: 0 0 2px; font-size: 1.25rem; }
@@ -967,10 +969,41 @@ function replyTo(r, draft) {
   ta.focus(); const at = ta.value.indexOf("\n\n") + 2; ta.setSelectionRange(at, at);
 }
 
+// Add tickets: search photo sign-ups and tap one to fill in their name, phone and email.
+function photoPicker(box) {
+  const wrap = document.createElement("div"); wrap.className = "pick-photo";
+  const l = document.createElement("label"); l.textContent = "Fill in from a Santa photo sign-up (optional)";
+  const find = document.createElement("input"); find.type = "search"; find.placeholder = "Type a name, pet, phone or email"; find.autocomplete = "off";
+  const out = document.createElement("div"); out.className = "pick-results";
+  l.append(find); wrap.append(l, out);
+  // Enter picks the first match instead of saving the form.
+  find.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); const b = out.querySelector("button"); if (b) b.click(); } };
+  find.oninput = () => {
+    const q = find.value.trim().toLowerCase(), qd = q.replace(/\D/g, "");
+    out.innerHTML = "";
+    if (q.length < 2) return;
+    const hits = data.photos.filter(r => `${r.first_name} ${r.last_name} ${r.email} ${r.pets}`.toLowerCase().includes(q) || (qd.length >= 3 && String(r.phone).replace(/\D/g, "").includes(qd))).slice(0, 6);
+    if (!hits.length) { out.innerHTML = '<span class="muted">No photo sign-up matches.</span>'; return; }
+    hits.forEach(r => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "ghost small";
+      b.textContent = `${r.first_name} ${r.last_name}` + (r.pets ? ` · ${r.pets}` : "") + (r.times ? ` · ${r.times}` : "");
+      b.onclick = () => {
+        ["first_name", "last_name", "phone", "email"].forEach(k => { const i = box.querySelector(`[name="${k}"]`); if (i) i.value = r[k] || ""; });
+        out.innerHTML = `<span class="muted">✓ Filled in ${escH(r.first_name)} ${escH(r.last_name)}. Now add the ticket numbers.</span>`;
+        find.value = "";
+        const t = box.querySelector('[name="ticket"]'); if (t) t.focus();
+      };
+      out.append(b);
+    });
+  };
+  return wrap;
+}
+
 function editRow(table, r, adding) {
   const dlg = document.getElementById("edit"), box = document.getElementById("edit-fields");
   document.getElementById("edit-title").textContent = adding ? ({ photos: "Add a walk-up", vendors: "Add a vendor", shirts: "Add someone to the shirt list", raffle: "Add a raffle prize", raffle_tickets: "Add raffle tickets", budget: r.kind === "Income" ? "Add other income" : "Add a cost" })[table] : table === "raffle_bulk" ? `Edit ${r.ids.length} ticket${r.ids.length === 1 ? "" : "s"}` : "Edit " + (table === "photos" ? `${r.first_name} ${r.last_name}` : table === "raffle_tickets" ? `ticket #${r.ticket}` : r.business || r.name);
   box.innerHTML = "";
+  if (adding && table === "raffle_tickets") box.append(photoPicker(box));
   EDIT_FIELDS[table].filter(([k]) => !(adding && table === "raffle" && k === "winner")).forEach(([k, label, kind]) => {
     const l = document.createElement("label"); l.textContent = label;
     let input;
