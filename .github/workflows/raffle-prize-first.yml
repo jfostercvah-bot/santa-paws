@@ -1,0 +1,27 @@
+# Moves one raffle prize to the front of the drawing order (same as tapping ↑ on the admin Raffle prizes tab).
+# The other prizes keep their order behind it. Run by hand from the Actions tab.
+name: Make raffle prize first
+
+on:
+  workflow_dispatch:
+    inputs:
+      name: { description: "Exact prize name to draw first", required: true }
+
+jobs:
+  first:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set the order
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          NAME: ${{ inputs.name }}
+        run: |
+          set -eo pipefail
+          curl -sf -H "Authorization: Bearer $ADMIN_PASSWORD" https://api.cvahsantapaws.com/admin > admin.json
+          jq --arg n "$NAME" '[.raffle[] | {id, name, o: (if .draw_order > 0 then .draw_order else 1000000000 end)}] | sort_by(.o, .id)
+            | (map(select(.name == $n)) + map(select(.name != $n)))' admin.json > order.json
+          jq -e --arg n "$NAME" '.[0].name == $n' order.json >/dev/null || { echo "No prize named: $NAME"; exit 1; }
+          jq '{ids: map(.id)}' order.json > body.json
+          curl -sf -X POST -H "Authorization: Bearer $ADMIN_PASSWORD" -H "Content-Type: application/json" --data @body.json https://api.cvahsantapaws.com/admin/prize-order | tee out.json
+          jq -e '.ok' out.json >/dev/null
+          echo "Drawing order:"; jq -r 'to_entries[] | "\(.key + 1). \(.value.name)"' order.json
