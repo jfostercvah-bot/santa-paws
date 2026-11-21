@@ -107,6 +107,7 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
 .draw-card { border: 2px solid var(--line, #ccc); border-radius: 12px; padding: 10px 14px; display: grid; gap: 4px; }
 .draw-card.won { border-color: #2f9a63; background: rgba(47, 154, 99, .14); }
 .draw-card h3 { margin: 0; font-size: 1.3rem; }
+.ticket-range { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; } .ticket-range input { width: 110px; }
 .pick-photo { border: 1px dashed var(--line, #ccc); border-radius: 10px; padding: 8px 10px; margin-bottom: 4px; }
 .pick-results { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; } .pick-results button { text-align: left; white-space: normal; }
 .prize-now { display: flex; gap: 14px; align-items: flex-start; margin-top: 8px; padding: 10px 14px; border: 2px solid var(--line, #ccc); border-radius: 12px; font-weight: 400; }
@@ -202,6 +203,10 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
         <label for="draw-no"><strong>Ticket drawn</strong></label>
         <input id="draw-no" inputmode="numeric" autocomplete="off" placeholder="Ticket number, like 1205">
         <button type="submit">Find ticket</button>
+      </form>
+      <form class="ticket-range" id="range-form">
+        <strong>Ticket roll numbers</strong> from <input id="range-from" inputmode="numeric" placeholder="first #" aria-label="First ticket number"> to <input id="range-to" inputmode="numeric" placeholder="last #" aria-label="Last ticket number">
+        <button type="submit" class="ghost small">Save range</button> <span id="range-msg" class="muted" role="status"></span>
       </form>
       <label class="repeat-ok"><input type="checkbox" id="draw-repeat"> Allow repeat winners <span class="muted">(only if you run out of new families and still have prizes)</span></label>
       <div id="draw-next" style="font-weight:600"></div>
@@ -362,7 +367,7 @@ async function api(path, body) {
   });
   if (r.status === 401) { logout("That password didn't work."); throw new Error("unauthorized"); }
   const d = await r.json();
-  if (!d.ok) throw Object.assign(new Error(d.reason || "error"), { taken: d.taken });
+  if (!d.ok) throw Object.assign(new Error(d.reason || "error"), { taken: d.taken, bad: d.bad, range: d.range });
   return d;
 }
 
@@ -1042,6 +1047,7 @@ function editRow(table, r, adding) {
       catch (e) {
         if (e.message === "taken") problem("Someone else already has that time. Pick a different slot.");
         else if (e.message === "duplicate") problem(e.taken && e.taken.length ? `Already entered: ${e.taken.map(t => `#${t.ticket} (${t.first_name} ${t.last_name})`).join(", ")}.` : "That ticket number is already entered for someone else.");
+        else if (e.message === "out_of_range") problem(`${e.bad.slice(0, 5).map(t => "#" + t).join(", ")}${e.bad.length > 5 ? ` and ${e.bad.length - 5} more` : ""} ${e.bad.length === 1 ? "isn't" : "aren't"} on the ticket roll (${rangeText(e.range)}). Check the number, or change the range in the drawing box.`);
         else if (e.message === "bad_ticket") problem("Enter ticket numbers like 1205, a range like 1201-1210 (up to 200), or a list like 1201, 1205.");
         else if (e.message === "bad_time") problem("Use times on the schedule, like 10:05 AM or 1:30 PM (every 5 minutes, 10 AM to 3 PM), up to 3.");
         else throw e;
@@ -1229,10 +1235,20 @@ const escH = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": 
 
 // Tickets checked in the list, for Edit selected / Delete selected.
 const picked = new Set();
+const rangeText = r => r.from !== null && r.to !== null ? `#${r.from} to #${r.to}` : r.from !== null ? `#${r.from} and up` : `up to #${r.to}`;
+function savedRange() { try { const r = JSON.parse(data.settings["ticket-range"] || "{}"); return { from: r.from ?? null, to: r.to ?? null }; } catch { return { from: null, to: null }; } }
+document.getElementById("range-form").onsubmit = async e => {
+  e.preventDefault();
+  const m = document.getElementById("range-msg");
+  try { await api("/admin/ticket-range", { from: document.getElementById("range-from").value, to: document.getElementById("range-to").value }); await load(); m.textContent = "Saved."; }
+  catch (x) { if (x.message === "unauthorized") return; m.textContent = x.message === "bad_range" ? "Use whole numbers, with the last one bigger than the first." : "That didn't save. Try again."; }
+};
 function drawBox() {
   const box = document.getElementById("draw");
   box.hidden = tab !== "raffle_tickets";
   if (box.hidden) return;
+  const rg = savedRange(), rf = document.getElementById("range-from"), rt = document.getElementById("range-to");
+  if (document.activeElement !== rf && document.activeElement !== rt) { rf.value = rg.from ?? ""; rt.value = rg.to ?? ""; }
   [...picked].forEach(id => { if (!data.raffle_tickets.some(r => r.id === id)) picked.delete(id); });
   const sel = data.raffle_tickets.filter(r => picked.has(r.id));
   document.getElementById("ticket-bulk").hidden = !sel.length;

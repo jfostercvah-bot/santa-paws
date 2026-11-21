@@ -26,6 +26,7 @@
  *   POST /admin/win        { id, won, prize_id, allow_repeat }  (mark a raffle ticket as a winner, optionally for a prize)
  *   POST /admin/order      { first_name, last_name, email, phone, items (JSON [{design, style, size, qty}]), notes, paid }
  *   POST /admin/paid       { id, paid }  (shirt orders)
+ *   POST /admin/ticket-range { from, to }  (raffle ticket numbers allowed; blank = no limit)
  *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
@@ -573,6 +574,15 @@ function ticketList(v) {
   return out.length && out.length <= 200 && new Set(out).size === out.length ? out : null;
 }
 
+// The printed raffle ticket roll's numbers, set on the admin page; tickets outside it are refused. Blank ends = no limit.
+async function ticketRange(db) {
+  const row = await db.prepare("SELECT value FROM settings WHERE key = 'ticket-range'").first();
+  try { const r = JSON.parse(row ? row.value : "{}"); return { from: Number.isFinite(r.from) ? r.from : null, to: Number.isFinite(r.to) ? r.to : null }; }
+  catch { return { from: null, to: null }; }
+}
+const outOfRange = (list, r) => r.from === null && r.to === null ? [] :
+  list.filter(t => !/^\d+$/.test(t) || (r.from !== null && Number(t) < r.from) || (r.to !== null && Number(t) > r.to));
+
 // Budget tab: costs of putting on the event, plus income that isn't a sign-up (donations, raffle...).
 const BUDGET_KINDS = ["Cost", "Income"];
 const budgetAmount = v => { const t = String(v ?? "").replace(/[$,\s]/g, ""), n = t === "" ? NaN : Number(t); return Number.isFinite(n) && n >= 0 && n < 1e7 ? Math.round(n * 100) / 100 : null; };
@@ -633,6 +643,8 @@ async function admin(request, env, path) {
     const first = field(p, "first_name", 80), last = field(p, "last_name", 80), list = ticketList(p.ticket);
     if (!first || !last) return json({ ok: false, reason: "missing" });
     if (!list) return json({ ok: false, reason: "bad_ticket" });
+    const range = await ticketRange(db), bad = outOfRange(list, range);
+    if (bad.length) return json({ ok: false, reason: "out_of_range", bad, range });
     const taken = (await db.prepare(`SELECT ticket, first_name, last_name FROM raffle_tickets WHERE ticket IN (${list.map(() => "?").join(",")})`).bind(...list).all()).results;
     if (taken.length) return json({ ok: false, reason: "duplicate", taken });
     await db.batch(list.map(t => db.prepare("INSERT INTO raffle_tickets (ticket, first_name, last_name, phone, email) VALUES (?, ?, ?, ?, ?)")
@@ -706,6 +718,13 @@ async function admin(request, env, path) {
     return json({ ok: true });
   }
   // Printer prices per shirt type (plus an extra charge for 2XL and up), used for the Budget tab's shirt cost.
+  if (path === "/admin/ticket-range") {
+    const num = v => { const t = String(v ?? "").trim().replace(/^#/, ""); return t === "" ? null : /^\d{1,9}$/.test(t) ? Number(t) : NaN; };
+    const from = num(p.from), to = num(p.to);
+    if (Number.isNaN(from) || Number.isNaN(to) || (from !== null && to !== null && to < from)) return json({ ok: false, reason: "bad_range" });
+    await db.prepare("INSERT INTO settings (key, value) VALUES ('ticket-range', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated = datetime('now')").bind(JSON.stringify({ from, to })).run();
+    return json({ ok: true });
+  }
   if (path === "/admin/shirt-costs") {
     const costs = {};
     for (const k of [...STAFF_STYLES, "big"]) {
@@ -729,6 +748,8 @@ async function admin(request, env, path) {
     if (p.table === "raffle_tickets" && keys.includes("ticket")) {
       fields.ticket = ticketNo(fields.ticket);
       if (!fields.ticket) return json({ ok: false, reason: "bad_ticket" });
+      const range = await ticketRange(db);
+      if (outOfRange([fields.ticket], range).length) return json({ ok: false, reason: "out_of_range", bad: [fields.ticket], range });
       const other = await db.prepare("SELECT id FROM raffle_tickets WHERE ticket = ? AND id != ?").bind(fields.ticket, p.id).first();
       if (other) return json({ ok: false, reason: "duplicate" });
     }
