@@ -107,6 +107,11 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
 .draw-card { border: 2px solid var(--line, #ccc); border-radius: 12px; padding: 10px 14px; display: grid; gap: 4px; }
 .draw-card.won { border-color: #2f9a63; background: rgba(47, 154, 99, .14); }
 .draw-card h3 { margin: 0; font-size: 1.3rem; }
+.prize-now { display: flex; gap: 14px; align-items: flex-start; margin-top: 8px; padding: 10px 14px; border: 2px solid var(--line, #ccc); border-radius: 12px; font-weight: 400; }
+.prize-now img { width: 150px; max-height: 150px; object-fit: contain; border-radius: 8px; flex: none; background: #fff; }
+.prize-now h3 { margin: 0 0 2px; font-size: 1.25rem; }
+.prize-now p { margin: 4px 0 0; white-space: pre-wrap; font-size: 1.05rem; line-height: 1.45; }
+@media (max-width: 560px) { .prize-now { flex-direction: column; } .prize-now img { width: 100%; max-height: 220px; } }
 .draw-alert { background: rgba(214, 40, 64, .14); color: inherit; border: 2px solid #d62840; border-radius: 12px; padding: 10px 14px; font-weight: 700; }
 .win-box { display: flex; align-items: center; gap: 12px; font-size: 1.2rem; font-weight: 700; cursor: pointer; }
 .win-box input { width: 28px; height: 28px; margin: 0; accent-color: #1f7a4d; cursor: pointer; }
@@ -1166,7 +1171,10 @@ function drawBox() {
   if (winners.length && fams.every(g => g.some(r => r.won))) document.getElementById("draw-winners").insertAdjacentHTML("beforeend", ` <strong>Every family has won now.</strong> Check Allow repeat winners to keep drawing for the prizes left.`);
   const up = nextPrize(), left = data.raffle.filter(p => !p.winner).length;
   document.getElementById("draw-next").innerHTML = !data.raffle.length ? "" : up
-    ? `🎁 Now drawing for: #${prizeOrder().indexOf(up) + 1} ${escH(up.name)} <span class="muted">(${left} prize${left === 1 ? "" : "s"} left · change the order on the Raffle prizes tab)</span>`
+    ? `🎁 Now drawing for: #${prizeOrder().indexOf(up) + 1} ${escH(up.name)} <span class="muted">(${left} prize${left === 1 ? "" : "s"} left · change the order on the Raffle prizes tab)</span>
+      <div class="prize-now">${up.image ? `<img src="${escH(up.image)}" alt="">` : ""}<div>
+        <h3>${escH(up.name)}</h3>${up.donor ? `<p class="muted">Sponsored by ${escH(up.donor)}</p>` : ""}${up.description ? `<p>${escH(up.description)}</p>` : ""}
+      </div></div>`
     : "🎉 Every prize has a winner.";
   const res = document.getElementById("draw-result");
   if (!drawTicket) { res.innerHTML = ""; return; }
