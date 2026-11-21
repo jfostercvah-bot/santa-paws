@@ -1020,8 +1020,17 @@ function editRow(table, r, adding) {
     else if (kind === "money") { input = document.createElement("input"); input.inputMode = "decimal"; input.placeholder = "0.00"; }
     else input = document.createElement("input");
     input.name = k; input.value = r[k] ?? "";
-    if (table === "raffle_tickets" && k === "ticket" && adding) { l.firstChild.textContent = "Ticket number(s): one, a range like 1201-1210, or a list like 1201, 1205"; input.placeholder = "1201-1210"; }
+    if (table === "raffle_tickets" && k === "ticket" && adding) { l.firstChild.textContent = "First ticket number (or a range like 1201-1210, or a list like 1201, 1205)"; input.placeholder = "1201"; }
     l.append(input); box.append(l);
+    if (table === "raffle_tickets" && k === "ticket" && adding) {
+      // First number + how many: 1201 and 10 become 1201-1210.
+      const hl = document.createElement("label"); hl.textContent = "How many tickets (counts up from the first number)";
+      const how = document.createElement("input"); how.id = "ticket-count"; how.type = "number"; how.min = "1"; how.max = "200"; how.inputMode = "numeric"; how.placeholder = "1";
+      const shows = document.createElement("span"); shows.className = "muted"; shows.style.fontSize = ".9rem";
+      const preview = () => { const f = input.value.trim().replace(/^#/, ""), n = Number(how.value); shows.textContent = /^\d+$/.test(f) && Number.isInteger(n) && n > 1 && n <= 200 ? `Adds #${Number(f)} to #${Number(f) + n - 1}` : ""; };
+      input.addEventListener("input", preview); how.oninput = preview;
+      hl.append(how, shows); box.append(hl);
+    }
   });
   dlg.onclose = () => {
     if (dlg.returnValue !== "save") return;
@@ -1037,6 +1046,15 @@ function editRow(table, r, adding) {
     }
     if (table === "raffle_tickets" && (!fields.first_name.trim() || !fields.last_name.trim())) return problem("Add their first and last name.");
     if (table === "raffle_tickets" && !fields.ticket.trim()) return problem("Add the ticket number.");
+    const howMany = adding && table === "raffle_tickets" ? box.querySelector("#ticket-count") : null;
+    if (howMany && howMany.value.trim()) {
+      const f = fields.ticket.trim().replace(/^#/, ""), n = Number(howMany.value);
+      if (!Number.isInteger(n) || n < 1 || n > 200) return problem("How many tickets should be a number from 1 to 200.");
+      if (n > 1) {
+        if (!/^\d+$/.test(f)) return problem("To use How many, put just the first ticket number, like 1201.");
+        fields.ticket = `${Number(f)}-${Number(f) + n - 1}`;
+      }
+    }
     if (table === "raffle" && !fields.name.trim()) return problem("Say what the prize is, like Holiday gift basket.");
     if (table === "budget" && !fields.item.trim()) return problem("Say what it's for, like Santa suit rental.");
     if (table === "budget" && !/^\$?\s*[\d,]*\.?\d+$/.test(fields.amount.trim())) return problem("Enter the amount as a number, like 45 or 12.50.");
