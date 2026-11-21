@@ -107,6 +107,8 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
 .draw-card { border: 2px solid var(--line, #ccc); border-radius: 12px; padding: 10px 14px; display: grid; gap: 4px; }
 .draw-card.won { border-color: #2f9a63; background: rgba(47, 154, 99, .14); }
 .draw-card h3 { margin: 0; font-size: 1.3rem; }
+.win-table { border-collapse: collapse; width: 100%; font-size: .95rem; } .win-table th, .win-table td { border: 1px solid var(--line, #ccc); padding: 6px 8px; text-align: left; vertical-align: top; }
+.win-table tr.here td { background: rgba(47, 154, 99, .14); } .win-table button { white-space: nowrap; }
 .ticket-range { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; } .ticket-range input { width: 110px; }
 .pick-photo { border: 1px dashed var(--line, #ccc); border-radius: 10px; padding: 8px 10px; margin-bottom: 4px; }
 .pick-results { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; } .pick-results button { text-align: left; white-space: normal; }
@@ -212,6 +214,7 @@ input.pick { width: 22px; height: 22px; margin: 0; cursor: pointer; }
       <div id="draw-next" style="font-weight:600"></div>
       <div id="draw-result" aria-live="polite"></div>
       <div id="draw-winners" class="muted"></div>
+      <div id="win-list"></div>
       <div class="bar" id="ticket-bulk" style="margin:0" hidden>
         <strong class="grow" id="bulk-count"></strong>
         <button type="button" class="ghost small" id="bulk-person">Select all of their tickets</button>
@@ -1269,6 +1272,58 @@ document.getElementById("range-form").onsubmit = async e => {
   try { await api("/admin/ticket-range", { from: document.getElementById("range-from").value, to: document.getElementById("range-to").value }); await load(); m.textContent = "Saved."; }
   catch (x) { if (x.message === "unauthorized") return; m.textContent = x.message === "bad_range" ? "Use whole numbers, with the last one bigger than the first." : "That didn't save. Try again."; }
 };
+// Winners in prize order, with a Picked up button for each, and a printable copy.
+function winnersInOrder(winners) {
+  const order = prizeOrder().map(p => p.id);
+  const at = w => { const i = order.indexOf(w.prize_id); return i < 0 ? 1e9 : i; };
+  return [...winners].sort((a, b) => at(a) - at(b) || String(a.won_at).localeCompare(String(b.won_at)));
+}
+function winList(winners) {
+  const box = document.getElementById("win-list");
+  box.innerHTML = "";
+  if (!winners.length) return;
+  const list = winnersInOrder(winners), got = list.filter(w => w.picked_up).length;
+  const head = document.createElement("div"); head.className = "bar"; head.style.margin = "10px 0 6px";
+  head.innerHTML = `<strong class="grow">Prize pickup: ${got} of ${list.length} picked up</strong>`;
+  const pb = document.createElement("button"); pb.type = "button"; pb.className = "small"; pb.textContent = "Print winners list"; pb.onclick = () => printWinners(list);
+  head.append(pb); box.append(head);
+  const t = document.createElement("table"); t.className = "win-table";
+  t.innerHTML = "<thead><tr><th>Prize</th><th>Winner</th><th>Ticket</th><th>Phone / email</th><th>Picked up</th></tr></thead>";
+  const body = t.createTBody();
+  list.forEach(w => {
+    const tr = body.insertRow(); if (w.picked_up) tr.className = "here";
+    tr.innerHTML = `<td>${escH(w.prize || "Prize not picked")}</td><td>${escH(w.first_name)} ${escH(w.last_name)}</td><td>#${escH(w.ticket)}</td><td>${[w.phone, w.email].filter(Boolean).map(escH).join("<br>")}</td>`;
+    const td = tr.insertCell();
+    const b = document.createElement("button"); b.type = "button"; b.className = w.picked_up ? "ghost small" : "small";
+    b.textContent = w.picked_up ? `✓ ${clock(w.picked_up)} · Undo` : "Picked up";
+    b.onclick = () => act(() => api("/admin/picked-up", { id: w.id, on: !w.picked_up }));
+    td.append(b);
+  });
+  const sc = document.createElement("div"); sc.className = "scroll"; sc.append(t); box.append(sc);
+}
+function printWinners(list) {
+  const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const today = new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const got = list.filter(w => w.picked_up).length;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Santa Paws raffle winners</title>
+<style>
+body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1d2b24; background: #fff; margin: 0 auto; padding: 24px 16px 48px; max-width: 980px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; color: #123d2c; } .muted { color: #5b6b63; }
+table { border-collapse: collapse; width: 100%; margin-top: 14px; } th, td { border: 1px solid #cfd8d2; padding: 8px; text-align: left; vertical-align: top; }
+thead th { background: #123d2c; color: #fff; font-weight: 600; } .mark { text-align: center; white-space: nowrap; font-size: 1.1rem; } .sig { width: 20%; }
+.print { background: #a3242f; color: #fff; border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-weight: 600; cursor: pointer; margin-top: 16px; }
+@media print { .print { display: none; } body { padding: 0; } thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } tr { break-inside: avoid; } }
+</style></head><body>
+<h1>Santa Paws raffle winners</h1>
+<p class="muted">${list.length} winner${list.length === 1 ? "" : "s"} · ${got} picked up · ${list.length - got} still to pick up · as of ${esc(today)}</p>
+<table><thead><tr><th>#</th><th>Prize</th><th>Winner</th><th>Ticket</th><th>Phone</th><th>Email</th><th>Picked up</th><th>Signature / notes</th></tr></thead><tbody>
+${list.map((w, i) => `<tr><td>${i + 1}</td><td><strong>${esc(w.prize || "Prize not picked")}</strong></td><td>${esc(w.first_name)} ${esc(w.last_name)}</td><td>#${esc(w.ticket)}</td><td>${esc(w.phone)}</td><td>${esc(w.email)}</td><td class="mark">${w.picked_up ? "✓ Yes" : "☐"}</td><td class="sig"></td></tr>`).join("")}
+</tbody></table>
+<button class="print" onclick="print()">Print or save as PDF</button>
+</body></html>`;
+  const w = window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
+  if (!w) alert("Your browser blocked the new tab. Allow pop-ups for this page and try again.");
+}
 function drawBox() {
   const box = document.getElementById("draw");
   box.hidden = tab !== "raffle_tickets";
@@ -1294,6 +1349,7 @@ function drawBox() {
         <h3>${escH(up.name)}</h3>${up.donor ? `<p class="muted">Sponsored by ${escH(up.donor)}</p>` : ""}${up.description ? `<p>${escH(up.description)}</p>` : ""}
       </div></div>`
     : "🎉 Every prize has a winner.";
+  winList(winners);
   const res = document.getElementById("draw-result");
   if (!drawTicket) { res.innerHTML = ""; return; }
   const t = data.raffle_tickets.find(r => r.ticket === drawTicket);

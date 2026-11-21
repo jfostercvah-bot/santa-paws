@@ -28,6 +28,7 @@
  *   POST /admin/paid       { id, paid }  (shirt orders)
  *   POST /admin/ticket-range { from, to }  (raffle ticket numbers allowed; blank = no limit)
  *   POST /admin/shirt-costs { "T-shirt", "Long sleeve", Crewneck, Hoodie, big }  (printer price each; big = extra for 2XL and up)
+ *   POST /admin/picked-up  { id, on }  (raffle winner picked up their prize)
  *   POST /admin/checkin    { id, on }
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/raffle     { name, donor, description, image }  (new prize; with id and image only, changes the photo; empty image removes it)
@@ -696,7 +697,7 @@ async function admin(request, env, path) {
       const prize = Number.isInteger(p.prize_id) ? await db.prepare("SELECT id, name FROM raffle WHERE id = ?").bind(p.prize_id).first() : null;
       stmts.push(db.prepare("UPDATE raffle_tickets SET won = 1, won_at = datetime('now'), prize_id = ?, prize = ? WHERE id = ?").bind(prize ? prize.id : null, prize ? prize.name : "", t.id));
       if (prize) stmts.push(db.prepare("UPDATE raffle SET winner = ? WHERE id = ?").bind(`${t.first_name} ${t.last_name} (ticket #${t.ticket})`, prize.id));
-    } else stmts.push(db.prepare("UPDATE raffle_tickets SET won = 0, won_at = '', prize_id = NULL, prize = '' WHERE id = ?").bind(t.id));
+    } else stmts.push(db.prepare("UPDATE raffle_tickets SET won = 0, won_at = '', prize_id = NULL, prize = '', picked_up = '' WHERE id = ?").bind(t.id));
     await db.batch(stmts);
     return json({ ok: true });
   }
@@ -806,6 +807,11 @@ async function admin(request, env, path) {
     await db.prepare("INSERT INTO vendors (business, contact, email, phone, category, website, needs, description, code, show) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)")
       .bind(business, field(p, "contact", 120), field(p, "email", 120), field(p, "phone", 40), field(p, "category", 80),
         field(p, "website", 200), field(p, "needs", 500), field(p, "description", 2000), newCode()).run();
+    return json({ ok: true });
+  }
+  if (path === "/admin/picked-up") {
+    if (!Number.isInteger(p.id)) return json({ ok: false, reason: "bad_request" }, 400);
+    await db.prepare("UPDATE raffle_tickets SET picked_up = CASE WHEN ? THEN datetime('now') ELSE '' END WHERE id = ?").bind(p.on ? 1 : 0, p.id).run();
     return json({ ok: true });
   }
   if (path === "/admin/checkin") {
