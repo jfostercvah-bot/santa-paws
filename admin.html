@@ -1024,12 +1024,18 @@ function editRow(table, r, adding) {
     l.append(input); box.append(l);
     if (table === "raffle_tickets" && k === "ticket" && adding) {
       // First number + how many: 1201 and 10 become 1201-1210.
-      const hl = document.createElement("label"); hl.textContent = "How many tickets (counts up from the first number)";
+      const hl = document.createElement("label"); hl.textContent = "How many tickets";
       const how = document.createElement("input"); how.id = "ticket-count"; how.type = "number"; how.min = "1"; how.max = "200"; how.inputMode = "numeric"; how.placeholder = "1";
       const shows = document.createElement("span"); shows.className = "muted"; shows.style.fontSize = ".9rem";
-      const preview = () => { const f = input.value.trim().replace(/^#/, ""), n = Number(how.value); shows.textContent = /^\d+$/.test(f) && Number.isInteger(n) && n > 1 && n <= 200 ? `Adds #${Number(f)} to #${Number(f) + n - 1}` : ""; };
+      // Ticket rolls can count up (1, 2, 3...) or down (1000, 999, 998...). Remember the last choice.
+      const dir = document.createElement("select"); dir.id = "ticket-dir"; dir.setAttribute("aria-label", "Ticket numbers count up or down");
+      dir.add(new Option("Numbers count down (1000, 999, 998...)", "down")); dir.add(new Option("Numbers count up (1, 2, 3...)", "up"));
+      try { dir.value = localStorage.getItem("ticket-dir") || "down"; } catch { dir.value = "down"; }
+      const preview = () => { const f = input.value.trim().replace(/^#/, ""), n = Number(how.value), a = Number(f), down = dir.value === "down";
+        shows.textContent = /^\d+$/.test(f) && Number.isInteger(n) && n > 1 && n <= 200 ? (down && a - n + 1 < 0 ? "That would go below 0." : `Adds #${a} to #${down ? a - n + 1 : a + n - 1}`) : ""; };
       input.addEventListener("input", preview); how.oninput = preview;
-      hl.append(how, shows); box.append(hl);
+      dir.onchange = () => { try { localStorage.setItem("ticket-dir", dir.value); } catch {} preview(); };
+      hl.append(how, dir, shows); box.append(hl);
     }
   });
   dlg.onclose = () => {
@@ -1052,7 +1058,9 @@ function editRow(table, r, adding) {
       if (!Number.isInteger(n) || n < 1 || n > 200) return problem("How many tickets should be a number from 1 to 200.");
       if (n > 1) {
         if (!/^\d+$/.test(f)) return problem("To use How many, put just the first ticket number, like 1201.");
-        fields.ticket = `${Number(f)}-${Number(f) + n - 1}`;
+        const a = Number(f), down = (box.querySelector("#ticket-dir") || {}).value === "down";
+        if (down && a - n + 1 < 0) return problem(`Counting down from #${a}, there aren't ${n} tickets left. Check the number.`);
+        fields.ticket = down ? `${a - n + 1}-${a}` : `${a}-${a + n - 1}`;
       }
     }
     if (table === "raffle" && !fields.name.trim()) return problem("Say what the prize is, like Holiday gift basket.");
