@@ -296,8 +296,8 @@ const TABS = {
     remove: r => `Delete the vendor application from ${r.business}? The spot opens up for someone else.`,
   },
   sponsors: {
-    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["paid", "Paid"], ["shirt_size", "Shirt"], ["shirt_style", "Type"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"]],
-    note: "Every sponsor holds a spot. Tap Paid when they pay, then Show to put them on the website. Tap No shirt if a sponsor doesn't want their free shirt. Click a logo to download it.",
+    cols: [["logo", "Logo"], ["business", "Business"], ["level", "Level"], ["paid", "Paid"], ["shirt_size", "Shirt"], ["shirt_style", "Type"], ["show", "On website"], ["contact", "Contact"], ["email", "Email"], ["phone", "Phone"], ["website", "Website"], ["created", "Signed up"], ["ready_emailed", "Shirt email"]],
+    note: "Every sponsor holds a spot. Tap Paid when they pay, then Show to put them on the website. Tap No shirt if a sponsor doesn't want their free shirt. Tap Shirt ready to email them that their free shirt is ready for pickup. Click a logo to download it.",
     remove: r => `Remove ${r.business} as a sponsor?`,
   },
   gallery: {
@@ -361,7 +361,7 @@ async function api(path, body) {
 const minutes = t => { const m = String(t).match(/(\d+):(\d+)\s*([AP]M)/i); if (!m) return 9999; return (Number(m[1]) % 12 + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]); };
 const when = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
 const clock = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-const cell = (r, k) => tab === "raffle_tickets" && k === "won" ? (r.won ? "🏆 Won" + (r.prize ? ": " + r.prize : "") : "") : tab === "raffle_tickets" && k === "ticket" ? "#" + r.ticket : tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "ready_emailed" ? (r.ready_emailed ? "✓ " + when(r.ready_emailed) : "Not yet") : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
+const cell = (r, k) => tab === "raffle_tickets" && k === "won" ? (r.won ? "🏆 Won" + (r.prize ? ": " + r.prize : "") : "") : tab === "raffle_tickets" && k === "ticket" ? "#" + r.ticket : tab === "shirt_orders" && k === "items" ? itemText(r) : tab === "shirt_orders" && k === "total" ? "$" + r.total : k === "paid" ? (r.paid ? "Yes" : "No") : k === "shirt_size" && r.no_shirt ? "No shirt" : k === "shirt_style" && r.no_shirt ? "" : (k === "size" || k === "shirt_size") ? sizeLabel(r[k] || "") : k === "times" && !r.times ? "Waiting" : k === "created" ? (r.walkup ? "Walk-up" : when(r[k])) : k === "checked_in" ? (r.checked_in ? "✓ " + clock(r.checked_in) : "") : k === "show" ? (r.show ? "Yes" : "No") : k === "amount" ? usd(r.amount) : k === "ready_emailed" ? (r.ready_emailed ? "✓ " + when(r.ready_emailed) : r.no_shirt ? "" : "Not yet") : k === "replies" ? (r.replies ? r.replies.replace(/\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] /g, (_, t) => `✓ ${when(t)}: `) : "Not yet") : r[k] ?? "";
 
 // " Shirts to order: 2 M, 1 XL." for the Sponsors tab
 function shirtTally() {
@@ -598,6 +598,12 @@ function render() {
     if (tab === "shirt_orders") {
       const sb = document.createElement("button"); sb.className = r.ready_emailed ? "ghost small" : "small"; sb.textContent = r.ready_emailed ? "Email again" : "Shirt ready";
       sb.title = "Email them that their shirt is ready for pickup";
+      sb.onclick = () => shirtReadyMail(r);
+      td.append(sb, " ");
+    }
+    if (tab === "sponsors" && !r.no_shirt) {
+      const sb = document.createElement("button"); sb.className = r.ready_emailed ? "ghost small" : "small"; sb.textContent = r.ready_emailed ? "Email again" : "Shirt ready";
+      sb.title = "Email them that their free shirt is ready for pickup";
       sb.onclick = () => shirtReadyMail(r);
       td.append(sb, " ");
     }
@@ -880,20 +886,23 @@ function shirtReadyMail(r, draft) {
   const dlg = document.getElementById("reply"), ta = document.getElementById("reply-text");
   if (!data.emailReady) { alert("Email sending isn't set up yet."); return; }
   dialogWords("Your email", "Send email", "Sent from hello@cvahsantapaws.com. If they answer, it comes to your email. The event date, address and website are added at the bottom.");
-  document.getElementById("reply-title").textContent = `Email ${r.first_name} ${r.last_name}: shirt ready`;
-  document.getElementById("reply-to").textContent = `To ${r.email} · Subject: Your Santa Paws shirt is ready for pickup!`;
-  document.getElementById("reply-orig").textContent = "Their order: " + itemText(r) + ` · $${r.total}` + (r.paid ? " · paid" : " · not paid yet");
+  const sponsor = tab === "sponsors", table = sponsor ? "sponsors" : "shirt_orders";
+  const first = sponsor ? String(r.contact || "").trim().split(/\s+/)[0] || r.business : String(r.first_name).trim();
+  document.getElementById("reply-title").textContent = `Email ${sponsor ? r.business : r.first_name + " " + r.last_name}: shirt ready`;
+  document.getElementById("reply-to").textContent = `To ${r.email || "(no email on file)"} · Subject: Your Santa Paws shirt is ready for pickup!`;
+  document.getElementById("reply-orig").textContent = sponsor ? `Their free sponsor shirt: ${r.shirt_style || "Long sleeve"} ${sizeLabel(r.shirt_size || "")}` : "Their order: " + itemText(r) + ` · $${r.total}` + (r.paid ? " · paid" : " · not paid yet");
   const past = document.getElementById("reply-past");
   past.className = r.ready_emailed ? "reply-past" : ""; past.textContent = r.ready_emailed ? "Already emailed " + when(r.ready_emailed) : "";
-  const s = orderItems(r).reduce((n, l) => n + l.qty, 0) === 1 ? "shirt is" : "shirts are";
-  ta.value = draft ?? `Hi ${String(r.first_name).trim()},\n\nGood news: your Santa Paws ${s} in! You can pick up your order at Carolina Virginia Animal Hospital during office hours, or at the Santa Paws event tomorrow, Saturday, November 21, from 10 AM to 3 PM.` +
+  const s = sponsor ? "sponsor shirt is" : orderItems(r).reduce((n, l) => n + l.qty, 0) === 1 ? "shirt is" : "shirts are";
+  if (draft == null) draft = sponsor ? `Hi ${first},\n\nGood news: your free Santa Paws ${s} in! You can pick it up at Carolina Virginia Animal Hospital during office hours, or at the Santa Paws event, Saturday, November 21, from 10 AM to 3 PM.\n\nThank you so much for sponsoring Santa Paws!\nThe Santa Paws team at Carolina Virginia Animal Hospital` : `Hi ${first},\n\nGood news: your Santa Paws ${s} in! You can pick up your order at Carolina Virginia Animal Hospital during office hours, or at the Santa Paws event, Saturday, November 21, from 10 AM to 3 PM.` +
     (r.paid ? "" : `\n\nYour total is $${r.total}. You can pay by cash, Venmo, CashApp or PayPal when you pick up.`) + `\n\nThank you for supporting Santa Paws!\nThe Santa Paws team at Carolina Virginia Animal Hospital`;
+  ta.value = draft;
   dlg.onclose = () => {
     if (dlg.returnValue !== "send") return;
     const text = ta.value;
     if (!text.trim()) { alert("Type your message first."); return shirtReadyMail(r, text); }
     act(async () => {
-      try { await api("/admin/shirt-ready", { id: r.id, message: text }); }
+      try { await api("/admin/shirt-ready", { table, id: r.id, message: text }); }
       catch (e) {
         if (e.message === "unauthorized") throw e;
         alert(e.message === "bad_email" ? "That email address doesn't look right, so it can't be sent." : "The email didn't go out. Your text is still there, so try again.");

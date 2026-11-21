@@ -31,7 +31,7 @@
  *   POST /admin/edit       { table: vendors|sponsors|photos, id, fields: {name: value} } (photos may include times)
  *   POST /admin/raffle     { name, donor, description, image }  (new prize; with id and image only, changes the photo; empty image removes it)
  *   POST /admin/gallery    { year, caption, image, thumb }  (data: URLs; with id and no image to edit)
- *   POST /admin/shirt-ready { id, message, subject? }  (emails a shirt order that it's ready for pickup)
+ *   POST /admin/shirt-ready { table?: shirt_orders|sponsors, id, message, subject? }  (emails that their shirt is ready for pickup)
  *   POST /admin/email      { audience: photos|photo_times|vendors|everyone|test|photo_times_test, subject, message }
  *                          (photo_times starts each letter with that family's own time and pets)
  *
@@ -479,14 +479,15 @@ async function shirtReady(env, p) {
   const db = env.DB, text = field(p, "message", 10000);
   if (!emailReady(env)) return { ok: false, reason: "email_not_set_up" };
   if (!Number.isInteger(p.id) || !text) return { ok: false, reason: "bad_request" };
-  const o = await db.prepare("SELECT * FROM shirt_orders WHERE id = ?").bind(p.id).first();
+  const table = p.table === "sponsors" ? "sponsors" : "shirt_orders";
+  const o = await db.prepare(`SELECT * FROM ${table} WHERE id = ?`).bind(p.id).first();
   if (!o) return { ok: false, reason: "not_found" };
   const to = String(o.email).trim();
   if (!looksLikeEmail(to)) return { ok: false, reason: "bad_email" };
   const result = await sendEmails(env, [letter(to, field(p, "subject", 150) || "Your Santa Paws shirt is ready for pickup!", text, env)]);
   if (!result.sent) return { ok: false, reason: "send_failed", error: result.error };
   const stamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-  await db.prepare("UPDATE shirt_orders SET ready_emailed = ? WHERE id = ?").bind(stamp, p.id).run();
+  await db.prepare(`UPDATE ${table} SET ready_emailed = ? WHERE id = ?`).bind(stamp, p.id).run();
   return { ok: true };
 }
 
