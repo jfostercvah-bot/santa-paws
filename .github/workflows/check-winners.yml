@@ -1,0 +1,26 @@
+# Read-only check of raffle winners who haven't picked up their prize.
+# The repo is public, so this prints no names, emails or phones: only counts and prize names.
+name: Check raffle winners
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Count winners not picked up
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          set -eo pipefail
+          curl -sf -H "Authorization: Bearer $ADMIN_PASSWORD" https://api.cvahsantapaws.com/admin > admin.json
+          jq -r '
+            [.raffle_tickets[] | select(.won == 1 and (.picked_up // "") == "") | .email = ((.email // "") | gsub("^\\s+|\\s+$"; ""))] as $w
+            | ($w | map((.email // "") | ascii_downcase | gsub("^\\s+|\\s+$"; ""))) as $em
+            | "Winners not picked up: \($w | length)",
+              "With an email that looks right: \($w | map(select((.email // "") | test("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"))) | length)",
+              "Unique emails: \($em | map(select(. != "")) | unique | length)",
+              "",
+              ($w | to_entries[] | "\(.key + 1). \(.value.prize // "no prize") | email: \(if ((.value.email // "") | test("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) then "yes" elif (.value.email // "") == "" then "MISSING" else "LOOKS WRONG" end) | same email as another winner: \(((.value.email // "") | ascii_downcase | gsub("^\\s+|\\s+$"; "")) as $e | if $e != "" and ($em | map(select(. == $e)) | length) > 1 then "YES" else "no" end)")
+          ' admin.json
