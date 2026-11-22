@@ -544,8 +544,8 @@ function render() {
   const sel = document.getElementById("e-to"), was = sel.value;
   sel.innerHTML = "";
   const timed = count(data.photos.filter(r => String(r.times || "").trim()));
-  const unpicked = count(data.raffle_tickets.filter(r => r.won && !r.picked_up));
-  [["winners", `Raffle winners who haven't picked up: each gets their own prize (${unpicked.size})`], ["photo_times", `Photo time reminder: each family gets their own time (${timed.size})`], ["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
+  const notPicked = data.raffle_tickets.filter(r => r.won && !r.picked_up), unpicked = count(notPicked), noEmail = notPicked.filter(r => !String(r.email || "").trim()).length;
+  [["winners", `Raffle winners who haven't picked up: ${notPicked.length} winner${notPicked.length === 1 ? "" : "s"}` + (noEmail ? `, ${unpicked.size} with email (${noEmail} with no email to call)` : "") + ` (${unpicked.size})`], ["photo_times", `Photo time reminder: each family gets their own time (${timed.size})`], ["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
     .forEach(([v, t]) => sel.add(new Option(t, v)));
   if (was) sel.value = was;
   reminderHint();
