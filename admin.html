@@ -765,7 +765,7 @@ async function sendEmail(test) {
   const f = document.getElementById("email-form"), m = document.getElementById("e-msg");
   const subject = f.subject.value.trim(), message = f.message.value.trim();
   if (!subject || !message) { m.textContent = "Add a subject and message."; return; }
-  if (/\[paste/i.test(message)) { m.textContent = "Paste the photo download link into the message first (replace [paste the photo link here])."; return; }
+  if (/\[paste/i.test(message)) { m.textContent = "Fill in the part of the message in [brackets] first, like the download PIN."; return; }
   const audience = test ? (["photo_times", "winners", "checked_in"].includes(f.audience.value) ? f.audience.value + "_test" : "test") : f.audience.value;
   if (!test && !confirm(`Send "${subject}" to ${f.audience.selectedOptions[0].text.replace(/ \((\d+)\)/, ": $1 people")}?`)) return;
   m.textContent = "Sending...";
@@ -801,14 +801,14 @@ const WINNERS = {
 const PHOTOS_READY = {
   subject: "Your Santa Paws photos are ready! 📸",
   message: "Thank you so much for bringing your fur family to Santa Paws! We had the best time, and your pictures with Santa are ready.\n\n" +
-    "Download your photos here:\nhttps://fadedfencephotography44.pixieset.com/santapaws2026/\n\n" +
+    "Download your photos here:\nhttps://fadedfencephotography44.pixieset.com/santapaws2026/\nDownload PIN: [paste the download PIN here]\n\n" +
     "Our photos were taken by Faded Fence Photography. Find your photos in the gallery, then save the ones you love. They're free to keep and share. If you post them, we'd love for you to tag Carolina Virginia Animal Hospital!\n\n" +
     "Can't find your pictures or have trouble downloading? Just reply to this email and we'll help.\n\n" +
     "Merry Christmas from all of us at Carolina Virginia Animal Hospital!",
 };
 const TEMPLATES = { photo_times: REMINDER, winners: WINNERS, checked_in: PHOTOS_READY };
 const NOTES = {
-  checked_in: 'Goes only to families marked checked in on Photo bookings (booked, waiting list and walk-ups alike). Anyone not checked in is skipped, and so is anyone with no email. Each email starts with "Hi (first name)". The Faded Fence Photography gallery link is already in the message.',
+  checked_in: 'Goes only to families marked checked in on Photo bookings (booked, waiting list and walk-ups alike). Anyone not checked in is skipped, and so is anyone with no email. Each email starts with "Hi (first name)". The Faded Fence Photography gallery link is already in the message. Type the download PIN where it says [paste the download PIN here] (it's left out of this page on purpose, since the website code is public).',
   photo_times: 'Each email starts with "Hi (first name)", their own photo time and their pets, then this message. Families on the waiting list (no time) are skipped. "Send me a test" shows you one family\'s version.',
   winners: 'Each email starts with "Hi (first name), Congratulations! You won..." and their prize, who donated it and their ticket number, then this message. Only winners not marked Picked up (and with an email) get it. "Send me a test" shows you one winner\'s version.',
 };
