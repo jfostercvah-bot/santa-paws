@@ -410,13 +410,19 @@ const AUDIENCES = { photos: "Photo families", photo_times: "Photo families, each
 
 // Photo families (booked, waiting list and walk-ups) who were checked in at the event, one letter per email.
 async function checkedInLetters(db) {
-  const { results } = await db.prepare("SELECT first_name, email FROM photos WHERE checked_in != '' ORDER BY id").all();
+  const { results } = await db.prepare("SELECT first_name, email, pets FROM photos WHERE checked_in != '' ORDER BY id").all();
   const byEmail = new Map();
   for (const r of results) {
     const e = String(r.email).trim(), k = e.toLowerCase();
-    if (looksLikeEmail(e) && !byEmail.has(k)) byEmail.set(k, { email: e, intro: `Hi ${String(r.first_name).trim()},\n\n` });
+    if (!looksLikeEmail(e)) continue;
+    const x = byEmail.get(k) || { email: e, first: String(r.first_name).trim(), pets: [] };
+    // "Biscuit (Dog), Mittens (Cat)" -> Biscuit, Mittens
+    String(r.pets || "").split(",").map(n => n.replace(/\((dog|cat)\)\s*$/i, "").trim()).filter(n => n && !/^(dogs?|cats?)$/i.test(n))
+      .forEach(n => { if (!x.pets.some(o => o.toLowerCase() === n.toLowerCase())) x.pets.push(n); });
+    byEmail.set(k, x);
   }
-  return [...byEmail.values()];
+  const and = l => l.length < 2 ? l.join("") : l.slice(0, -1).join(", ") + " and " + l[l.length - 1];
+  return [...byEmail.values()].map(x => ({ email: x.email, intro: `Hi ${x.first},\n\n` + (x.pets.length ? `Photos of ${and(x.pets)} with Santa are ready! 🐾\n\n` : "") }));
 }
 
 // Raffle winners who haven't picked up their prize, one letter per email, each starting with what they won.
