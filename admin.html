@@ -545,7 +545,8 @@ function render() {
   sel.innerHTML = "";
   const timed = count(data.photos.filter(r => String(r.times || "").trim()));
   const notPicked = data.raffle_tickets.filter(r => r.won && !r.picked_up), unpicked = count(notPicked), noEmail = notPicked.filter(r => !String(r.email || "").trim()).length;
-  [["winners", `Raffle winners who haven't picked up: ${notPicked.length} winner${notPicked.length === 1 ? "" : "s"}` + (noEmail ? `, ${unpicked.size} with email (${noEmail} with no email to call)` : "") + ` (${unpicked.size})`], ["photo_times", `Photo time reminder: each family gets their own time (${timed.size})`], ["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
+  const came = data.photos.filter(r => r.checked_in), cameMail = count(came), cameNo = came.filter(r => !String(r.email || "").trim()).length;
+  [["checked_in", `Photo download link: checked-in families only: ${came.length} checked in` + (cameNo ? `, ${cameMail.size} with email (${cameNo} with no email)` : "") + ` (${cameMail.size})`], ["winners", `Raffle winners who haven't picked up: ${notPicked.length} winner${notPicked.length === 1 ? "" : "s"}` + (noEmail ? `, ${unpicked.size} with email (${noEmail} with no email to call)` : "") + ` (${unpicked.size})`], ["photo_times", `Photo time reminder: each family gets their own time (${timed.size})`], ["photos", `Photo families (${fam.size})`], ["vendors", `Vendors (${ven.size})`], ["everyone", `Everyone (${all.size})`]]
     .forEach(([v, t]) => sel.add(new Option(t, v)));
   if (was) sel.value = was;
   reminderHint();
@@ -764,7 +765,8 @@ async function sendEmail(test) {
   const f = document.getElementById("email-form"), m = document.getElementById("e-msg");
   const subject = f.subject.value.trim(), message = f.message.value.trim();
   if (!subject || !message) { m.textContent = "Add a subject and message."; return; }
-  const audience = test ? (["photo_times", "winners"].includes(f.audience.value) ? f.audience.value + "_test" : "test") : f.audience.value;
+  if (/\[paste/i.test(message)) { m.textContent = "Paste the photo download link into the message first (replace [paste the photo link here])."; return; }
+  const audience = test ? (["photo_times", "winners", "checked_in"].includes(f.audience.value) ? f.audience.value + "_test" : "test") : f.audience.value;
   if (!test && !confirm(`Send "${subject}" to ${f.audience.selectedOptions[0].text.replace(/ \((\d+)\)/, ": $1 people")}?`)) return;
   m.textContent = "Sending...";
   document.getElementById("e-test").disabled = document.getElementById("e-send").disabled = true;
@@ -796,8 +798,17 @@ const WINNERS = {
   message: "Thank you for coming out to Santa Paws! Your prize is waiting for you. You can pick it up at Carolina Virginia Animal Hospital, 46 Shady Grove Road, Providence, during office hours. Just give us your name when you stop by.\n\n" +
     "If you have any questions, simply reply to this email.\n\nThank you for supporting Santa Paws and our local vendors!\nThe Santa Paws team at Carolina Virginia Animal Hospital",
 };
-const TEMPLATES = { photo_times: REMINDER, winners: WINNERS };
+const PHOTOS_READY = {
+  subject: "Your Santa Paws photos are ready! 📸",
+  message: "Thank you so much for bringing your fur family to Santa Paws! We had the best time, and your pictures with Santa are ready.\n\n" +
+    "Download your photos here:\n[paste the photo link here]\n\n" +
+    "Find your photos, then save the ones you love. They're free to keep and share. If you post them, we'd love for you to tag Carolina Virginia Animal Hospital!\n\n" +
+    "Can't find your pictures or have trouble downloading? Just reply to this email and we'll help.\n\n" +
+    "Merry Christmas from all of us at Carolina Virginia Animal Hospital!",
+};
+const TEMPLATES = { photo_times: REMINDER, winners: WINNERS, checked_in: PHOTOS_READY };
 const NOTES = {
+  checked_in: 'Goes only to families marked checked in on Photo bookings (booked, waiting list and walk-ups alike). Anyone not checked in is skipped, and so is anyone with no email. Each email starts with "Hi (first name)". Paste your photo link where it says [paste the photo link here] before sending.',
   photo_times: 'Each email starts with "Hi (first name)", their own photo time and their pets, then this message. Families on the waiting list (no time) are skipped. "Send me a test" shows you one family\'s version.',
   winners: 'Each email starts with "Hi (first name), Congratulations! You won..." and their prize, who donated it and their ticket number, then this message. Only winners not marked Picked up (and with an email) get it. "Send me a test" shows you one winner\'s version.',
 };

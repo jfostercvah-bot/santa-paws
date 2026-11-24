@@ -37,7 +37,8 @@
  *   POST /admin/shirt-ready { table?: shirt_orders|sponsors, id, message, subject? }  (emails that their shirt is ready for pickup)
  *   POST /admin/email      { audience: photos|photo_times|vendors|everyone|test|photo_times_test, subject, message }
  *                          (photo_times starts each letter with that family's own time and pets;
- *                           winners goes to raffle winners not yet picked up, starting with what they won)
+ *                           winners goes to raffle winners not yet picked up, starting with what they won;
+ *                           checked_in goes only to photo families checked in at the event)
  *
  * Email goes out through Resend when the RESEND_API_KEY and REPLY_TO_EMAIL secrets are set:
  * a confirmation to each person who books or applies, and announcements from the admin page.
@@ -405,7 +406,18 @@ async function confirmSponsor(env, p) {
   await sendEmails(env, [letter(field(p, "email", 120), "Thank you for sponsoring Santa Paws!", text, env)]);
 }
 
-const AUDIENCES = { photos: "Photo families", photo_times: "Photo families, each with their own time", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself", photo_times_test: "Test to yourself", winners: "Raffle winners who haven't picked up", winners_test: "Test to yourself" };
+const AUDIENCES = { photos: "Photo families", photo_times: "Photo families, each with their own time", vendors: "Vendors", everyone: "Photo families and vendors", test: "Test to yourself", photo_times_test: "Test to yourself", winners: "Raffle winners who haven't picked up", winners_test: "Test to yourself", checked_in: "Photo families who were checked in", checked_in_test: "Test to yourself" };
+
+// Photo families (booked, waiting list and walk-ups) who were checked in at the event, one letter per email.
+async function checkedInLetters(db) {
+  const { results } = await db.prepare("SELECT first_name, email FROM photos WHERE checked_in != '' ORDER BY id").all();
+  const byEmail = new Map();
+  for (const r of results) {
+    const e = String(r.email).trim(), k = e.toLowerCase();
+    if (looksLikeEmail(e) && !byEmail.has(k)) byEmail.set(k, { email: e, intro: `Hi ${String(r.first_name).trim()},\n\n` });
+  }
+  return [...byEmail.values()];
+}
 
 // Raffle winners who haven't picked up their prize, one letter per email, each starting with what they won.
 async function winnerLetters(db) {
@@ -443,8 +455,8 @@ async function announce(env, p) {
   const subject = field(p, "subject", 150), message = field(p, "message", 10000);
   if (!emailReady(env)) return { ok: false, reason: "email_not_set_up" };
   if (!(audience in AUDIENCES) || !subject || !message) return { ok: false, reason: "bad_request" };
-  if (["photo_times", "photo_times_test", "winners", "winners_test"].includes(audience)) {
-    const people = audience.startsWith("winners") ? await winnerLetters(db) : await photoTimeLetters(db);
+  if (["photo_times", "photo_times_test", "winners", "winners_test", "checked_in", "checked_in_test"].includes(audience)) {
+    const people = audience.startsWith("winners") ? await winnerLetters(db) : audience.startsWith("checked_in") ? await checkedInLetters(db) : await photoTimeLetters(db);
     if (!people.length) return { ok: false, reason: "no_recipients" };
     const test = audience.endsWith("_test");
     const list = test ? [{ ...people[0], email: env.REPLY_TO_EMAIL }] : people;
